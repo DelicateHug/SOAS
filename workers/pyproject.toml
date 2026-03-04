@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soas-workers"
+version = "0.1.0"
+description = "SOC on a Stick - Celery Workers"
+requires-python = ">=3.12"
+dependencies = [
+    "celery[redis]>=5.4.0",
+    "croniter>=2.0.0",
+    "redis>=5.0.0",
+    "requests>=2.31.0",
+    "psycopg[binary]>=3.1.0",
+    "psycopg2-binary>=2.9.0",
+    "sqlalchemy>=2.0.0",
+    "soas-shared",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

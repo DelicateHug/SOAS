@@ -1,0 +1,39 @@
+# Development overrides - use with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  backend:
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/alembic:/app/alembic
+      - ./shared/src:/app/shared-src
+      - ./VisualPython2/src:/opt/vp2
+      - automations:/app/automations
+    command: sh -c "alembic upgrade head && uvicorn soas_backend.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src --reload-dir /app/shared-src"
+    environment:
+      DEBUG: "true"
+      PYTHONPATH: "/app/shared-src:/app/src:/opt/vp2"
+
+  worker:
+    volumes:
+      - ./workers/src:/app/src
+      - ./shared/src:/app/shared-src
+      - ./VisualPython2/src:/opt/vp2
+      - automations:/app/automations
+    environment:
+      PYTHONPATH: "/app/shared-src:/app/src:/opt/vp:/opt/vp2"
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+      target: deps
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: "http://backend:8000"
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+
+volumes:
+  automations:

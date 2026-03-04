@@ -1,0 +1,239 @@
+/**
+ * Code Library management page - browse, create, edit, and share custom code blocks.
+ */
+
+import { useState } from "react";
+import {
+  Plus,
+  Search,
+  Star,
+  Globe,
+  Lock,
+  Pencil,
+  Trash2,
+  Code,
+  Shield,
+} from "lucide-react";
+import {
+  useCodeLibraryBlocks,
+  useDeleteBlock,
+  useToggleFavorite,
+  type CodeLibraryBlock,
+} from "@/components/graph-editor/hooks/useCodeLibrary";
+import { CodeBlockEditor } from "./CodeBlockEditor";
+import { CodeBlockPermissionsDialog } from "./components/CodeBlockPermissionsDialog";
+
+const languageColors: Record<string, string> = {
+  python: "bg-blue-100 text-blue-800",
+  javascript: "bg-yellow-100 text-yellow-800",
+  bash: "bg-gray-100 text-gray-800",
+};
+
+export function CodeLibraryPage() {
+  const [search, setSearch] = useState("");
+  const [language, setLanguage] = useState("");
+  const [page, setPage] = useState(1);
+  const [editingBlock, setEditingBlock] = useState<CodeLibraryBlock | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [permissionsBlock, setPermissionsBlock] = useState<CodeLibraryBlock | null>(null);
+
+  const { data, isLoading } = useCodeLibraryBlocks({
+    search: search || undefined,
+    language: language || undefined,
+    page,
+    per_page: 25,
+  });
+
+  const deleteBlock = useDeleteBlock();
+  const toggleFavorite = useToggleFavorite();
+
+  const blocks = data?.data || [];
+  const meta = data?.meta;
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Code className="w-6 h-6" />
+          <h1 className="text-2xl font-bold">Code Library</h1>
+        </div>
+        <button
+          onClick={() => setIsCreating(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
+        >
+          <Plus className="w-4 h-4" />
+          New Block
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-3 mb-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search blocks..."
+            className="w-full pl-10 pr-3 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm"
+          />
+        </div>
+        <select
+          value={language}
+          onChange={(e) => {
+            setLanguage(e.target.value);
+            setPage(1);
+          }}
+          className="px-3 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm bg-[hsl(var(--background))]"
+        >
+          <option value="">All Languages</option>
+          <option value="python">Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="bash">Bash</option>
+        </select>
+      </div>
+
+      {/* Block list */}
+      {isLoading ? (
+        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">Loading...</div>
+      ) : blocks.length === 0 ? (
+        <div className="text-center py-12">
+          <Code className="w-12 h-12 mx-auto mb-3 text-[hsl(var(--muted-foreground))] opacity-40" />
+          <p className="text-[hsl(var(--muted-foreground))]">
+            {search ? "No matching blocks found" : "No code blocks yet. Create your first one!"}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {blocks.map((block) => (
+            <div
+              key={block.id}
+              className="flex items-center gap-4 p-4 border border-[hsl(var(--border))] rounded-lg hover:bg-[hsl(var(--accent))] transition-colors"
+            >
+              {/* Favorite star */}
+              <button
+                onClick={() => toggleFavorite.mutate(block.id)}
+                className="flex-shrink-0"
+                title={block.is_favorited ? "Remove from favorites" : "Add to favorites"}
+              >
+                <Star
+                  className={`w-4 h-4 ${
+                    block.is_favorited
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "text-[hsl(var(--muted-foreground))]"
+                  }`}
+                />
+              </button>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-medium text-sm truncate">{block.name}</h3>
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                      languageColors[block.language] || "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {block.language}
+                  </span>
+                  {block.is_public ? (
+                    <span title="Public"><Globe className="w-3 h-3 text-green-500" /></span>
+                  ) : (
+                    <span title="Private"><Lock className="w-3 h-3 text-[hsl(var(--muted-foreground))]" /></span>
+                  )}
+                  <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                    v{block.version}
+                  </span>
+                </div>
+                {block.description && (
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">
+                    {block.description}
+                  </p>
+                )}
+                <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
+                  by {block.created_by.display_name}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={() => setPermissionsBlock(block)}
+                  className="p-1.5 hover:bg-[hsl(var(--accent))] rounded"
+                  title="Permissions"
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setEditingBlock(block)}
+                  className="p-1.5 hover:bg-[hsl(var(--accent))] rounded"
+                  title="Edit"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`Delete "${block.name}"?`)) {
+                      deleteBlock.mutate(block.id);
+                    }
+                  }}
+                  className="p-1.5 hover:bg-red-100 rounded text-red-500"
+                  title="Delete"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {meta && meta.total_pages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+            Page {page} of {meta.total_pages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(meta.total_pages, p + 1))}
+            disabled={page === meta.total_pages}
+            className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      {/* Create/Edit dialog */}
+      {(isCreating || editingBlock) && (
+        <CodeBlockEditor
+          block={editingBlock ?? undefined}
+          onClose={() => {
+            setIsCreating(false);
+            setEditingBlock(null);
+          }}
+        />
+      )}
+
+      {/* Permissions dialog */}
+      {permissionsBlock && (
+        <CodeBlockPermissionsDialog
+          blockId={permissionsBlock.id}
+          blockName={permissionsBlock.name}
+          onClose={() => setPermissionsBlock(null)}
+        />
+      )}
+    </div>
+  );
+}

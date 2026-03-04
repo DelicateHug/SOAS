@@ -1,0 +1,362 @@
+import { useCallback, useEffect, useMemo } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import {
+  ReactFlow,
+  Node,
+  Edge,
+  Background,
+  Controls,
+  MiniMap,
+  Handle,
+  useNodesState,
+  useEdgesState,
+  Position,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { api } from "@/lib/api";
+import { ArrowLeft } from "lucide-react";
+import type { DependencyGraphData } from "@/types/api";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 80;
+const HORIZONTAL_SPACING = 280;
+const VERTICAL_SPACING = 120;
+
+// ---------------------------------------------------------------------------
+// Auto-layout: BFS-based layered positioning
+// ---------------------------------------------------------------------------
+
+function computeLayout(
+  graphNodes: DependencyGraphData["nodes"],
+  graphEdges: DependencyGraphData["edges"]
+): Map<string, { x: number; y: number }> {
+  const positions = new Map<string, { x: number; y: number }>();
+
+  // Build adjacency & track incoming edges
+  const incomingCount = new Map<string, number>();
+  const adjacency = new Map<string, string[]>();
+
+  for (const n of graphNodes) {
+    incomingCount.set(n.id, 0);
+    adjacency.set(n.id, []);
+  }
+
+  for (const e of graphEdges) {
+    adjacency.get(e.source)?.push(e.target);
+    incomingCount.set(e.target, (incomingCount.get(e.target) ?? 0) + 1);
+  }
+
+  // Find root nodes (no incoming edges)
+  const roots = graphNodes
+    .filter((n) => (incomingCount.get(n.id) ?? 0) === 0)
+    .map((n) => n.id);
+
+  // If no roots exist (cycles), just start with the first node
+  if (roots.length === 0 && graphNodes.length > 0) {
+    roots.push(graphNodes[0]!.id);
+  }
+
+  // BFS to assign layers
+  const layerMap = new Map<string, number>();
+  const visited = new Set<string>();
+  const queue: Array<{ id: string; layer: number }> = [];
+
+  for (const root of roots) {
+    queue.push({ id: root, layer: 0 });
+    visited.add(root);
+    layerMap.set(root, 0);
+  }
+
+  while (queue.length > 0) {
+    const { id, layer } = queue.shift()!;
+    const children = adjacency.get(id) ?? [];
+    for (const child of children) {
+      // Always take the deepest layer assignment
+      const existingLayer = layerMap.get(child) ?? -1;
+      const newLayer = layer + 1;
+      if (newLayer > existingLayer) {
+        layerMap.set(child, newLayer);
+      }
+      if (!visited.has(child)) {
+        visited.add(child);
+        queue.push({ id: child, layer: newLayer });
+      }
+    }
+  }
+
+  // Place any unvisited nodes (disconnected components) in layer 0
+  for (const n of graphNodes) {
+    if (!layerMap.has(n.id)) {
+      layerMap.set(n.id, 0);
+    }
+  }
+
+  // Group nodes by layer
+  const layers = new Map<number, string[]>();
+  for (const [nodeId, layer] of layerMap) {
+    if (!layers.has(layer)) {
+      layers.set(layer, []);
+    }
+    layers.get(layer)!.push(nodeId);
+  }
+
+  // Position nodes layer by layer
+  const sortedLayers = Array.from(layers.keys()).sort((a, b) => a - b);
+  for (const layer of sortedLayers) {
+    const nodesInLayer = layers.get(layer)!;
+    const layerHeight = nodesInLayer.length * VERTICAL_SPACING;
+    const startY = -layerHeight / 2 + VERTICAL_SPACING / 2;
+
+    nodesInLayer.forEach((nodeId, index) => {
+      positions.set(nodeId, {
+        x: layer * HORIZONTAL_SPACING,
+        y: startY + index * VERTICAL_SPACING,
+      });
+    });
+  }
+
+  return positions;
+}
+
+// ---------------------------------------------------------------------------
+// Transform API data into React Flow nodes and edges
+// ---------------------------------------------------------------------------
+
+function buildFlowElements(
+  data: DependencyGraphData,
+  focusedId?: string
+): { nodes: Node[]; edges: Edge[] } {
+  const positions = computeLayout(data.nodes, data.edges);
+
+  const nodes: Node[] = data.nodes.map((n) => {
+    const pos = positions.get(n.id) ?? { x: 0, y: 0 };
+    const isAutomation = n.type === "automation";
+    const isFocused = n.id === focusedId;
+
+    return {
+      id: n.id,
+      position: pos,
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+      data: {
+        label: n.name,
+        nodeType: n.type,
+        status: n.status,
+        version: n.version,
+        language: n.language,
+      },
+      style: {
+        width: NODE_WIDTH,
+        minHeight: NODE_HEIGHT,
+        padding: "12px 16px",
+        borderRadius: "8px",
+        border: isFocused
+          ? "2px solid hsl(var(--primary))"
+          : "1px solid hsl(var(--border))",
+        boxShadow: isFocused
+          ? "0 0 0 3px hsla(var(--primary) / 0.25)"
+          : "0 1px 3px hsla(0 0% 0% / 0.1)",
+        background: isAutomation
+          ? "hsl(210 80% 96%)"
+          : "hsl(140 70% 95%)",
+        color: "hsl(var(--foreground))",
+        fontSize: "12px",
+        display: "flex",
+        flexDirection: "column" as const,
+        gap: "4px",
+      },
+    };
+  });
+
+  const edges: Edge[] = data.edges.map((e, i) => ({
+    id: `edge-${e.source}-${e.target}-${i}`,
+    source: e.source,
+    target: e.target,
+    type: "smoothstep",
+    animated: true,
+    style: {
+      stroke: "hsl(var(--muted-foreground))",
+      strokeWidth: 1.5,
+    },
+  }));
+
+  return { nodes, edges };
+}
+
+// ---------------------------------------------------------------------------
+// Custom node component
+// ---------------------------------------------------------------------------
+
+interface DepNodeData {
+  label: string;
+  nodeType: string;
+  status?: string;
+  version?: number;
+  language?: string;
+  [key: string]: unknown;
+}
+
+function DependencyNode({ data }: { data: DepNodeData }) {
+  const isAutomation = data.nodeType === "automation";
+  const badgeBg = isAutomation
+    ? "bg-blue-100 text-blue-800"
+    : "bg-green-100 text-green-800";
+
+  return (
+    <>
+      <Handle type="target" position={Position.Left} />
+      <div className="flex flex-col gap-1">
+        <div className="font-medium text-sm truncate" title={data.label}>
+          {data.label}
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${badgeBg}`}>
+            {isAutomation ? "automation" : "code block"}
+          </span>
+          {data.status && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
+              {data.status}
+            </span>
+          )}
+          {data.version != null && (
+            <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+              v{data.version}
+            </span>
+          )}
+        </div>
+      </div>
+      <Handle type="source" position={Position.Right} />
+    </>
+  );
+}
+
+const nodeTypes = {
+  default: DependencyNode,
+};
+
+// ---------------------------------------------------------------------------
+// Main page component
+// ---------------------------------------------------------------------------
+
+export function DependencyGraphPage() {
+  const { id: automationId } = useParams<{ id?: string }>();
+  const navigate = useNavigate();
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["dependency-graph"],
+    queryFn: () => api.get<DependencyGraphData>("/automations/dependency-graph"),
+  });
+
+  const { initialNodes, initialEdges } = useMemo(() => {
+    if (!data) return { initialNodes: [], initialEdges: [] };
+    return {
+      initialNodes: buildFlowElements(data, automationId).nodes,
+      initialEdges: buildFlowElements(data, automationId).edges,
+    };
+  }, [data, automationId]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // Sync when data loads or automationId changes
+  useEffect(() => {
+    if (initialNodes.length > 0) {
+      setNodes(initialNodes);
+      setEdges(initialEdges);
+    }
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
+
+  // Navigate on node click
+  const onNodeClick = useCallback(
+    (_: React.MouseEvent, node: Node) => {
+      const nodeType = node.data?.nodeType;
+      if (nodeType === "automation") {
+        navigate(`/automations/${node.id}`);
+      } else if (nodeType === "code_block") {
+        navigate("/code-library");
+      }
+    },
+    [navigate]
+  );
+
+  // Back link destination
+  const backTo = automationId
+    ? `/automations/${automationId}`
+    : "/automations";
+
+  return (
+    <div className="flex flex-col -m-6" style={{ height: "100vh", width: "calc(100% + 3rem)" }}>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+        <Link
+          to={backTo}
+          className="flex items-center gap-1.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Link>
+        <div className="w-px h-5 bg-[hsl(var(--border))]" />
+        <h1 className="text-lg font-semibold">Dependency Graph</h1>
+      </div>
+
+      {/* Canvas */}
+      <div className="flex-1 relative">
+        {isLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center text-[hsl(var(--muted-foreground))]">
+            Loading dependency graph...
+          </div>
+        ) : error ? (
+          <div className="absolute inset-0 flex items-center justify-center text-red-500">
+            Failed to load dependency graph. Please try again.
+          </div>
+        ) : nodes.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center text-[hsl(var(--muted-foreground))]">
+            No dependencies found.
+          </div>
+        ) : (
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeClick={onNodeClick}
+            nodeTypes={nodeTypes}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+            minZoom={0.1}
+            maxZoom={2}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background
+              color="hsl(var(--muted))"
+              gap={20}
+              size={1}
+            />
+            <Controls
+              className="[&>button]:bg-[hsl(var(--background))] [&>button]:border-[hsl(var(--border))] [&>button]:text-[hsl(var(--foreground))] [&>button:hover]:bg-[hsl(var(--accent))]"
+            />
+            <MiniMap
+              nodeColor={(node) => {
+                const nodeType = node.data?.nodeType;
+                if (nodeType === "automation") return "hsl(210 80% 70%)";
+                if (nodeType === "code_block") return "hsl(140 70% 65%)";
+                return "hsl(var(--muted))";
+              }}
+              maskColor="hsla(var(--background) / 0.7)"
+              style={{
+                background: "hsl(var(--card, var(--background)))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "6px",
+              }}
+            />
+          </ReactFlow>
+        )}
+      </div>
+    </div>
+  );
+}
