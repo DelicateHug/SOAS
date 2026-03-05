@@ -18,10 +18,25 @@ class ApiClient {
   private refreshToken: string | null = null;
   private refreshPromise: Promise<boolean> | null = null;
   private onTokensChanged: ((accessToken: string, refreshToken: string) => void) | null = null;
+  private _devMode: boolean = false;
 
   constructor() {
     this.accessToken = localStorage.getItem("access_token");
     this.refreshToken = localStorage.getItem("refresh_token");
+    this._devMode = localStorage.getItem("dev_mode") === "true";
+  }
+
+  get devMode(): boolean {
+    return this._devMode;
+  }
+
+  setDevMode(enabled: boolean) {
+    this._devMode = enabled;
+    if (enabled) {
+      localStorage.setItem("dev_mode", "true");
+    } else {
+      localStorage.removeItem("dev_mode");
+    }
   }
 
   setOnTokensChanged(callback: ((accessToken: string, refreshToken: string) => void) | null) {
@@ -86,6 +101,9 @@ class ApiClient {
 
     if (this.accessToken) {
       headers["Authorization"] = `Bearer ${this.accessToken}`;
+    }
+    if (this._devMode) {
+      headers["X-Dev-Mode"] = "true";
     }
 
     let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
@@ -153,6 +171,9 @@ class ApiClient {
     const headers: Record<string, string> = {};
     if (this.accessToken) {
       headers["Authorization"] = `Bearer ${this.accessToken}`;
+    }
+    if (this._devMode) {
+      headers["X-Dev-Mode"] = "true";
     }
 
     let res = await fetch(`${API_BASE}${path}`, {

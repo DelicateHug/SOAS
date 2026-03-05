@@ -15,6 +15,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 from soas_backend.api.deps import get_current_user, require_permission, security
 from soas_backend.database import get_db
 from soas_backend.models.user import User
+from soas_backend.models.automation import Automation
 from soas_backend.services.automation_service import AutomationService
 from soas_backend.services.rbac_service import RBACService
 from soas_backend.services.version_service import VersionService
@@ -243,11 +244,12 @@ async def list_addable_automations(
 
 @router.get("/dependency-graph")
 async def get_dependency_graph(
+    automation_id: UUID | None = Query(None, description="Focus on this automation's connected subgraph"),
     _: dict = Depends(require_permission("automation", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     svc = AutomationService(db)
-    return await svc.get_dependency_graph()
+    return await svc.get_dependency_graph(focus_id=automation_id)
 
 
 @router.get("/{automation_id}", response_model=AutomationRead)

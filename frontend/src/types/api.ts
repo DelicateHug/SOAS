@@ -635,9 +635,11 @@ export interface WikiPageListItem {
   status: WikiPageStatus;
   version: number;
   icon: string | null;
+  linked_node_type: string | null;
   created_by: UserBrief;
   updated_by: UserBrief | null;
   child_count: number;
+  active_editors: number;
   created_at: string;
   updated_at: string;
 }
@@ -791,4 +793,91 @@ export interface GitSyncConfig {
   git_sync_auth_token: string;
   git_sync_ssh_key_path: string;
   git_sync_entity_types: string;
+}
+
+// Deployment Mode
+export type DeploymentMode = "development" | "production";
+
+export interface DeploymentModeResponse {
+  mode: DeploymentMode;
+  is_production: boolean;
+}
+
+// Change Requests
+export type ChangeRequestStatus = "draft" | "submitted" | "approved" | "rejected" | "applied" | "withdrawn" | "pushed_to_dev";
+export type ChangeRequestAction = "create" | "update" | "delete";
+export type VersionTier = "user" | "dev" | "prod";
+
+export interface ChangeRequestItem {
+  id: string;
+  entity_type: string;
+  entity_id: string | null;
+  action: ChangeRequestAction;
+  title: string;
+  status: ChangeRequestStatus;
+  diff_summary: Record<string, { old: unknown; new: unknown }> | null;
+  review_comment: string | null;
+  git_branch: string | null;
+  git_sha: string | null;
+  target_tier: string;
+  created_by: string;
+  creator: UserBrief | null;
+  reviewed_by: string | null;
+  reviewer: UserBrief | null;
+  created_at: string;
+  updated_at: string;
+  reviewed_at: string | null;
+}
+
+export interface ChangeRequestDetail extends ChangeRequestItem {
+  snapshot: Record<string, unknown>;
+}
+
+export interface ChangeRequestListResponse {
+  data: ChangeRequestItem[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface ChangeRequestCreate {
+  entity_type: string;
+  entity_id?: string | null;
+  action: ChangeRequestAction;
+  title: string;
+  snapshot: Record<string, unknown>;
+  diff_summary?: Record<string, { old: unknown; new: unknown }> | null;
+}
+
+// Branch Versioning
+export interface EntityVersionResponse {
+  entity_type: string;
+  entity_id: string | null;
+  tier: VersionTier;
+  snapshot: Record<string, unknown> | null;
+}
+
+export interface PushToDevResult {
+  status: "merged" | "up-to-date" | "conflict";
+  conflicts: string[];
+  sha: string | null;
+}
+
+export interface PromotionResult {
+  status: "merged" | "up-to-date" | "conflict";
+  conflicts: string[];
+  sha: string | null;
+}
+
+export interface BranchInfo {
+  name: string;
+  sha: string | null;
+  is_user: boolean;
+  is_dev: boolean;
+  is_prod: boolean;
+}
+
+export interface DevChangesItem {
+  file_path: string;
+  entity_type: string | null;
 }

@@ -8,7 +8,7 @@
  * - TestRunPanel / CodePreviewPanel (bottom, tabbed)
  */
 
-import { useCallback, useRef, useState, useEffect, type DragEvent } from "react";
+import { memo, useCallback, useMemo, useRef, useState, useEffect, type DragEvent } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -59,6 +59,18 @@ const edgeTypes = {
   dataEdge: DataEdge,
 };
 
+/**
+ * Subscribes to nodes/edges from the Zustand store so drag-induced re-renders
+ * are isolated here instead of cascading through the entire GraphEditor tree.
+ */
+const StoreConnectedFlow = memo(function StoreConnectedFlow(
+  props: Omit<React.ComponentProps<typeof ReactFlow>, "nodes" | "edges">
+) {
+  const nodes = useGraphEditorStore((s) => s.nodes);
+  const edges = useGraphEditorStore((s) => s.edges);
+  return <ReactFlow nodes={nodes} edges={edges} {...props} />;
+});
+
 type BottomTab = "test-run" | "code-preview" | "errors";
 type RightTab = "properties" | "issues";
 
@@ -76,6 +88,7 @@ interface GraphEditorProps {
 
 export function GraphEditor({ automationId, automationVersion = 1, onCreateAutomation }: GraphEditorProps) {
   const reactFlowRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
   const [bottomTab, setBottomTab] = useState<BottomTab>("test-run");
@@ -100,8 +113,8 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
   }, [notification]);
 
   // Store state — data selectors (trigger re-renders when data changes)
-  const nodes = useGraphEditorStore((s) => s.nodes);
-  const edges = useGraphEditorStore((s) => s.edges);
+  // NOTE: nodes/edges are NOT subscribed here — they live in StoreConnectedFlow
+  // to avoid re-rendering the entire editor tree on every drag frame.
   const validationErrors = useGraphEditorStore((s) => s.validationErrors);
 
   // Store actions — grouped with useShallow (stable refs, single subscription)
@@ -164,7 +177,7 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
   } = useCollaboration(automationId);
 
   // Graph issues
-  const { issues: graphIssues, showIssues, setShowIssues, saveAnnotation } = useGraphIssues(automationId);
+  const { issues: graphIssues, showIssues, setShowIssues, saveAnnotation } = useGraphIssues(automationId, broadcastIssuesChanged);
   const [isCreateGraphIssueOpen, setIsCreateGraphIssueOpen] = useState(false);
   const [graphIssuePosition, setGraphIssuePosition] = useState({ x: 0, y: 0 });
 
@@ -230,17 +243,18 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
 
   // Handle node drag stop to push undo
   const handleNodeDragStop = useCallback(() => {
-    // The position has already changed; we push undo before drag in onNodeDragStart
+    isDraggingRef.current = false;
   }, []);
 
   const handleNodeDragStart = useCallback(() => {
+    isDraggingRef.current = true;
     pushUndoState();
   }, [pushUndoState]);
 
-  // Broadcast cursor position to collaborators
+  // Broadcast cursor position to collaborators (skip during node drag to avoid overhead)
   const handleMouseMove = useCallback(
     (event: React.MouseEvent) => {
-      if (!reactFlowInstance) return;
+      if (!reactFlowInstance || isDraggingRef.current) return;
       const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
@@ -463,6 +477,14 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleSave, undo, redo, deleteSelected, copySelected, pasteClipboard]);
 
+  // Memoize inline props to prevent React Flow re-renders on every state change
+  const defaultEdgeOptions = useMemo(() => ({ type: "dataEdge" as const }), []);
+  const canvasStyle = useMemo(() => ({ background: "#0f0f1a" }), []);
+  const miniMapNodeColor = useCallback((node: Node) => {
+    const data = node.data as CustomNodeData;
+    return data.color || "#6b7280";
+  }, []);
+
   return (
     <ReactFlowProvider>
     <div className="flex flex-col h-full bg-[#0f0f1a]">
@@ -563,9 +585,7 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
             style={isBottomOpen ? { flex: `1 1 0`, minHeight: 0 } : undefined}
             onMouseMove={handleMouseMove}
           >
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
+            <StoreConnectedFlow
               onNodesChange={isReadOnly ? undefined : onNodesChange}
               onEdgesChange={isReadOnly ? undefined : onEdgesChange}
               onConnect={isReadOnly ? undefined : onConnect}
@@ -583,19 +603,14 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
               elementsSelectable={!isReadOnly}
               fitView
               deleteKeyCode={null}
-              defaultEdgeOptions={{
-                type: "dataEdge",
-              }}
-              style={{ background: "#0f0f1a" }}
+              defaultEdgeOptions={defaultEdgeOptions}
+              style={canvasStyle}
             >
               <Background color="#1e1e2e" gap={20} size={1} />
               <Controls className="!bg-[#1a1a2e] !border-[#2a2a3e] !shadow-lg [&>button]:!bg-[#1a1a2e] [&>button]:!border-[#2a2a3e] [&>button]:!text-gray-300 [&>button:hover]:!bg-[#2a2a3e]" />
               <MiniMap
                 className="!bg-[#1a1a2e] !border-[#2a2a3e]"
-                nodeColor={(node) => {
-                  const data = node.data as CustomNodeData;
-                  return data.color || "#6b7280";
-                }}
+                nodeColor={miniMapNodeColor}
                 maskColor="rgba(0,0,0,0.6)"
               />
               {/* Collaborator cursor overlay - must be inside ReactFlow for useViewport() */}
@@ -603,9 +618,9 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
                 collaborators={collaborators}
                 myUserId={currentUser?.id ?? ""}
               />
-              {/* Issue annotation overlay */}
-              {showIssues && <IssueAnnotations issues={graphIssues} onSaveAnnotation={saveAnnotation} onIssuesChanged={broadcastIssuesChanged} onDoubleClickIssue={(id) => { setRightTab("issues"); setIsRightPanelOpen(true); setFocusIssueId(id); }} />}
-            </ReactFlow>
+            </StoreConnectedFlow>
+              {/* Issue annotation overlay — rendered outside ReactFlow so the pane doesn't swallow clicks */}
+              {showIssues && <IssueAnnotations issues={graphIssues} onSaveAnnotation={saveAnnotation} onDoubleClickIssue={(id) => { setRightTab("issues"); setIsRightPanelOpen(true); setFocusIssueId(id); }} />}
           </div>
 
           {/* Bottom panel (collapsible) */}

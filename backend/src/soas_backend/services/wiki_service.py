@@ -65,6 +65,7 @@ class WikiService:
         status: str = "published",
         icon: str | None = None,
         slug: str | None = None,
+        linked_node_type: str | None = None,
     ) -> WikiPage:
         if slug:
             # Verify uniqueness of provided slug
@@ -84,6 +85,7 @@ class WikiService:
             tags=tags or [],
             status=status,
             icon=icon,
+            linked_node_type=linked_node_type,
             created_by=created_by,
         )
         self.db.add(page)
@@ -191,6 +193,17 @@ class WikiService:
         await self.db.delete(page)
         await self.db.flush()
         return True
+
+    # ─── Node type linking ───
+
+    async def get_node_type_slug_map(self) -> dict[str, str]:
+        """Return {node_type: slug} for all wiki pages linked to a node type."""
+        result = await self.db.execute(
+            select(WikiPage.linked_node_type, WikiPage.slug).where(
+                WikiPage.linked_node_type.isnot(None)
+            )
+        )
+        return {row[0]: row[1] for row in result}
 
     # ─── Tree ───
 

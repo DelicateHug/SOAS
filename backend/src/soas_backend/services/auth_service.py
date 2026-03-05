@@ -14,8 +14,16 @@ from soas_backend.auth.jwt import (
 )
 from soas_backend.auth.password import hash_password, verify_password
 from soas_backend.config import settings
+from soas_backend.crypto import setup_user_dek
 from soas_backend.models.role import Permission, Role, RolePermission, UserRole
 from soas_backend.models.user import RefreshToken, User
+
+
+class AccountLockedException(Exception):
+    """Raised when an account is locked due to too many failed login attempts."""
+
+    def __init__(self, locked_until: datetime):
+        self.locked_until = locked_until
 
 
 class AuthService:
@@ -46,9 +54,22 @@ class AuthService:
                 self.db.add(UserRole(user_id=user.id, role_id=admin_role.id))
                 await self.db.flush()
 
+        # Generate per-user DEK wrapped with password + server key
+        _dek, salt, pw_wrapped, srv_wrapped = setup_user_dek(password)
+        user.dek_salt = salt
+        user.password_wrapped_dek = pw_wrapped
+        user.server_wrapped_dek = srv_wrapped
+        await self.db.flush()
+
         return user
 
-    async def authenticate(self, username: str, password: str) -> User | None:
+    async def authenticate(
+        self,
+        username: str,
+        password: str,
+        max_failed_attempts: int = 0,
+        lockout_minutes: int = 30,
+    ) -> User | None:
         result = await self.db.execute(
             select(User)
             .options(selectinload(User.user_roles))
@@ -58,10 +79,24 @@ class AuthService:
 
         if user is None or not user.is_active:
             return None
+
+        now = datetime.now(timezone.utc)
+
+        # Check if account is locked
+        if user.locked_until and user.locked_until > now:
+            raise AccountLockedException(user.locked_until)
+
         if not verify_password(password, user.password_hash):
+            # Increment failed attempts and maybe lock
+            user.failed_login_attempts += 1
+            if max_failed_attempts > 0 and user.failed_login_attempts >= max_failed_attempts:
+                user.locked_until = now + timedelta(minutes=lockout_minutes)
             return None
 
-        user.last_login_at = datetime.now(timezone.utc)
+        # Successful login: reset counters
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        user.last_login_at = now
         return user
 
     async def get_user_permissions(self, user_id: UUID) -> tuple[list[str], list[str]]:

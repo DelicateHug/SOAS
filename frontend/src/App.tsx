@@ -40,6 +40,10 @@ const WikiListPage = lazy(() => import("@/pages/wiki/WikiListPage").then((m) => 
 const WikiPageView = lazy(() => import("@/pages/wiki/WikiPageView").then((m) => ({ default: m.WikiPageView })));
 const WikiPageEditor = lazy(() => import("@/pages/wiki/WikiPageEditor").then((m) => ({ default: m.WikiPageEditor })));
 const WikiVersionHistory = lazy(() => import("@/pages/wiki/WikiVersionHistory").then((m) => ({ default: m.WikiVersionHistory })));
+const UserSecretsPage = lazy(() => import("@/pages/UserSecretsPage").then((m) => ({ default: m.UserSecretsPage })));
+const AdminUserSecretsPage = lazy(() => import("@/pages/admin/AdminUserSecretsPage").then((m) => ({ default: m.AdminUserSecretsPage })));
+const LocalChangesPage = lazy(() => import("@/pages/LocalChangesPage").then((m) => ({ default: m.LocalChangesPage })));
+const ReviewChangesPage = lazy(() => import("@/pages/admin/ReviewChangesPage").then((m) => ({ default: m.ReviewChangesPage })));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -113,6 +117,12 @@ export default function App() {
           {/* Jobs — redirect to executions page with jobs tab */}
           <Route path="jobs" element={<Navigate to="/executions?tab=jobs" replace />} />
 
+          {/* My Secrets */}
+          <Route path="my-secrets" element={<UserSecretsPage />} />
+
+          {/* Local Changes */}
+          <Route path="local-changes" element={<LocalChangesPage />} />
+
           {/* Executions */}
           <Route path="executions" element={<ExecutionListPage />} />
           <Route path="executions/:id" element={<ExecutionDetailPage />} />
@@ -129,6 +139,8 @@ export default function App() {
           <Route path="admin/webhooks" element={<WebhooksPage />} />
           <Route path="admin/webhook-sources" element={<WebhookSourcesPage />} />
           <Route path="admin/normalization" element={<NormalizationEditorPage />} />
+          <Route path="admin/user-secrets" element={<AdminUserSecretsPage />} />
+          <Route path="admin/review-changes" element={<ReviewChangesPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
       </Routes>

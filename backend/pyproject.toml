@@ -27,6 +27,7 @@ dependencies = [
     "croniter>=2.0.0",
     "soas-shared",
     "mistune>=3.0.0",
+    "cryptography>=42.0.0",
 ]
 
 [project.optional-dependencies]

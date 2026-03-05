@@ -1,15 +1,26 @@
 /**
- * Hook for saving graph data to the backend.
+ * Hook for saving graph data as a draft change request.
+ *
+ * All saves go through the change request system. Only admin "Apply"
+ * writes to the live automations table.
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useGraphEditorStore } from "../stores/graphEditorStore";
 import { toBackendFormat } from "../utils/graphConversion";
+import type { ChangeRequestCreate, ChangeRequestDetail } from "@/types/api";
 
 export function useGraphSave(automationId: string | undefined) {
   const queryClient = useQueryClient();
-  const { setIsSaving, setIsDirty, toVP2GraphData } = useGraphEditorStore();
+
+  // Use getState() to avoid subscribing to the entire store —
+  // subscribing without a selector causes GraphEditor to re-render
+  // on every single state change (node drags, selections, etc.).
+  const store = useGraphEditorStore;
+  const setIsSaving = store((s) => s.setIsSaving);
+  const setIsDirty = store((s) => s.setIsDirty);
+  const toVP2GraphData = store((s) => s.toVP2GraphData);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -21,18 +32,19 @@ export function useGraphSave(automationId: string | undefined) {
       const graphData = toVP2GraphData();
       const backendData = toBackendFormat(graphData);
 
-      return api.request<{ id: string }>(`/automations/${id}/graph`, {
-        method: "PUT",
-        body: JSON.stringify({ graph_data: backendData }),
-      });
+      const body: ChangeRequestCreate = {
+        entity_type: "automation",
+        entity_id: id,
+        action: "update",
+        title: "Update automation graph",
+        snapshot: { graph_data: backendData },
+      };
+      return api.post<ChangeRequestDetail>("/change-requests", body);
     },
     onSuccess: () => {
       setIsDirty(false);
       setIsSaving(false);
-      const id = automationId || useGraphEditorStore.getState().graphId;
-      if (id) {
-        queryClient.invalidateQueries({ queryKey: ["automation", id] });
-      }
+      queryClient.invalidateQueries({ queryKey: ["change-request"] });
     },
     onError: () => {
       setIsSaving(false);

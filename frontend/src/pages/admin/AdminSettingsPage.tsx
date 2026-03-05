@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
-import { Shield, Fingerprint, Key, GitBranch, CheckCircle2, XCircle } from "lucide-react";
+import { Shield, ShieldAlert, Fingerprint, Key, GitBranch, CheckCircle2, XCircle } from "lucide-react";
 import type { GitSyncConfig } from "@/types/api";
 
 export function AdminSettingsPage() {
@@ -14,6 +14,7 @@ export function AdminSettingsPage() {
 
       <div className="space-y-6">
         <GitSyncSection />
+        <LoginSecuritySection />
         <MfaSection isMfaEnabled={false} />
         <WebAuthnSection />
         <AccountInfoSection user={user} />
@@ -464,6 +465,132 @@ function GitSyncSection() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function LoginSecuritySection() {
+  const queryClient = useQueryClient();
+
+  const { data: maxAttempts, isLoading: loadingMax } = useQuery({
+    queryKey: ["settings", "max_failed_login_attempts"],
+    queryFn: () =>
+      api.get<{ key: string; value: string }>(
+        "/settings/max_failed_login_attempts"
+      ),
+  });
+
+  const { data: lockoutMin, isLoading: loadingLockout } = useQuery({
+    queryKey: ["settings", "failed_login_lockout_minutes"],
+    queryFn: () =>
+      api.get<{ key: string; value: string }>(
+        "/settings/failed_login_lockout_minutes"
+      ),
+  });
+
+  const [maxAttemptsVal, setMaxAttemptsVal] = useState<string | null>(null);
+  const [lockoutMinVal, setLockoutMinVal] = useState<string | null>(null);
+
+  const currentMax = maxAttemptsVal ?? maxAttempts?.value ?? "";
+  const currentLockout = lockoutMinVal ?? lockoutMin?.value ?? "";
+
+  const isDirty =
+    maxAttemptsVal !== null || lockoutMinVal !== null;
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      const promises: Promise<unknown>[] = [];
+      if (maxAttemptsVal !== null) {
+        promises.push(
+          api.put("/settings/max_failed_login_attempts", {
+            value: maxAttemptsVal,
+          })
+        );
+      }
+      if (lockoutMinVal !== null) {
+        promises.push(
+          api.put("/settings/failed_login_lockout_minutes", {
+            value: lockoutMinVal,
+          })
+        );
+      }
+      await Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["settings", "max_failed_login_attempts"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["settings", "failed_login_lockout_minutes"],
+      });
+      setMaxAttemptsVal(null);
+      setLockoutMinVal(null);
+    },
+  });
+
+  if (loadingMax || loadingLockout) {
+    return (
+      <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+        <p className="text-[hsl(var(--muted-foreground))]">
+          Loading login security settings...
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+      <div className="flex items-center gap-3 mb-4">
+        <ShieldAlert className="w-5 h-5 text-[hsl(var(--primary))]" />
+        <div>
+          <h2 className="font-semibold">Login Security</h2>
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Configure account lockout after failed login attempts
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm font-medium">
+              Max Failed Attempts
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={currentMax}
+              onChange={(e) => setMaxAttemptsVal(e.target.value)}
+              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+            />
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+              0 = no lockout
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-medium">
+              Lockout Duration (minutes)
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={currentLockout}
+              onChange={(e) => setLockoutMinVal(e.target.value)}
+              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))]">
+          <button
+            onClick={() => saveMut.mutate()}
+            disabled={!isDirty || saveMut.isPending}
+            className="px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+          >
+            {saveMut.isPending ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

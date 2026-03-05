@@ -13,7 +13,7 @@ import redis
 
 from soas_workers.celery_app import app
 from soas_workers.config import config
-from soas_workers.db import update_execution_complete, update_execution_status
+from soas_workers.db import get_case_incident_ids, get_sensitive_incident_variable_names, update_execution_complete, update_execution_status
 
 
 @app.task(name="soas.test_run_graph", bind=True, max_retries=0)
@@ -53,9 +53,10 @@ def test_run_graph(
         from visualpython2.serialization.graph_serializer import GraphSerializer
         from visualpython2.compiler.code_generator import CodeGenerator
 
+        sensitive_vars = get_sensitive_incident_variable_names()
         serializer = GraphSerializer()
         graph = serializer.deserialize(graph_json)
-        result = CodeGenerator(graph, debug_mode=True).generate()
+        result = CodeGenerator(graph, debug_mode=True, sensitive_var_names=sensitive_vars).generate()
 
         if not result.success:
             error_msg = "; ".join(result.errors) if result.errors else "Compilation failed"
@@ -126,7 +127,18 @@ def test_run_graph(
     except ImportError:
         pass  # SOAS vars bridge not available
 
-    # 3b. Incident variables — real bridge or fallback stubs
+    # 3b. Resolve incident group for group bridge functions
+    case_id = parameters.get("case_id")
+    group_incident_ids: list[str] | None = None
+
+    if case_id:
+        group_incident_ids = get_case_incident_ids(case_id)
+        if not incident_id and group_incident_ids:
+            incident_id = group_incident_ids[0]
+    elif incident_id:
+        group_incident_ids = [incident_id]
+
+    # 3c. Incident variables — real bridge or fallback stubs
     has_incident_bridge = False
     if incident_id:
         try:
@@ -134,7 +146,10 @@ def test_run_graph(
                 generate_incident_bridge_code,
             )
 
-            bridge_code = generate_incident_bridge_code(incident_id)
+            bridge_code = generate_incident_bridge_code(
+                incident_id,
+                group_incident_ids=group_incident_ids,
+            )
             compiled_code = bridge_code + "\n" + compiled_code
             has_incident_bridge = True
         except ImportError:
@@ -149,6 +164,12 @@ def test_run_graph(
             "    pass\n"
             "def get_incident_data():\n"
             "    return {}\n"
+            "def get_group_incidents():\n"
+            "    return []\n"
+            "def get_group_incident(index):\n"
+            "    raise IndexError(f'Incident index {index} out of range (group size: 0)')\n"
+            "def get_group_incident_count():\n"
+            "    return 0\n"
             "# --- End Stubs ---\n\n"
         )
         compiled_code = stub_bridge + compiled_code
@@ -164,7 +185,8 @@ def test_run_graph(
     env["REDIS_URL"] = config.REDIS_URL
     if incident_id:
         env["SOAS_INCIDENT_ID"] = incident_id
-    env["SOAS_DEBUG_FILE"] = debug_file_path
+    if case_id:
+        env["SOAS_CASE_ID"] = case_id
     # Sub-automation support: inject API credentials and runtime module path
     env["SOAS_API_URL"] = config.SOAS_API_URL
     env["SOAS_API_TOKEN"] = api_token or config.SOAS_API_TOKEN
@@ -197,6 +219,30 @@ def test_run_graph(
 
         # Create a temp file for debug trace output
         debug_file_path = tmp_path.replace(".py", "_debug.json")
+        env["SOAS_DEBUG_FILE"] = debug_file_path
+
+        # Collect sensitive values for stdout/stderr scrubbing
+        _scrub_values: list[str] = []
+        if incident_id:
+            _sens_names = get_sensitive_incident_variable_names()
+            if _sens_names:
+                for _iid in (group_incident_ids or [incident_id]):
+                    for _name in _sens_names:
+                        _raw = r.hget(f"incident:{_iid}:data", _name)
+                        if _raw:
+                            try:
+                                _decoded = json.loads(_raw if isinstance(_raw, str) else _raw.decode())
+                                s = str(_decoded) if _decoded is not None else ""
+                                if len(s) >= 3:
+                                    _scrub_values.append(s)
+                            except Exception:
+                                pass
+        _scrub_values.sort(key=len, reverse=True)
+
+        def _scrub_line(line: str) -> str:
+            for v in _scrub_values:
+                line = line.replace(v, "***")
+            return line
 
         try:
             proc = subprocess.Popen(
@@ -214,7 +260,7 @@ def test_run_graph(
                 for line in iter(proc.stdout.readline, ""):
                     if not line:
                         break
-                    stripped = line.rstrip("\n")
+                    stripped = _scrub_line(line.rstrip("\n"))
                     stdout_lines.append(stripped)
                     r.publish(
                         pubsub_channel,
@@ -227,7 +273,7 @@ def test_run_graph(
                 for line in iter(proc.stderr.readline, ""):
                     if not line:
                         break
-                    stripped = line.rstrip("\n")
+                    stripped = _scrub_line(line.rstrip("\n"))
                     stderr_lines.append(stripped)
                     r.publish(
                         pubsub_channel,

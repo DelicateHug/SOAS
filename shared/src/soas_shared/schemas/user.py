@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, field_validator
 
 from soas_shared.schemas.common import BaseReadSchema, BaseSchema
 
@@ -14,12 +14,32 @@ class UserCreate(BaseSchema):
     display_name: str = Field(min_length=1, max_length=200)
     password: str = Field(min_length=8, max_length=128)
 
+    @field_validator("username", "display_name")
+    @classmethod
+    def strip_text_fields(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("email")
+    @classmethod
+    def strip_email(cls, v: str) -> str:
+        return v.strip().lower()
+
 
 class AdminUserCreate(BaseSchema):
     """Schema for admin-created users (password is auto-generated)."""
     username: str = Field(min_length=3, max_length=100)
     email: EmailStr
     display_name: str = Field(min_length=1, max_length=200)
+
+    @field_validator("username", "display_name")
+    @classmethod
+    def strip_text_fields(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("email")
+    @classmethod
+    def strip_email(cls, v: str) -> str:
+        return v.strip().lower()
 
 
 class UserRead(BaseReadSchema):

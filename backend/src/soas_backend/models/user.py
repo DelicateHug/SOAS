@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, LargeBinary, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, LargeBinary, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -28,6 +28,13 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Per-user Data Encryption Key (DEK) for secret encryption
+    dek_salt: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    password_wrapped_dek: Mapped[str | None] = mapped_column(Text, nullable=True)
+    server_wrapped_dek: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     webauthn_credentials: Mapped[list["WebAuthnCredential"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"

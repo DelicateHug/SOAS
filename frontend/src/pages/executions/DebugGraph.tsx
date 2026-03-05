@@ -10,7 +10,7 @@ import {
   Background,
   Controls,
   type Node,
-  type Edge,
+  type OnSelectionChangeFunc,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -42,6 +42,13 @@ export function DebugGraph({ graphData, nodeTrace }: DebugGraphProps) {
     setInspectedNodeId((prev) => (prev === nodeId ? null : nodeId));
   }, []);
 
+  // Use onSelectionChange as the reliable way to detect node clicks
+  const onSelectionChange: OnSelectionChangeFunc = useCallback(({ nodes: selectedNodes }) => {
+    if (selectedNodes.length > 0 && selectedNodes[0]) {
+      handleInspect(selectedNodes[0].id);
+    }
+  }, [handleInspect]);
+
   // Convert graph data to React Flow format with debug overlays
   const { nodes, edges } = useMemo(() => {
     if (!catalog) return { nodes: [], edges: [] };
@@ -62,7 +69,7 @@ export function DebugGraph({ graphData, nodeTrace }: DebugGraphProps) {
           nodeId: node.id,
         },
         draggable: false,
-        selectable: false,
+        selectable: true,
         connectable: false,
       };
     });
@@ -97,46 +104,47 @@ export function DebugGraph({ graphData, nodeTrace }: DebugGraphProps) {
         </div>
       </div>
 
-      <div className="flex" style={{ height: 450 }}>
-        {/* Graph canvas */}
-        <div className={inspectedTrace ? "w-2/3" : "w-full"} style={{ height: "100%" }}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            fitView
-            fitViewOptions={{ padding: 0.2 }}
-            proOptions={{ hideAttribution: true }}
-            nodesDraggable={false}
-            nodesConnectable={false}
-            elementsSelectable={false}
-            panOnScroll
-            zoomOnScroll
-            minZoom={0.2}
-            maxZoom={2}
-          >
-            <Background color="#333" gap={20} />
-            <Controls showInteractive={false} />
-          </ReactFlow>
-        </div>
-
-        {/* Inspection panel */}
-        {inspectedTrace && inspectedNode && (
-          <NodeInspector
-            nodeId={inspectedNodeId!}
-            trace={inspectedTrace}
-            label={inspectedNode.data.label}
-            nodeType={inspectedNode.data.type}
-            onClose={() => setInspectedNodeId(null)}
-          />
-        )}
+      {/* Graph canvas — always full width */}
+      <div style={{ height: 450 }}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          onNodeClick={(_event, node) => handleInspect(node.id)}
+          onSelectionChange={onSelectionChange}
+          fitView
+          fitViewOptions={{ padding: 0.2 }}
+          proOptions={{ hideAttribution: true }}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={true}
+          panOnDrag={[1, 2]}
+          panOnScroll
+          zoomOnScroll
+          minZoom={0.2}
+          maxZoom={2}
+        >
+          <Background color="#333" gap={20} />
+          <Controls showInteractive={false} />
+        </ReactFlow>
       </div>
+
+      {/* Inspection panel — below the graph */}
+      {inspectedNode && (
+        <NodeInspector
+          nodeId={inspectedNodeId!}
+          trace={inspectedTrace ?? { type: inspectedNode.data.type, label: inspectedNode.data.label, executions: [] }}
+          label={inspectedNode.data.label}
+          nodeType={inspectedNode.data.type}
+          onClose={() => setInspectedNodeId(null)}
+        />
+      )}
     </div>
   );
 }
 
-/** Side panel for inspecting a node's debug data */
+/** Panel for inspecting a node's debug data */
 function NodeInspector({
   nodeId,
   trace,
@@ -158,50 +166,16 @@ function NodeInspector({
   const status = exec?.status === "completed" ? "completed" : "error";
 
   return (
-    <div className="w-1/3 border-l border-[hsl(var(--border))] overflow-y-auto bg-[hsl(var(--card))]">
-      <div className="px-3 py-2 border-b border-[hsl(var(--border))] flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold">{label}</p>
-          <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
-            {nodeType} &middot; {nodeId.slice(0, 8)}
-          </p>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-1"
-        >
-          X
-        </button>
-      </div>
-
-      {/* Execution selector for loop nodes */}
-      {execCount > 1 && (
-        <div className="px-3 py-2 border-b border-[hsl(var(--border))] flex items-center gap-2">
-          <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-            Iteration:
-          </span>
-          <select
-            value={selectedExec}
-            onChange={(e) => setSelectedExec(Number(e.target.value))}
-            className="text-xs bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded px-1 py-0.5"
-          >
-            {Array.from({ length: execCount }).map((_, i) => (
-              <option key={i} value={i}>
-                #{i + 1}
-                {i === execCount - 1 ? " (latest)" : ""}
-              </option>
-            ))}
-          </select>
-          <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-            of {execCount}
-          </span>
-        </div>
-      )}
-
-      {exec ? (
-        <div className="px-3 py-2 space-y-3">
-          {/* Status + duration */}
-          <div className="flex items-center gap-2">
+    <div className="border-t border-[hsl(var(--border))] bg-[hsl(var(--card))]">
+      <div className="px-4 py-2 border-b border-[hsl(var(--border))] flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div>
+            <p className="text-xs font-semibold">{label}</p>
+            <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
+              {nodeType} &middot; {nodeId.slice(0, 8)}
+            </p>
+          </div>
+          {exec && (
             <span
               className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                 status === "completed"
@@ -211,20 +185,50 @@ function NodeInspector({
             >
               {status}
             </span>
-            {exec.duration_ms != null && (
+          )}
+          {exec?.duration_ms != null && (
+            <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+              {exec.duration_ms < 1
+                ? `${(exec.duration_ms * 1000).toFixed(0)}us`
+                : exec.duration_ms < 1000
+                  ? `${exec.duration_ms.toFixed(1)}ms`
+                  : `${(exec.duration_ms / 1000).toFixed(2)}s`}
+            </span>
+          )}
+          {/* Execution selector for loop nodes */}
+          {execCount > 1 && (
+            <div className="flex items-center gap-2">
               <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-                {exec.duration_ms < 1
-                  ? `${(exec.duration_ms * 1000).toFixed(0)}us`
-                  : exec.duration_ms < 1000
-                    ? `${exec.duration_ms.toFixed(1)}ms`
-                    : `${(exec.duration_ms / 1000).toFixed(2)}s`}
+                Iteration:
               </span>
-            )}
-          </div>
+              <select
+                value={selectedExec}
+                onChange={(e) => setSelectedExec(Number(e.target.value))}
+                className="text-xs bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded px-1 py-0.5"
+              >
+                {Array.from({ length: execCount }).map((_, i) => (
+                  <option key={i} value={i}>
+                    #{i + 1}
+                    {i === execCount - 1 ? " (latest)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1"
+        >
+          Close
+        </button>
+      </div>
 
+      {exec ? (
+        <div className="px-4 py-3">
           {/* Error */}
           {exec.error && (
-            <div className="bg-red-900/20 border border-red-800/30 rounded p-2">
+            <div className="bg-red-900/20 border border-red-800/30 rounded p-2 mb-3">
               <p className="text-[10px] font-medium text-red-400 mb-1">Error</p>
               <pre className="text-[10px] text-red-300 whitespace-pre-wrap break-all font-mono">
                 {exec.error}
@@ -232,60 +236,63 @@ function NodeInspector({
             </div>
           )}
 
-          {/* Inputs */}
-          <div>
-            <p className="text-[10px] font-medium text-[hsl(var(--muted-foreground))] mb-1">
-              Inputs
-            </p>
-            {Object.keys(exec.inputs).length > 0 ? (
-              <div className="space-y-1">
-                {Object.entries(exec.inputs).map(([port, value]) => (
-                  <div
-                    key={port}
-                    className="bg-[hsl(var(--background))] rounded p-1.5 border border-[hsl(var(--border))]"
-                  >
-                    <p className="text-[10px] font-medium text-blue-400">{port}</p>
-                    <pre className="text-[10px] text-[hsl(var(--foreground))] whitespace-pre-wrap break-all font-mono mt-0.5">
-                      {value}
-                    </pre>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[10px] text-[hsl(var(--muted-foreground))] italic">
-                No inputs
+          {/* Inputs and Outputs side by side */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Inputs */}
+            <div>
+              <p className="text-[10px] font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                Inputs
               </p>
-            )}
-          </div>
+              {Object.keys(exec.inputs).length > 0 ? (
+                <div className="space-y-1">
+                  {Object.entries(exec.inputs).map(([port, value]) => (
+                    <div
+                      key={port}
+                      className="bg-[hsl(var(--background))] rounded p-1.5 border border-[hsl(var(--border))]"
+                    >
+                      <p className="text-[10px] font-medium text-blue-400">{port}</p>
+                      <pre className="text-[10px] text-[hsl(var(--foreground))] whitespace-pre-wrap break-all font-mono mt-0.5">
+                        {value}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10px] text-[hsl(var(--muted-foreground))] italic">
+                  No inputs
+                </p>
+              )}
+            </div>
 
-          {/* Outputs */}
-          <div>
-            <p className="text-[10px] font-medium text-[hsl(var(--muted-foreground))] mb-1">
-              Outputs
-            </p>
-            {Object.keys(exec.outputs).length > 0 ? (
-              <div className="space-y-1">
-                {Object.entries(exec.outputs).map(([port, value]) => (
-                  <div
-                    key={port}
-                    className="bg-[hsl(var(--background))] rounded p-1.5 border border-[hsl(var(--border))]"
-                  >
-                    <p className="text-[10px] font-medium text-green-400">{port}</p>
-                    <pre className="text-[10px] text-[hsl(var(--foreground))] whitespace-pre-wrap break-all font-mono mt-0.5">
-                      {value}
-                    </pre>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[10px] text-[hsl(var(--muted-foreground))] italic">
-                No outputs
+            {/* Outputs */}
+            <div>
+              <p className="text-[10px] font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                Outputs
               </p>
-            )}
+              {Object.keys(exec.outputs).length > 0 ? (
+                <div className="space-y-1">
+                  {Object.entries(exec.outputs).map(([port, value]) => (
+                    <div
+                      key={port}
+                      className="bg-[hsl(var(--background))] rounded p-1.5 border border-[hsl(var(--border))]"
+                    >
+                      <p className="text-[10px] font-medium text-green-400">{port}</p>
+                      <pre className="text-[10px] text-[hsl(var(--foreground))] whitespace-pre-wrap break-all font-mono mt-0.5">
+                        {value}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10px] text-[hsl(var(--muted-foreground))] italic">
+                  No outputs
+                </p>
+              )}
+            </div>
           </div>
         </div>
       ) : (
-        <div className="px-3 py-4 text-center">
+        <div className="px-4 py-3 text-center">
           <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
             Node was not reached during execution
           </p>

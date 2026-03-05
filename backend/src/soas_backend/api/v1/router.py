@@ -36,6 +36,8 @@ from soas_backend.api.v1.case_files import router as case_files_router
 from soas_backend.api.v1.case_form_submissions import router as case_form_submissions_router
 from soas_backend.api.v1.case_automations import router as case_automations_router
 from soas_backend.api.v1.user_secrets import router as user_secrets_router
+from soas_backend.api.v1.change_requests import router as change_requests_router
+from soas_backend.api.v1.branch_versions import router as branch_versions_router
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth_router)
@@ -72,3 +74,5 @@ v1_router.include_router(case_files_router)
 v1_router.include_router(case_form_submissions_router)
 v1_router.include_router(case_automations_router)
 v1_router.include_router(user_secrets_router)
+v1_router.include_router(change_requests_router)
+v1_router.include_router(branch_versions_router)

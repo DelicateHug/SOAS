@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { marked } from "marked";
+import { DynamicIcon } from "@/components/ui/DynamicIcon";
 import "@/components/MarkdownEditor.css";
 
 // ---------------------------------------------------------------------------
@@ -11,14 +14,37 @@ interface TocEntry {
   level: number;
 }
 
+export interface ChildPageLink {
+  title: string;
+  slug: string;
+  icon: string | null;
+}
+
 export interface DocumentationViewerProps {
   /** HTML content to render */
   content: string;
+  /** Child pages to show in sidebar for quick access */
+  childPages?: ChildPageLink[];
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Detect if content is raw markdown (not HTML from Tiptap). */
+function isMarkdown(content: string): boolean {
+  const trimmed = content.trim();
+  // If it starts with an HTML tag, it's likely Tiptap HTML
+  if (trimmed.startsWith("<")) return false;
+  // Markdown indicators: headings, bullet lists, bold/italic syntax
+  return /^#{1,6}\s/m.test(trimmed) || /^\s*[-*]\s/m.test(trimmed) || /\*\*.+\*\*/m.test(trimmed);
+}
+
+/** Convert markdown to HTML if needed. */
+function ensureHtml(content: string): string {
+  if (!isMarkdown(content)) return content;
+  return marked.parse(content, { async: false }) as string;
+}
 
 function slugify(text: string, index: number): string {
   const slug = text
@@ -60,12 +86,12 @@ function processHtml(html: string): {
 // Component
 // ---------------------------------------------------------------------------
 
-export function DocumentationViewer({ content }: DocumentationViewerProps) {
+export function DocumentationViewer({ content, childPages }: DocumentationViewerProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [activeId, setActiveId] = useState<string>("");
 
   const { processedHtml, headings } = useMemo(
-    () => processHtml(content),
+    () => processHtml(ensureHtml(content)),
     [content],
   );
 
@@ -126,29 +152,54 @@ export function DocumentationViewer({ content }: DocumentationViewerProps) {
       />
 
       {/* TOC Sidebar */}
-      {headings.length > 0 && (
+      {(headings.length > 0 || (childPages && childPages.length > 0)) && (
         <nav className="w-48 shrink-0 sticky top-4 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
-          <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
-            On this page
-          </p>
-          <ul className="space-y-1 border-l border-[hsl(var(--border))]">
-            {headings.map((h) => (
-              <li key={h.id}>
-                <button
-                  onClick={() => scrollTo(h.id)}
-                  className={`block w-full text-left text-sm py-0.5 transition-colors border-l-2 -ml-px ${
-                    h.level === 1 ? "pl-3" : h.level === 2 ? "pl-5" : "pl-7"
-                  } ${
-                    activeId === h.id
-                      ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))] font-medium"
-                      : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:border-[hsl(var(--border))]"
-                  }`}
-                >
-                  {h.text}
-                </button>
-              </li>
-            ))}
-          </ul>
+          {headings.length > 0 && (
+            <>
+              <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
+                On this page
+              </p>
+              <ul className="space-y-1 border-l border-[hsl(var(--border))]">
+                {headings.map((h) => (
+                  <li key={h.id}>
+                    <button
+                      onClick={() => scrollTo(h.id)}
+                      className={`block w-full text-left text-sm py-0.5 transition-colors border-l-2 -ml-px ${
+                        h.level === 1 ? "pl-3" : h.level === 2 ? "pl-5" : "pl-7"
+                      } ${
+                        activeId === h.id
+                          ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))] font-medium"
+                          : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:border-[hsl(var(--border))]"
+                      }`}
+                    >
+                      {h.text}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {childPages && childPages.length > 0 && (
+            <div className={headings.length > 0 ? "mt-4" : ""}>
+              <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
+                Subpages
+              </p>
+              <ul className="space-y-0.5 border-l border-[hsl(var(--border))]">
+                {childPages.map((child) => (
+                  <li key={child.slug}>
+                    <Link
+                      to={`/wiki/${child.slug}`}
+                      className="flex items-center gap-1.5 text-sm py-0.5 pl-3 border-l-2 -ml-px border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:border-[hsl(var(--border))] transition-colors"
+                    >
+                      <DynamicIcon name={child.icon} className="w-3.5 h-3.5 shrink-0" />
+                      {child.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </nav>
       )}
     </div>

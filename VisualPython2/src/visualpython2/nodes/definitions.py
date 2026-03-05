@@ -488,8 +488,19 @@ class EndNode(BaseNode):
         self._result_value = None
 
 
+_IF_VALID_OPERATORS = frozenset({
+    "is_truthy", "is_falsy",
+    "equals", "not_equals",
+    "contains", "not_contains",
+    "starts_with", "ends_with",
+    "greater_than", "greater_equal", "less_than", "less_equal",
+    "matches_regex",
+    "custom",
+})
+
+
 class IfNode(BaseNode):
-    """Conditional branching node."""
+    """Conditional branching node with operator-based comparisons."""
 
     node_type: str = "if"
     display_name: str = "If"
@@ -502,7 +513,11 @@ class IfNode(BaseNode):
         name: Optional[str] = None,
         position: Optional[Position] = None,
         condition_code: str = "",
+        operator: str = "is_truthy",
+        compare_value: str = "",
     ) -> None:
+        self._operator: str = operator
+        self._compare_value: str = compare_value
         self._condition_code: str = condition_code
         self._last_result: Optional[bool] = None
         super().__init__(node_id, name, position)
@@ -518,7 +533,7 @@ class IfNode(BaseNode):
         ))
         self.add_input_port(InputPort(
             name="value", port_type=PortType.ANY,
-            description="Optional value input accessible in condition_code", required=False,
+            description="Value to compare using the selected operator", required=False,
         ))
         self.add_output_port(OutputPort(
             name="true_branch", port_type=PortType.FLOW,
@@ -534,6 +549,22 @@ class IfNode(BaseNode):
         ))
 
     @property
+    def operator(self) -> str:
+        return self._operator
+
+    @operator.setter
+    def operator(self, value: str) -> None:
+        self._operator = value
+
+    @property
+    def compare_value(self) -> str:
+        return self._compare_value
+
+    @compare_value.setter
+    def compare_value(self, value: str) -> None:
+        self._compare_value = value
+
+    @property
     def condition_code(self) -> str:
         return self._condition_code
 
@@ -545,37 +576,95 @@ class IfNode(BaseNode):
     def last_result(self) -> Optional[bool]:
         return self._last_result
 
+    def _evaluate_operator(self, value: Any) -> bool:
+        """Evaluate the configured operator against a value."""
+        op = self._operator
+        cmp = self._compare_value
+
+        if op == "is_truthy":
+            return bool(value)
+        elif op == "is_falsy":
+            return not bool(value)
+        elif op == "equals":
+            return str(value) == cmp
+        elif op == "not_equals":
+            return str(value) != cmp
+        elif op == "contains":
+            return cmp in str(value)
+        elif op == "not_contains":
+            return cmp not in str(value)
+        elif op == "starts_with":
+            return str(value).startswith(cmp)
+        elif op == "ends_with":
+            return str(value).endswith(cmp)
+        elif op == "greater_than":
+            try:
+                return float(value) > float(cmp)
+            except (ValueError, TypeError):
+                return False
+        elif op == "greater_equal":
+            try:
+                return float(value) >= float(cmp)
+            except (ValueError, TypeError):
+                return False
+        elif op == "less_than":
+            try:
+                return float(value) < float(cmp)
+            except (ValueError, TypeError):
+                return False
+        elif op == "less_equal":
+            try:
+                return float(value) <= float(cmp)
+            except (ValueError, TypeError):
+                return False
+        elif op == "matches_regex":
+            try:
+                return bool(re.search(cmp, str(value)))
+            except re.error:
+                return False
+        else:
+            return bool(value)
+
     def validate(self) -> List[str]:
         errors: List[str] = []
-        if self._condition_code:
+        if self._operator not in _IF_VALID_OPERATORS:
+            errors.append(f"Invalid operator: {self._operator}")
+        if self._operator == "custom" and self._condition_code:
             try:
                 compile(self._condition_code, "<condition>", "eval")
             except SyntaxError as e:
                 errors.append(f"Invalid condition code: {e}")
+        if self._operator == "matches_regex" and self._compare_value:
+            try:
+                re.compile(self._compare_value)
+            except re.error as e:
+                errors.append(f"Invalid regex pattern: {e}")
         return errors
 
     def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         result: bool
-        if self._condition_code:
-            namespace: Dict[str, Any] = {
-                "inputs": inputs,
-                "value": inputs.get("value"),
-                "condition": inputs.get("condition", False),
-            }
-            try:
-                result = eval(self._condition_code, {"__builtins__": {}}, namespace)
-            except Exception as e:
-                raise ValueError(f"Failed to evaluate condition code: {e}")
-            if not isinstance(result, bool):
-                result = bool(result)
-        else:
-            condition_value = inputs.get("condition")
-            if condition_value is None:
-                result = False
-            elif isinstance(condition_value, bool):
-                result = condition_value
+        if self._operator == "custom":
+            # Legacy: raw Python expression
+            if self._condition_code:
+                namespace: Dict[str, Any] = {
+                    "inputs": inputs,
+                    "value": inputs.get("value"),
+                    "condition": inputs.get("condition", False),
+                }
+                try:
+                    result = eval(self._condition_code, {"__builtins__": {}}, namespace)
+                except Exception as e:
+                    raise ValueError(f"Failed to evaluate condition code: {e}")
+                if not isinstance(result, bool):
+                    result = bool(result)
             else:
-                result = bool(condition_value)
+                result = bool(inputs.get("condition", False))
+        else:
+            # Operator-based evaluation
+            value = inputs.get("value")
+            if value is None:
+                value = inputs.get("condition", False)
+            result = self._evaluate_operator(value)
         self._last_result = result
         return {"result": result}
 
@@ -589,10 +678,22 @@ class IfNode(BaseNode):
         self._last_result = None
 
     def _get_serializable_properties(self) -> Dict[str, Any]:
-        return {"condition_code": self._condition_code}
+        return {
+            "operator": self._operator,
+            "compare_value": self._compare_value,
+            "condition_code": self._condition_code,
+        }
 
     def _load_serializable_properties(self, properties: Dict[str, Any]) -> None:
+        self._compare_value = properties.get("compare_value", "")
         self._condition_code = properties.get("condition_code", "")
+        # Backwards compat: old graphs only have condition_code
+        if "operator" in properties:
+            self._operator = properties["operator"]
+        elif self._condition_code:
+            self._operator = "custom"
+        else:
+            self._operator = "is_truthy"
 
 
 class ForLoopNode(BaseNode):
@@ -4318,6 +4419,105 @@ class GetIncidentDataNode(BaseNode):
 
     def _load_serializable_properties(self, properties: Dict[str, Any]) -> None:
         self._incident_id = properties.get("incident_id", "")
+
+
+# ===========================================================================
+# INCIDENT GROUP NODES
+# ===========================================================================
+
+class GetGroupIncidentsNode(BaseNode):
+    """Get all incidents in the case/group as a list of data dicts."""
+    node_type: str = "get_group_incidents"
+    display_name: str = "Get Group Incidents"
+    node_category: str = "Incident"
+    node_color: str = "#E91E63"
+
+    def __init__(self, node_id: Optional[str] = None, name: Optional[str] = None,
+                 position: Optional[Position] = None) -> None:
+        super().__init__(node_id, name, position)
+
+    def _setup_ports(self) -> None:
+        self.add_input_port(InputPort(name="exec_in", port_type=PortType.FLOW, description="Execution flow input", required=False))
+        self.add_output_port(OutputPort(name="exec_out", port_type=PortType.FLOW, description="Execution flow output"))
+        self.add_output_port(OutputPort(name="incidents", port_type=PortType.LIST, description="List of incident data dicts"))
+        self.add_output_port(OutputPort(name="count", port_type=PortType.INTEGER, description="Number of incidents in group"))
+
+    def validate(self) -> List[str]:
+        return []
+
+    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        return {"incidents": [], "count": 0}
+
+    def _get_serializable_properties(self) -> Dict[str, Any]:
+        return {}
+
+    def _load_serializable_properties(self, properties: Dict[str, Any]) -> None:
+        pass
+
+
+class GetGroupIncidentByIndexNode(BaseNode):
+    """Get a specific incident from the group by index."""
+    node_type: str = "get_group_incident"
+    display_name: str = "Get Group Incident"
+    node_category: str = "Incident"
+    node_color: str = "#E91E63"
+
+    def __init__(self, node_id: Optional[str] = None, name: Optional[str] = None,
+                 position: Optional[Position] = None, index: int = 0) -> None:
+        self._index: int = index
+        super().__init__(node_id, name, position)
+
+    def _setup_ports(self) -> None:
+        self.add_input_port(InputPort(name="exec_in", port_type=PortType.FLOW, description="Execution flow input", required=False))
+        self.add_input_port(InputPort(name="index", port_type=PortType.INTEGER, description="Incident index (0-based)", required=False))
+        self.add_output_port(OutputPort(name="exec_out", port_type=PortType.FLOW, description="Execution flow output"))
+        self.add_output_port(OutputPort(name="data", port_type=PortType.DICT, description="Incident data dict"))
+
+    @property
+    def index(self) -> int: return self._index
+    @index.setter
+    def index(self, value: int) -> None: self._index = value
+
+    def validate(self) -> List[str]:
+        return []
+
+    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        return {"data": {}}
+
+    def _get_serializable_properties(self) -> Dict[str, Any]:
+        return {"index": self._index}
+
+    def _load_serializable_properties(self, properties: Dict[str, Any]) -> None:
+        self._index = properties.get("index", 0)
+
+
+class GetGroupIncidentCountNode(BaseNode):
+    """Get the number of incidents in the group."""
+    node_type: str = "get_group_incident_count"
+    display_name: str = "Get Group Incident Count"
+    node_category: str = "Incident"
+    node_color: str = "#E91E63"
+
+    def __init__(self, node_id: Optional[str] = None, name: Optional[str] = None,
+                 position: Optional[Position] = None) -> None:
+        super().__init__(node_id, name, position)
+
+    def _setup_ports(self) -> None:
+        self.add_input_port(InputPort(name="exec_in", port_type=PortType.FLOW, description="Execution flow input", required=False))
+        self.add_output_port(OutputPort(name="exec_out", port_type=PortType.FLOW, description="Execution flow output"))
+        self.add_output_port(OutputPort(name="count", port_type=PortType.INTEGER, description="Number of incidents in group"))
+
+    def validate(self) -> List[str]:
+        return []
+
+    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        return {"count": 0}
+
+    def _get_serializable_properties(self) -> Dict[str, Any]:
+        return {}
+
+    def _load_serializable_properties(self, properties: Dict[str, Any]) -> None:
+        pass
 
 
 # ===========================================================================

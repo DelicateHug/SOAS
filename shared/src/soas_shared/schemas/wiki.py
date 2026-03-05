@@ -20,6 +20,7 @@ class WikiPageCreate(BaseSchema):
     tags: list[str] = []
     status: str = "published"
     icon: str | None = None
+    linked_node_type: str | None = None
 
 
 class WikiPageUpdate(BaseSchema):
@@ -31,6 +32,7 @@ class WikiPageUpdate(BaseSchema):
     tags: list[str] | None = None
     status: str | None = None
     icon: str | None = None
+    linked_node_type: str | None = None
     change_summary: str | None = Field(default=None, max_length=500)
 
 
@@ -47,9 +49,11 @@ class WikiPageRead(BaseReadSchema):
     status: str
     version: int
     icon: str | None = None
+    linked_node_type: str | None = None
     created_by: UserBrief
     updated_by: UserBrief | None = None
     child_count: int = 0
+    active_editors: int = 0
 
 
 class WikiPageListItem(BaseReadSchema):
@@ -61,9 +65,11 @@ class WikiPageListItem(BaseReadSchema):
     status: str
     version: int
     icon: str | None = None
+    linked_node_type: str | None = None
     created_by: UserBrief
     updated_by: UserBrief | None = None
     child_count: int = 0
+    active_editors: int = 0
 
 
 # --- Tree ---

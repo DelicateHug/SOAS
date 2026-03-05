@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     # User Secrets encryption
     user_secret_encryption_key: str = ""
 
+    # Login security
+    max_failed_login_attempts: int = 0  # 0 = no lockout (infinite)
+    failed_login_lockout_minutes: int = 30
+
     # Monitoring
     monitoring_check_interval: int = 30
     monitoring_snapshot_persist_interval: int = 300

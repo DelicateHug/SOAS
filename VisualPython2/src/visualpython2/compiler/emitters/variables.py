@@ -242,6 +242,103 @@ class GetIncidentDataNodeEmitter(NodeEmitter):
         context.mark_node_processed(node.id)
 
 
+class GetGroupIncidentsNodeEmitter(NodeEmitter):
+    """Emitter for GetGroupIncidents nodes - retrieve all incidents in the group."""
+
+    @property
+    def node_type(self) -> str:
+        return "get_group_incidents"
+
+    def emit(
+        self,
+        node: object,
+        context: GenerationContext,
+        generator: CodeGenerator,
+    ) -> None:
+        """Generate code to retrieve all group incidents."""
+        from visualpython2.nodes.definitions import GetGroupIncidentsNode
+
+        if not isinstance(node, GetGroupIncidentsNode):
+            context.errors.append(f"Expected GetGroupIncidentsNode but got {type(node).__name__}")
+            return
+
+        incidents_var = context.generate_variable_name("group_incidents")
+        count_var = context.generate_variable_name("group_count")
+        context.set_output_variable(node.id, "incidents", incidents_var)
+        context.set_output_variable(node.id, "count", count_var)
+
+        context.add_line(f"# Get group incidents: {node.name}")
+        context.add_line(f"{incidents_var} = get_group_incidents()")
+        context.add_line(f"{count_var} = len({incidents_var})")
+        context.add_blank_line()
+
+        context.mark_node_processed(node.id)
+
+
+class GetGroupIncidentByIndexNodeEmitter(NodeEmitter):
+    """Emitter for GetGroupIncidentByIndex nodes - retrieve a specific incident by index."""
+
+    @property
+    def node_type(self) -> str:
+        return "get_group_incident"
+
+    def emit(
+        self,
+        node: object,
+        context: GenerationContext,
+        generator: CodeGenerator,
+    ) -> None:
+        """Generate code to retrieve a group incident by index."""
+        from visualpython2.nodes.definitions import GetGroupIncidentByIndexNode
+
+        if not isinstance(node, GetGroupIncidentByIndexNode):
+            context.errors.append(f"Expected GetGroupIncidentByIndexNode but got {type(node).__name__}")
+            return
+
+        index_input = self.get_input_value(node, "index", context, generator.graph)
+        data_var = context.generate_variable_name("group_incident_data")
+        context.set_output_variable(node.id, "data", data_var)
+
+        context.add_line(f"# Get group incident by index: {node.name}")
+        if index_input:
+            context.add_line(f"{data_var} = get_group_incident({index_input})")
+        else:
+            context.add_line(f"{data_var} = get_group_incident({node.index})")
+        context.add_blank_line()
+
+        context.mark_node_processed(node.id)
+
+
+class GetGroupIncidentCountNodeEmitter(NodeEmitter):
+    """Emitter for GetGroupIncidentCount nodes - retrieve the number of incidents in the group."""
+
+    @property
+    def node_type(self) -> str:
+        return "get_group_incident_count"
+
+    def emit(
+        self,
+        node: object,
+        context: GenerationContext,
+        generator: CodeGenerator,
+    ) -> None:
+        """Generate code to retrieve the group incident count."""
+        from visualpython2.nodes.definitions import GetGroupIncidentCountNode
+
+        if not isinstance(node, GetGroupIncidentCountNode):
+            context.errors.append(f"Expected GetGroupIncidentCountNode but got {type(node).__name__}")
+            return
+
+        count_var = context.generate_variable_name("group_incident_count")
+        context.set_output_variable(node.id, "count", count_var)
+
+        context.add_line(f"# Get group incident count: {node.name}")
+        context.add_line(f"{count_var} = get_group_incident_count()")
+        context.add_blank_line()
+
+        context.mark_node_processed(node.id)
+
+
 class GetSOASVarNodeEmitter(NodeEmitter):
     """Emitter for GetSOASVar nodes - retrieve SOAS application-level variables."""
 

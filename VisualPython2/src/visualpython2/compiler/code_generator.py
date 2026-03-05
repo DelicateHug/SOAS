@@ -504,18 +504,36 @@ class CodeGenerator:
         "thread", "thread_join", "subgraph",
     })
 
-    def __init__(self, graph: Graph, debug_mode: bool = False) -> None:
+    # Node types with sensitive outputs that must be redacted in debug traces.
+    # Maps node_type -> set of output port names to redact.
+    _SENSITIVE_OUTPUTS: dict[str, frozenset[str]] = {
+        "get_user_secret": frozenset({"value"}),
+    }
+
+    def __init__(
+        self,
+        graph: Graph,
+        debug_mode: bool = False,
+        sensitive_var_names: Set[str] | None = None,
+    ) -> None:
         """
         Initialize the code generator.
 
         Args:
             graph: The graph to generate code from.
             debug_mode: When True, inject per-node I/O tracing code.
+            sensitive_var_names: Incident variable names marked as sensitive.
+                When provided, get/set_incident_var nodes using these names
+                will have their values redacted in debug traces.
         """
         self._graph = graph
         self._debug_mode = debug_mode
+        self._sensitive_var_names: Set[str] = sensitive_var_names or set()
         self._debug_counter = 0
         self._debug_pre_vars: Dict[str, Set[str]] = {}
+        # Track which (node_id.port_name) keys hold sensitive data so
+        # downstream nodes that consume them get redacted in debug traces.
+        self._sensitive_output_keys: Set[str] = set()
         self._emitters: Dict[str, NodeEmitter] = {}
         self._context = GenerationContext()
 
@@ -540,6 +558,9 @@ class CodeGenerator:
             GetIncidentVarNodeEmitter,
             SetIncidentVarNodeEmitter,
             GetIncidentDataNodeEmitter,
+            GetGroupIncidentsNodeEmitter,
+            GetGroupIncidentByIndexNodeEmitter,
+            GetGroupIncidentCountNodeEmitter,
             GetSOASVarNodeEmitter,
             SetSOASVarNodeEmitter,
             GetUserSecretNodeEmitter,
@@ -598,6 +619,9 @@ class CodeGenerator:
             GetIncidentVarNodeEmitter(),
             SetIncidentVarNodeEmitter(),
             GetIncidentDataNodeEmitter(),
+            GetGroupIncidentsNodeEmitter(),
+            GetGroupIncidentByIndexNodeEmitter(),
+            GetGroupIncidentCountNodeEmitter(),
             GetSOASVarNodeEmitter(),
             SetSOASVarNodeEmitter(),
             GetUserSecretNodeEmitter(),
@@ -749,12 +773,34 @@ class CodeGenerator:
         # Snapshot generated_variables keys so we can diff for outputs later
         self._debug_pre_vars[node_id] = set(context.generated_variables.keys())
 
+        # Determine which input ports should be redacted in debug traces.
+        # For set_incident_var nodes with a sensitive variable, redact the value input.
+        redacted_inputs: set[str] = set()
+        if node_type == "set_incident_var" and self._sensitive_var_names:
+            var_name = getattr(node, "variable_name", "")
+            if var_name and var_name in self._sensitive_var_names:
+                redacted_inputs.add("value")
+
+        # Track whether this node receives any tainted (sensitive) data.
+        # If so, all its outputs will be marked sensitive for further propagation.
+        node_has_tainted_input = False
+
         # Build input capture expressions
         input_parts: List[str] = []
         for port in node.input_ports:
             if port.port_type == PortType.FLOW:
                 continue
+            if port.name in redacted_inputs:
+                input_parts.append(f"'{port.name}': '***'")
+                node_has_tainted_input = True
+                continue
             if port.is_connected() and port.connection:
+                # Check if source is a sensitive output (taint propagation)
+                source_key = f"{port.connection.source_node_id}.{port.connection.source_port_name}"
+                if source_key in self._sensitive_output_keys:
+                    input_parts.append(f"'{port.name}': '***'")
+                    node_has_tainted_input = True
+                    continue
                 source_var = context.get_output_variable(
                     port.connection.source_node_id,
                     port.connection.source_port_name,
@@ -767,6 +813,11 @@ class CodeGenerator:
                 if len(val_repr) > 200:
                     val_repr = val_repr[:200] + "...'"
                 input_parts.append(f"'{port.name}': {val_repr}")
+
+        # If this node received tainted input, mark it so _emit_debug_post
+        # can propagate sensitivity to all its outputs.
+        if node_has_tainted_input:
+            self._sensitive_output_keys.add(f"{node_id}._tainted")
 
         inputs_expr = "{" + ", ".join(input_parts) + "}" if input_parts else "{}"
 
@@ -790,12 +841,35 @@ class CodeGenerator:
         post_keys = set(context.generated_variables.keys())
         new_keys = post_keys - pre_keys
 
+        node_type = node.node_type
+        redacted_ports = set(self._SENSITIVE_OUTPUTS.get(node_type, frozenset()))
+
+        # For get_incident_var nodes, redact value output if variable is sensitive
+        if node_type == "get_incident_var" and self._sensitive_var_names:
+            var_name = getattr(node, "variable_name", "")
+            if var_name and var_name in self._sensitive_var_names:
+                redacted_ports.add("value")
+
+        # If this node received tainted (sensitive) input, redact ALL outputs
+        # to prevent sensitive data from leaking through print/code nodes.
+        node_is_tainted = f"{node_id}._tainted" in self._sensitive_output_keys
+        if node_is_tainted:
+            for key in new_keys:
+                if key.startswith(f"{node_id}."):
+                    port_name = key[len(node_id) + 1 :]
+                    redacted_ports.add(port_name)
+
         output_parts: List[str] = []
         for key in sorted(new_keys):
             if key.startswith(f"{node_id}."):
                 port_name = key[len(node_id) + 1 :]
-                var_name = context.generated_variables[key]
-                output_parts.append(f"'{port_name}': _safe_repr({var_name})")
+                if port_name in redacted_ports:
+                    output_parts.append(f"'{port_name}': '***'")
+                    # Record as sensitive for downstream taint propagation
+                    self._sensitive_output_keys.add(key)
+                else:
+                    var_name = context.generated_variables[key]
+                    output_parts.append(f"'{port_name}': _safe_repr({var_name})")
 
         outputs_expr = "{" + ", ".join(output_parts) + "}" if output_parts else "{}"
 

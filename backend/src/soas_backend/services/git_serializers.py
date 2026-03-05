@@ -1027,3 +1027,165 @@ SERIALIZER_REGISTRY: dict[str, type] = {
     "webhook_sources": WebhookSourceSerializer,
     "incident_variables": IncidentVariableSerializer,
 }
+
+# Maps change_request entity_type names → serializer registry keys
+ENTITY_TYPE_TO_SERIALIZER_KEY: dict[str, str] = {
+    "automation": "automations",
+    "wiki_page": "wiki",
+    "code_library": "code_library",
+    "soas_variable": "variables",
+    "incident_variable": "incident_variables",
+    "role": "roles",
+    "form_definition": "form_definitions",
+    "webhook_source": "webhook_sources",
+    "normalization": "normalization",
+    "app_settings": "settings",
+}
+
+
+# ---------------------------------------------------------------------------
+# Single-entity read / write helpers (for branch versioning)
+# ---------------------------------------------------------------------------
+
+
+def _snapshot_filename(entity_type: str, snapshot: dict) -> str:
+    """Derive a filename from a snapshot dict based on entity type."""
+    if entity_type == "wiki_page":
+        slug = snapshot.get("slug") or snapshot.get("title", "untitled")
+        return f"{_safe_filename(slug)}.md"
+    # Most JSON entity types use "name" as the key
+    name = snapshot.get("name") or snapshot.get("title") or str(snapshot.get("id", "unnamed"))
+    return f"{_safe_filename(name)}.json"
+
+
+def _serializer_dir(entity_type: str) -> str:
+    """Get the directory name for a given entity type."""
+    key = ENTITY_TYPE_TO_SERIALIZER_KEY.get(entity_type, entity_type)
+    cls = SERIALIZER_REGISTRY.get(key)
+    if cls and hasattr(cls, "directory"):
+        return cls.directory
+    return key
+
+
+def export_one(entity_type: str, snapshot: dict, base_path: Path) -> Path:
+    """Write a single entity snapshot to a file on disk.
+
+    Works for all JSON-based entity types and wiki (markdown).
+    Returns the path of the written file.
+    """
+    directory = _serializer_dir(entity_type)
+    out_dir = base_path / directory
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = _snapshot_filename(entity_type, snapshot)
+    fp = out_dir / filename
+
+    if entity_type == "wiki_page":
+        # Write markdown with YAML frontmatter
+        meta = {k: v for k, v in snapshot.items() if k != "content"}
+        lines = ["---"]
+        for k, v in meta.items():
+            if isinstance(v, list):
+                lines.append(f"{k}: {json.dumps(v)}")
+            elif v is None:
+                lines.append(f"{k}: null")
+            else:
+                lines.append(f"{k}: {json.dumps(v)}")
+        lines.append("---")
+        lines.append("")
+        lines.append(_html_to_markdown(snapshot.get("content", "")))
+        fp.write_text("\n".join(lines), encoding="utf-8")
+    elif entity_type == "normalization":
+        # Normalization uses a single groups.json file
+        fp = out_dir / "groups.json"
+        fp.write_text(json.dumps(snapshot, indent=2, default=str), encoding="utf-8")
+    elif entity_type == "app_settings":
+        fp = out_dir / "app_settings.json"
+        fp.write_text(json.dumps(snapshot, indent=2, default=str), encoding="utf-8")
+    else:
+        # Standard JSON entity
+        fp.write_text(json.dumps(snapshot, indent=2, default=str), encoding="utf-8")
+
+    return fp
+
+
+def read_one(entity_type: str, entity_id: str, base_path: Path) -> dict | None:
+    """Read a single entity from files by scanning for its ID.
+
+    Returns the parsed snapshot dict or ``None`` if not found.
+    """
+    directory = _serializer_dir(entity_type)
+    in_dir = base_path / directory
+    if not in_dir.exists():
+        return None
+
+    entity_id_str = str(entity_id)
+
+    if entity_type == "wiki_page":
+        for fp in in_dir.glob("*.md"):
+            text = fp.read_text(encoding="utf-8")
+            meta, content = WikiSerializer._parse_frontmatter(text)
+            if meta.get("id") == entity_id_str:
+                meta["content"] = _markdown_to_html(content)
+                return meta
+        return None
+
+    if entity_type == "normalization":
+        fp = in_dir / "groups.json"
+        if not fp.exists():
+            return None
+        data = json.loads(fp.read_text(encoding="utf-8"))
+        # Normalization is a list of groups; find by ID
+        if isinstance(data, list):
+            for group in data:
+                if group.get("id") == entity_id_str:
+                    return group
+        return data if isinstance(data, dict) else None
+
+    if entity_type == "app_settings":
+        fp = in_dir / "app_settings.json"
+        if not fp.exists():
+            return None
+        return json.loads(fp.read_text(encoding="utf-8"))
+
+    # Standard JSON entity: scan all .json files
+    for fp in in_dir.glob("*.json"):
+        data = json.loads(fp.read_text(encoding="utf-8"))
+        if data.get("id") == entity_id_str:
+            return data
+
+    return None
+
+
+def read_all_of_type(entity_type: str, base_path: Path) -> list[dict]:
+    """Read all entities of a type from files.  Returns list of snapshots."""
+    directory = _serializer_dir(entity_type)
+    in_dir = base_path / directory
+    if not in_dir.exists():
+        return []
+
+    results: list[dict] = []
+
+    if entity_type == "wiki_page":
+        for fp in sorted(in_dir.glob("*.md")):
+            text = fp.read_text(encoding="utf-8")
+            meta, content = WikiSerializer._parse_frontmatter(text)
+            if meta:
+                meta["content"] = _markdown_to_html(content)
+                results.append(meta)
+        return results
+
+    if entity_type in ("normalization", "app_settings"):
+        fname = "groups.json" if entity_type == "normalization" else "app_settings.json"
+        fp = in_dir / fname
+        if fp.exists():
+            data = json.loads(fp.read_text(encoding="utf-8"))
+            if isinstance(data, list):
+                return data
+            return [data] if data else []
+        return []
+
+    for fp in sorted(in_dir.glob("*.json")):
+        data = json.loads(fp.read_text(encoding="utf-8"))
+        results.append(data)
+    return results

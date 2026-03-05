@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useTokenExpiration, type UrgencyLevel } from "@/hooks/useTokenExpiration";
+import { useDeploymentMode } from "@/hooks/useDeploymentMode";
 import {
   LayoutDashboard,
   AlertTriangle,
@@ -27,6 +28,11 @@ import {
   CircleDot,
   BookOpen,
   Layers,
+  KeyRound,
+  ToggleLeft,
+  ToggleRight,
+  GitBranch,
+  GitPullRequest,
 } from "lucide-react";
 
 const urgencyColors: Record<UrgencyLevel, string> = {
@@ -52,6 +58,8 @@ const navItems = [
   { to: "/wiki", label: "Wiki", icon: BookOpen },
   { to: "/code-library", label: "Code Library", icon: Code },
   { to: "/executions", label: "Executions", icon: Terminal },
+  { to: "/my-secrets", label: "My Secrets", icon: KeyRound },
+  { to: "/local-changes", label: "Local Changes", icon: GitBranch },
 ];
 
 const adminItems = [
@@ -63,6 +71,8 @@ const adminItems = [
   { to: "/admin/webhooks", label: "Webhooks", icon: Radio },
   { to: "/admin/webhook-sources", label: "Webhook Sources", icon: Unplug },
   { to: "/admin/normalization", label: "Normalization", icon: SlidersHorizontal },
+  { to: "/admin/user-secrets", label: "User Secrets", icon: KeyRound },
+  { to: "/admin/review-changes", label: "Review Changes", icon: GitPullRequest },
   { to: "/monitoring", label: "Monitoring", icon: Heart },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
@@ -71,6 +81,7 @@ export function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const { user, logout, hasPermission, refreshSession, isRefreshing } = useAuthStore();
   const { remainingText, urgency } = useTokenExpiration();
+  const { isDevMode, isProduction, canToggle, toggleDevMode } = useDeploymentMode();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -108,6 +119,36 @@ export function DashboardLayout() {
             >
               <PanelLeftClose className="w-4 h-4" />
             </button>
+          )}
+        </div>
+
+        {/* Per-user deployment mode toggle */}
+        <div className={`px-3 py-1.5 border-b border-[hsl(var(--border))] ${collapsed ? "flex justify-center" : ""}`}>
+          {canToggle ? (
+            <button
+              onClick={toggleDevMode}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                isDevMode
+                  ? "bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25"
+                  : "bg-zinc-500/15 text-zinc-400 border border-zinc-500/30 hover:bg-zinc-500/25"
+              }`}
+              title={isDevMode ? "Click to switch to production mode (read-only)" : "Click to switch to development mode (editing enabled)"}
+            >
+              {isDevMode ? (
+                <ToggleRight className="w-3.5 h-3.5" />
+              ) : (
+                <ToggleLeft className="w-3.5 h-3.5" />
+              )}
+              {!collapsed && (isDevMode ? "DEV MODE" : "PROD MODE")}
+            </button>
+          ) : (
+            <div
+              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-zinc-500/15 text-zinc-400 border border-zinc-500/30"
+              title="Production mode — you don't have permission to enable development mode"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+              {!collapsed && "PROD MODE"}
+            </div>
           )}
         </div>
 
@@ -224,6 +265,15 @@ export function DashboardLayout() {
 
       {/* Main content */}
       <main className="flex-1 min-w-0 overflow-auto">
+        {isProduction && (
+          <div className="bg-zinc-500/10 border-b border-zinc-500/20 px-6 py-2 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-zinc-400 shrink-0" />
+            <span className="text-xs text-zinc-400">
+              Production mode — editing is restricted.{" "}
+              {canToggle ? "Switch to development mode to make changes." : "Contact an admin for development mode access."}
+            </span>
+          </div>
+        )}
         <div className="p-6">
           <Outlet />
         </div>

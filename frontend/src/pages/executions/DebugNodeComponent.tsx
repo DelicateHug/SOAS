@@ -42,7 +42,7 @@ type NodeStatus = "completed" | "error" | "not_reached";
 function getNodeStatus(trace?: NodeTraceEntry): NodeStatus {
   if (!trace || trace.executions.length === 0) return "not_reached";
   const last = trace.executions[trace.executions.length - 1];
-  if (last.status === "completed") return "completed";
+  if (!last || last.status === "completed") return "completed";
   return "error";
 }
 

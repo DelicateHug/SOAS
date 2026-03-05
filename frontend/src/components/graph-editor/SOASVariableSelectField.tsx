@@ -13,6 +13,8 @@ interface SOASVariable {
   name: string;
   description: string | null;
   is_secret: boolean;
+  source?: "soas_var" | "shared_secret";
+  owner_username?: string | null;
 }
 
 interface PaginatedResponse {
@@ -31,7 +33,7 @@ export function SOASVariableSelectField({ value, onChange }: SOASVariableSelectF
 
   const { data: response, isLoading } = useQuery({
     queryKey: ["soas-variables", "list"],
-    queryFn: () => api.get<PaginatedResponse>("/soas-variables?per_page=100"),
+    queryFn: () => api.get<PaginatedResponse>("/soas-variables?per_page=100&include_shared=true"),
     staleTime: 30_000,
   });
 
@@ -92,7 +94,14 @@ export function SOASVariableSelectField({ value, onChange }: SOASVariableSelectF
                 setIsOpen(false);
               }}
             >
-              <span className="font-medium">{v.name}</span>
+              <span className="font-medium flex items-center gap-1">
+                {v.name}
+                {v.source === "shared_secret" && (
+                  <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium bg-blue-500/20 text-blue-400 leading-none">
+                    Shared
+                  </span>
+                )}
+              </span>
               {v.description && (
                 <span className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">
                   {v.description}

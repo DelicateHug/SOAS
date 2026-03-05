@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from visualpython2.nodes.registry import NodeRegistry, NodeTypeInfo
 
@@ -23,8 +23,8 @@ def _get_port_defs(node_instance, ports, is_input: bool) -> List[Dict[str, Any]]
     return result
 
 
-# Property metadata: (node_type, property_name) -> {description, placeholder, ui_type}
-_PROPERTY_METADATA: Dict[tuple[str, str], Dict[str, str]] = {
+# Property metadata: (node_type, property_name) -> {description, placeholder, ui_type, options, visible_when}
+_PROPERTY_METADATA: Dict[Tuple[str, str], Dict[str, Any]] = {
     # SubgraphInput
     ("subgraph_input", "port_name"): {
         "description": "Select the automation input parameter this node represents",
@@ -69,10 +69,42 @@ _PROPERTY_METADATA: Dict[tuple[str, str], Dict[str, str]] = {
         "description": "A description of what this code does",
         "placeholder": "Describe this code block...",
     },
-    # Condition
-    ("condition", "condition_code"): {
-        "description": "Python expression that evaluates to True or False",
-        "placeholder": "value > 0",
+    # If node
+    ("if", "operator"): {
+        "description": "How to evaluate the condition",
+        "ui_type": "select",
+        "options": [
+            {"value": "is_truthy", "label": "Is Truthy"},
+            {"value": "is_falsy", "label": "Is Falsy"},
+            {"value": "equals", "label": "Equals (==)"},
+            {"value": "not_equals", "label": "Not Equals (!=)"},
+            {"value": "contains", "label": "Contains"},
+            {"value": "not_contains", "label": "Does Not Contain"},
+            {"value": "starts_with", "label": "Starts With"},
+            {"value": "ends_with", "label": "Ends With"},
+            {"value": "greater_than", "label": "Greater Than (>)"},
+            {"value": "greater_equal", "label": "Greater or Equal (>=)"},
+            {"value": "less_than", "label": "Less Than (<)"},
+            {"value": "less_equal", "label": "Less or Equal (<=)"},
+            {"value": "matches_regex", "label": "Matches Regex"},
+            {"value": "custom", "label": "Custom Expression"},
+        ],
+    },
+    ("if", "compare_value"): {
+        "description": "Value to compare against",
+        "placeholder": "Enter comparison value...",
+        "visible_when": {
+            "operator": [
+                "equals", "not_equals", "contains", "not_contains",
+                "starts_with", "ends_with", "greater_than", "greater_equal",
+                "less_than", "less_equal", "matches_regex",
+            ],
+        },
+    },
+    ("if", "condition_code"): {
+        "description": "Python expression using 'value' and 'condition' variables",
+        "placeholder": "value == 'hello' and condition",
+        "visible_when": {"operator": ["custom"]},
     },
     # ForLoop
     ("for_loop", "iterable_code"): {
@@ -110,6 +142,11 @@ _PROPERTY_METADATA: Dict[tuple[str, str], Dict[str, str]] = {
     },
     ("set_incident_var", "variable_name"): {
         "description": "Select the incident variable to write",
+    },
+    # Incident Group
+    ("get_group_incident", "index"): {
+        "description": "Zero-based index of the incident to retrieve",
+        "placeholder": "0",
     },
     # Print
     ("print", "message"): {
@@ -175,7 +212,7 @@ def _get_property_defs(node_instance) -> List[Dict[str, Any]]:
             prop_def["ui_type"] = "incident_variable_select"
         if key == "secret_name" and node_type == "get_user_secret":
             prop_def["ui_type"] = "user_secret_select"
-        # Apply property metadata (description, placeholder, ui_type overrides)
+        # Apply property metadata (description, placeholder, ui_type, options, visible_when)
         meta = _PROPERTY_METADATA.get((node_type, key), {})
         if "description" in meta:
             prop_def["description"] = meta["description"]
@@ -183,6 +220,10 @@ def _get_property_defs(node_instance) -> List[Dict[str, Any]]:
             prop_def["placeholder"] = meta["placeholder"]
         if "ui_type" in meta:
             prop_def["ui_type"] = meta["ui_type"]
+        if "options" in meta:
+            prop_def["options"] = meta["options"]
+        if "visible_when" in meta:
+            prop_def["visible_when"] = meta["visible_when"]
         result.append(prop_def)
     return result
 
@@ -207,6 +248,7 @@ def generate_node_catalog(registry: NodeRegistry) -> List[Dict[str, Any]]:
                 "color": info.color,
                 "description": info.description,
                 "icon": info.icon,
+                "doc_url": info.doc_url,
                 "input_ports": _get_port_defs(instance, instance.input_ports, is_input=True),
                 "output_ports": _get_port_defs(instance, instance.output_ports, is_input=False),
                 "properties": _get_property_defs(instance),
@@ -221,6 +263,7 @@ def generate_node_catalog(registry: NodeRegistry) -> List[Dict[str, Any]]:
                 "color": info.color,
                 "description": info.description,
                 "icon": info.icon,
+                "doc_url": info.doc_url,
                 "input_ports": [],
                 "output_ports": [],
                 "properties": [],

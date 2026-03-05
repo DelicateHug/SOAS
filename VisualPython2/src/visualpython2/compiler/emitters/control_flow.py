@@ -114,24 +114,37 @@ class IfNodeEmitter(NodeEmitter):
             context.errors.append(f"Expected IfNode but got {type(node).__name__}")
             return
 
-        # Get condition value
+        # Get condition and value inputs
         condition_var = self.get_input_value(node, "condition", context, generator.graph)
-
-        # Determine the condition expression
-        if node.condition_code:
-            # Use the condition code directly
-            condition_expr = node.condition_code.strip()
-        elif condition_var:
-            condition_expr = condition_var
-        else:
-            condition_expr = "False"
+        value_var = self.get_input_value(node, "value", context, generator.graph)
 
         # Store the result (defined at current scope, not conditional)
         result_var = context.generate_variable_name("condition_result")
         context.set_output_variable(node.id, "result", result_var)
 
         context.add_line(f"# If node: {node.name}")
-        context.add_line(f"{result_var} = bool({condition_expr})")
+
+        operator = getattr(node, "operator", "custom")
+        compare_value = getattr(node, "compare_value", "")
+
+        if operator == "custom":
+            # Legacy custom expression mode
+            if node.condition_code:
+                if value_var:
+                    context.add_line(f"value = {value_var}")
+                if condition_var:
+                    context.add_line(f"condition = {condition_var}")
+                condition_expr = node.condition_code.strip()
+            elif condition_var:
+                condition_expr = condition_var
+            else:
+                condition_expr = "False"
+            context.add_line(f"{result_var} = bool({condition_expr})")
+        else:
+            # Operator-based comparison
+            val_expr = value_var or condition_var or "None"
+            self._emit_operator_code(operator, val_expr, compare_value, result_var, context)
+
         context.add_line(f"if {result_var}:")
 
         # Find convergence nodes - nodes that both branches lead to
@@ -193,6 +206,56 @@ class IfNodeEmitter(NodeEmitter):
             conv_node = generator.graph.get_node(conv_node_id)
             if conv_node and not context.is_node_processed(conv_node.id):
                 generator._emit_flow_from_node(conv_node, context)
+
+    def _emit_operator_code(
+        self,
+        operator: str,
+        val_expr: str,
+        compare_value: str,
+        result_var: str,
+        context: "GenerationContext",
+    ) -> None:
+        """Emit Python code for an operator-based comparison."""
+        cmp_repr = repr(compare_value)
+
+        if operator == "is_truthy":
+            context.add_line(f"{result_var} = bool({val_expr})")
+        elif operator == "is_falsy":
+            context.add_line(f"{result_var} = not bool({val_expr})")
+        elif operator == "equals":
+            context.add_line(f"{result_var} = str({val_expr}) == {cmp_repr}")
+        elif operator == "not_equals":
+            context.add_line(f"{result_var} = str({val_expr}) != {cmp_repr}")
+        elif operator == "contains":
+            context.add_line(f"{result_var} = {cmp_repr} in str({val_expr})")
+        elif operator == "not_contains":
+            context.add_line(f"{result_var} = {cmp_repr} not in str({val_expr})")
+        elif operator == "starts_with":
+            context.add_line(f"{result_var} = str({val_expr}).startswith({cmp_repr})")
+        elif operator == "ends_with":
+            context.add_line(f"{result_var} = str({val_expr}).endswith({cmp_repr})")
+        elif operator in ("greater_than", "greater_equal", "less_than", "less_equal"):
+            op_map = {
+                "greater_than": ">",
+                "greater_equal": ">=",
+                "less_than": "<",
+                "less_equal": "<=",
+            }
+            py_op = op_map[operator]
+            context.add_line("try:")
+            context.indentation.indent()
+            context.add_line(f"{result_var} = float({val_expr}) {py_op} float({cmp_repr})")
+            context.indentation.dedent()
+            context.add_line("except (ValueError, TypeError):")
+            context.indentation.indent()
+            context.add_line(f"{result_var} = False")
+            context.indentation.dedent()
+        elif operator == "matches_regex":
+            context.imports.add("import re as _re")
+            context.add_line(f"{result_var} = bool(_re.search({cmp_repr}, str({val_expr})))")
+        else:
+            # Fallback
+            context.add_line(f"{result_var} = bool({val_expr})")
 
     def _find_convergence_nodes(
         self,

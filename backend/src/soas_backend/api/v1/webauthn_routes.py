@@ -9,8 +9,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from soas_backend.api.deps import get_current_user
+from soas_backend.api.deps import get_current_user, get_redis_pool
 from soas_backend.auth.jwt import create_access_token
+from soas_backend.crypto import unwrap_dek_server
+from soas_backend.services.dek_cache import DekCache
 from soas_backend.auth.webauthn import (
     generate_authentication,
     generate_registration,
@@ -192,6 +194,15 @@ async def webauthn_login_complete(
 
     stored_cred.sign_count = verification["new_sign_count"]
     await db.flush()
+
+    # Cache DEK from server-wrapped copy (no password available with passkeys)
+    if user.server_wrapped_dek:
+        try:
+            dek = unwrap_dek_server(user.server_wrapped_dek)
+            aioredis = await get_redis_pool()
+            await DekCache(aioredis).set(user.id, dek)
+        except Exception:
+            pass  # Non-fatal; secret ops will fallback to server-wrapped
 
     auth_service = AuthService(db)
     access_token, refresh_token = await auth_service.create_tokens(user)

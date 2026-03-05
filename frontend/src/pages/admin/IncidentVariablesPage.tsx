@@ -8,6 +8,7 @@ interface IncidentVariable {
   name: string;
   description: string | null;
   default_enabled: boolean;
+  sensitive: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -27,6 +28,7 @@ export function IncidentVariablesPage() {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formDefaultEnabled, setFormDefaultEnabled] = useState(true);
+  const [formSensitive, setFormSensitive] = useState(false);
 
   const { data: varsResponse, isLoading } = useQuery({
     queryKey: ["incident-variables"],
@@ -44,6 +46,7 @@ export function IncidentVariablesPage() {
         name: formName,
         description: formDescription || null,
         default_enabled: formDefaultEnabled,
+        sensitive: formSensitive,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident-variables"] });
@@ -58,6 +61,7 @@ export function IncidentVariablesPage() {
       return api.patch(`/incident-variables/${editingVar.id}`, {
         description: formDescription || null,
         default_enabled: formDefaultEnabled,
+        sensitive: formSensitive,
       });
     },
     onSuccess: () => {
@@ -86,6 +90,7 @@ export function IncidentVariablesPage() {
     setFormName("");
     setFormDescription("");
     setFormDefaultEnabled(true);
+    setFormSensitive(false);
   };
 
   const openEdit = (v: IncidentVariable) => {
@@ -93,6 +98,7 @@ export function IncidentVariablesPage() {
     setFormName(v.name);
     setFormDescription(v.description || "");
     setFormDefaultEnabled(v.default_enabled);
+    setFormSensitive(v.sensitive);
   };
 
   return (
@@ -138,6 +144,9 @@ export function IncidentVariablesPage() {
                 <th className="text-center px-4 py-2 font-medium">
                   Default Enabled
                 </th>
+                <th className="text-center px-4 py-2 font-medium">
+                  Sensitive
+                </th>
                 <th className="text-right px-4 py-2 font-medium">Actions</th>
               </tr>
             </thead>
@@ -164,6 +173,15 @@ export function IncidentVariablesPage() {
                         <ToggleLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
                       )}
                     </button>
+                  </td>
+                  <td className="px-4 py-2 text-center">
+                    {v.sensitive ? (
+                      <span className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 text-[10px] font-medium">
+                        SENSITIVE
+                      </span>
+                    ) : (
+                      <span className="text-[hsl(var(--muted-foreground))] text-xs">-</span>
+                    )}
                   </td>
                   <td className="px-4 py-2 text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -249,6 +267,17 @@ export function IncidentVariablesPage() {
                 <span className="text-sm">
                   Default enabled (auto-add to all incidents and mock incident
                   UI)
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formSensitive}
+                  onChange={(e) => setFormSensitive(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm">
+                  Sensitive (redact values in debug output)
                 </span>
               </label>
             </div>

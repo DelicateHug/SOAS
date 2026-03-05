@@ -12,11 +12,12 @@ import type { CustomNodeData } from "./utils/graphConversion";
 import type { NodePropertyDef, VP2Port } from "./types/graph";
 import { PORT_TYPE_COLORS } from "./utils/portColors";
 import type { PortType } from "./types/graph";
-import { Settings2, X, HelpCircle } from "lucide-react";
+import { Settings2, X, HelpCircle, ExternalLink } from "lucide-react";
 import { AutomationSelectField } from "./AutomationSelectField";
 import type { AutomationInputDef } from "./AutomationSelectField";
 import { IncidentVariableSelectField } from "./IncidentVariableSelectField";
 import { SOASVariableSelectField } from "./SOASVariableSelectField";
+import { UserSecretSelectField } from "./UserSecretSelectField";
 import { api } from "@/lib/api";
 
 interface PropertyPanelProps {
@@ -24,8 +25,15 @@ interface PropertyPanelProps {
 }
 
 export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
-  const selectedNode = useGraphEditorStore(
-    (s) => (s.selectedNodeId ? s.nodes.find((n) => n.id === s.selectedNodeId) : null)
+  // Split into two selectors so position-only changes during drag don't trigger re-renders.
+  // applyNodeChanges creates a new node object but keeps the same `data` reference.
+  const selectedNodeId = useGraphEditorStore((s) => s.selectedNodeId);
+  const selectedNodeData = useGraphEditorStore(
+    (s) => {
+      if (!s.selectedNodeId) return null;
+      const node = s.nodes.find((n) => n.id === s.selectedNodeId);
+      return (node?.data as CustomNodeData) ?? null;
+    },
   );
   const graphId = useGraphEditorStore((s) => s.graphId);
   const updateNodeProperty = useGraphEditorStore((s) => s.updateNodeProperty);
@@ -41,7 +49,7 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
     requestAnimationFrame(() => updateNodeInternals(nodeId));
   };
 
-  if (!selectedNode) {
+  if (!selectedNodeId || !selectedNodeData) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center">
@@ -54,8 +62,17 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
     );
   }
 
-  const data = selectedNode.data as CustomNodeData;
-  const properties = data.catalogEntry?.properties || [];
+  const data = selectedNodeData;
+  const allProperties = data.catalogEntry?.properties || [];
+
+  // Filter properties by visible_when rules
+  const properties = allProperties.filter((prop) => {
+    if (!prop.visible_when) return true;
+    return Object.entries(prop.visible_when).every(([depProp, allowedValues]) => {
+      const currentVal = String(data.properties[depProp] ?? allProperties.find((p) => p.name === depProp)?.default ?? "");
+      return allowedValues.includes(currentVal);
+    });
+  });
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -67,13 +84,26 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
             {data.type}
           </p>
         </div>
-        <button
-          onClick={() => selectNode(null)}
-          className="p-0.5 hover:bg-[hsl(var(--accent))] rounded flex-shrink-0"
-          title="Deselect"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          {data.catalogEntry?.doc_url && (
+            <a
+              href={data.catalogEntry.doc_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-0.5 hover:bg-[hsl(var(--accent))] rounded"
+              title="Open documentation"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+            </a>
+          )}
+          <button
+            onClick={() => selectNode(null)}
+            className="p-0.5 hover:bg-[hsl(var(--accent))] rounded"
+            title="Deselect"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Scrollable content */}
@@ -91,9 +121,9 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
                   prop={prop}
                   value={data.properties[prop.name]}
                   onChange={(value) =>
-                    updateNodeProperty(selectedNode.id, prop.name, value)
+                    updateNodeProperty(selectedNodeId, prop.name, value)
                   }
-                  nodeId={selectedNode.id}
+                  nodeId={selectedNodeId}
                   currentAutomationId={graphId}
                   updateNodeProperty={updateNodeProperty}
                   updateNodeDynamicPorts={updateNodeDynamicPorts}
@@ -117,7 +147,7 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
                     key={port.name}
                     port={port}
                     onChange={(value) =>
-                      updateNodeInlineValue(selectedNode.id, port.name, value)
+                      updateNodeInlineValue(selectedNodeId, port.name, value)
                     }
                   />
                 ))}
@@ -280,16 +310,20 @@ function PropertyField({
         />
       ) : prop.type === "select" && prop.options ? (
         <select
-          value={String(value || "")}
+          value={String(value || prop.default || "")}
           onChange={(e) => onChange(e.target.value)}
           className={inputClasses}
         >
           <option value="">{prop.placeholder || "-- Select --"}</option>
-          {prop.options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
+          {prop.options.map((opt) => {
+            const optValue = typeof opt === "string" ? opt : opt.value;
+            const optLabel = typeof opt === "string" ? opt : opt.label;
+            return (
+              <option key={optValue} value={optValue}>
+                {optLabel}
+              </option>
+            );
+          })}
         </select>
       ) : prop.type === "code" ? (
         <textarea
@@ -347,6 +381,11 @@ function PropertyField({
         />
       ) : prop.type === "incident_variable_select" ? (
         <IncidentVariableSelectField
+          value={String(value || "")}
+          onChange={(name) => onChange(name)}
+        />
+      ) : prop.type === "user_secret_select" ? (
+        <UserSecretSelectField
           value={String(value || "")}
           onChange={(name) => onChange(name)}
         />

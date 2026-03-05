@@ -63,6 +63,9 @@ export function useCollaboration(
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastCursorBroadcast = useRef(0);
   const reconnectDelay = useRef(1000);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
+  const deliberateClose = useRef(false);
 
   // Derived state
   const isLockedByMe = lockState?.user_id === myUserId;
@@ -263,6 +266,7 @@ export function useCollaboration(
       ws.onopen = () => {
         setIsConnected(true);
         reconnectDelay.current = 1000;
+        reconnectAttempts.current = 0;
 
         // Start heartbeat
         heartbeatRef.current = setInterval(() => {
@@ -292,7 +296,17 @@ export function useCollaboration(
           heartbeatRef.current = null;
         }
 
+        // Don't reconnect if we intentionally closed or exceeded max attempts
+        if (deliberateClose.current) return;
+        if (reconnectAttempts.current >= maxReconnectAttempts) {
+          console.warn(
+            `[Collaboration] Gave up reconnecting after ${maxReconnectAttempts} attempts`
+          );
+          return;
+        }
+
         // Reconnect with exponential backoff
+        reconnectAttempts.current += 1;
         reconnectTimerRef.current = setTimeout(() => {
           reconnectDelay.current = Math.min(
             reconnectDelay.current * 2,
@@ -303,9 +317,12 @@ export function useCollaboration(
       };
     }
 
+    deliberateClose.current = false;
+    reconnectAttempts.current = 0;
     connect();
 
     return () => {
+      deliberateClose.current = true;
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = null;
@@ -315,7 +332,15 @@ export function useCollaboration(
         heartbeatRef.current = null;
       }
       if (wsRef.current) {
-        wsRef.current.close();
+        // Only close if the connection is open or connecting.
+        // Avoids "WebSocket is closed before the connection is established"
+        // warning caused by React StrictMode's double-mount in dev.
+        if (
+          wsRef.current.readyState === WebSocket.OPEN ||
+          wsRef.current.readyState === WebSocket.CONNECTING
+        ) {
+          wsRef.current.close();
+        }
         wsRef.current = null;
       }
       setCollaborators(new Map());

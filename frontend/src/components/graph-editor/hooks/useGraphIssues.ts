@@ -1,11 +1,18 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { GraphIssueItem, GraphAnnotation } from "@/types/api";
 
-export function useGraphIssues(automationId: string | undefined) {
+const CLOSED_STATUSES = new Set(["closed", "resolved", "wont_fix"]);
+
+export function useGraphIssues(automationId: string | undefined, onAnnotationSaved?: () => void) {
   const [showIssues, setShowIssues] = useState(true);
   const queryClient = useQueryClient();
+
+  // Track issue IDs that were already closed when the page loaded.
+  // These get filtered out; issues closed during the session stay visible
+  // until the user navigates away (ref resets on unmount).
+  const initiallyClosedRef = useRef<Set<string> | null>(null);
 
   const { data } = useQuery({
     queryKey: ["automation-graph-issues", automationId],
@@ -13,6 +20,21 @@ export function useGraphIssues(automationId: string | undefined) {
       api.get<GraphIssueItem[]>(`/issues/automation-graph/${automationId}`),
     enabled: !!automationId && showIssues,
   });
+
+  // On first successful fetch, snapshot which issues are already closed
+  if (data && initiallyClosedRef.current === null) {
+    initiallyClosedRef.current = new Set(
+      data.filter((i) => CLOSED_STATUSES.has(i.status)).map((i) => i.id)
+    );
+  }
+
+  // Hide issues that were already closed on page load
+  const visibleIssues = useMemo(() => {
+    if (!data) return [];
+    const initial = initiallyClosedRef.current;
+    if (!initial || initial.size === 0) return data;
+    return data.filter((i) => !initial.has(i.id));
+  }, [data]);
 
   const updateAnnotation = useMutation({
     mutationFn: ({
@@ -41,6 +63,9 @@ export function useGraphIssues(automationId: string | undefined) {
         );
       }
     },
+    onSuccess: () => {
+      onAnnotationSaved?.();
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["automation-graph-issues", automationId],
@@ -56,7 +81,7 @@ export function useGraphIssues(automationId: string | undefined) {
   );
 
   return {
-    issues: data ?? [],
+    issues: visibleIssues,
     showIssues,
     setShowIssues,
     saveAnnotation,

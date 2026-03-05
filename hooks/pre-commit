@@ -1,0 +1,18 @@
+#!/bin/sh
+# SOC on a Stick - pre-commit hook
+# Warns when committing directly to the main (production) branch.
+# Installed by: .\start.ps1 -InitBranches
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$branch" = "main" ]; then
+    echo ""
+    echo "  WARNING: You are committing directly to the 'main' branch."
+    echo "  The main branch is reserved for production deployments."
+    echo "  Changes should be made on the 'dev' branch and merged."
+    echo ""
+    echo "  To switch to dev:  git checkout dev"
+    echo "  To continue anyway (not recommended): use --no-verify"
+    echo ""
+    exit 1
+fi

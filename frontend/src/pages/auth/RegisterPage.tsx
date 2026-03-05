@@ -31,9 +31,15 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    const trimmedForm = {
+      username: form.username.trim(),
+      email: form.email.trim(),
+      display_name: form.display_name.trim(),
+      password: form.password,
+    };
     try {
-      await register(form);
-      await login(form.username, form.password);
+      await register(trimmedForm);
+      await login(trimmedForm.username, trimmedForm.password);
       navigate("/dashboard");
     } catch (err: unknown) {
       const apiErr = err as { detail?: string };

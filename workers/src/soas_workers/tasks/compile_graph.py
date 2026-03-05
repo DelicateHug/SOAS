@@ -6,7 +6,7 @@ import os
 
 from soas_workers.celery_app import app
 from soas_workers.config import config
-from soas_workers.db import get_connection
+from soas_workers.db import get_connection, get_sensitive_incident_variable_names
 
 
 @app.task(name="soas.compile_graph", bind=True, max_retries=1)
@@ -22,9 +22,10 @@ def compile_graph(self, automation_id: str, graph_json: dict):
             from visualpython2.serialization.graph_serializer import GraphSerializer
             from visualpython2.compiler.code_generator import CodeGenerator
 
+            sensitive_vars = get_sensitive_incident_variable_names()
             serializer = GraphSerializer()
             graph = serializer.deserialize(graph_json)
-            result = CodeGenerator(graph).generate()
+            result = CodeGenerator(graph, debug_mode=True, sensitive_var_names=sensitive_vars).generate()
         except ImportError:
             # Fall back to VP1
             from visualpython.serialization.project_serializer import ProjectSerializer

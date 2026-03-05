@@ -4,8 +4,11 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from soas_backend.api.deps import require_permission
+from soas_backend.database import get_db
+from soas_backend.services.wiki_service import WikiService
 from visualpython2.compiler.code_generator import CodeGenerator
 from visualpython2.nodes.registry import NodeRegistry
 from visualpython2.schema.graph_schema import GraphDataSchema
@@ -82,11 +85,20 @@ def _get_registry() -> NodeRegistry:
 @router.get("/node-catalog", response_model=NodeCatalogResponse)
 async def get_node_catalog(
     _: dict = Depends(require_permission("automation", "read")),
+    db: AsyncSession = Depends(get_db),
 ):
     """Return all node types with ports, properties, colors, and categories."""
     registry = _get_registry()
     catalog = generate_node_catalog(registry)
     categories = registry.get_categories()
+
+    # Inject doc_url from linked wiki pages
+    wiki_svc = WikiService(db)
+    node_slug_map = await wiki_svc.get_node_type_slug_map()
+    for entry in catalog:
+        slug = node_slug_map.get(entry["type"])
+        if slug:
+            entry["doc_url"] = f"/wiki/{slug}"
 
     return NodeCatalogResponse(nodes=catalog, categories=categories)
 

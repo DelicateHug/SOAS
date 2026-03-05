@@ -345,17 +345,46 @@ class AutomationService:
         )
         return list(result.scalars().all())
 
-    async def get_dependency_graph(self) -> dict:
-        """Get full dependency graph for all automations."""
+    async def get_dependency_graph(self, focus_id: UUID | None = None) -> dict:
+        """Get dependency graph, optionally filtered to the connected subgraph of focus_id."""
         # Get all automations (basic info)
         auto_result = await self.db.execute(
             select(Automation).options(selectinload(Automation.creator))
         )
         automations = auto_result.scalars().all()
+        auto_map = {a.id: a for a in automations}
 
         # Get all dependencies
         dep_result = await self.db.execute(select(AutomationDependency))
         deps = dep_result.scalars().all()
+
+        # If focus_id given, traverse to find reachable nodes
+        if focus_id is not None:
+            # Build adjacency in both directions
+            forward: dict[UUID, list[UUID]] = {}  # automation -> its dependencies
+            reverse: dict[UUID, list[UUID]] = {}  # dependency -> automations that use it
+            for d in deps:
+                forward.setdefault(d.automation_id, []).append(d.dependency_id)
+                reverse.setdefault(d.dependency_id, []).append(d.automation_id)
+
+            # BFS from focus_id in both directions
+            reachable: set[UUID] = set()
+            queue = [focus_id]
+            reachable.add(focus_id)
+            while queue:
+                current = queue.pop()
+                for neighbor in forward.get(current, []):
+                    if neighbor not in reachable:
+                        reachable.add(neighbor)
+                        queue.append(neighbor)
+                for neighbor in reverse.get(current, []):
+                    if neighbor not in reachable:
+                        reachable.add(neighbor)
+                        queue.append(neighbor)
+
+            # Filter deps to only those between reachable nodes
+            deps = [d for d in deps if d.automation_id in reachable and d.dependency_id in reachable]
+            automations = [a for a in automations if a.id in reachable]
 
         nodes = []
         for a in automations:

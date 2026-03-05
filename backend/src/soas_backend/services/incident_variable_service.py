@@ -18,11 +18,13 @@ class IncidentVariableService:
         created_by: UUID,
         description: str | None = None,
         default_enabled: bool = True,
+        sensitive: bool = False,
     ) -> IncidentVariable:
         variable = IncidentVariable(
             name=name,
             description=description,
             default_enabled=default_enabled,
+            sensitive=sensitive,
             created_by=created_by,
         )
         self.db.add(variable)
@@ -63,6 +65,7 @@ class IncidentVariableService:
         variable_id: UUID,
         description: str | None = ...,
         default_enabled: bool | None = None,
+        sensitive: bool | None = None,
     ) -> IncidentVariable | None:
         variable = await self.get(variable_id)
         if not variable:
@@ -72,6 +75,8 @@ class IncidentVariableService:
             variable.description = description
         if default_enabled is not None:
             variable.default_enabled = default_enabled
+        if sensitive is not None:
+            variable.sensitive = sensitive
 
         await self.db.flush()
         await self.db.refresh(variable)

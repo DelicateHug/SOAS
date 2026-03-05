@@ -14,9 +14,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from soas_backend.api.v1.collaboration import collab_ws_router
 from soas_backend.api.v1.executions import ws_router
 from soas_backend.api.v1.monitoring_ws import monitoring_ws_router
+from soas_backend.api.v1.wiki_collaboration import wiki_collab_ws_router
 from soas_backend.api.v1.router import v1_router
 from soas_backend.config import settings
 from soas_backend.middleware.monitoring import MonitoringMiddleware
+from soas_backend.middleware.production_guard import ProductionGuardMiddleware
 from soas_backend.services.quorum_service import QuorumService
 
 logger = logging.getLogger(__name__)
@@ -43,6 +45,13 @@ async def lifespan(app: FastAPI):
                 logger.warning("Quorum heartbeat failed", exc_info=True)
 
     task = asyncio.create_task(_heartbeat_loop())
+
+    # Seed default data (idempotent, non-fatal)
+    try:
+        from soas_backend.seed import seed_defaults
+        await seed_defaults()
+    except Exception:
+        logger.warning("Seed data failed (non-fatal)", exc_info=True)
 
     yield
 
@@ -74,6 +83,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Production mode guard (blocks writes on entity APIs in production mode)
+    app.add_middleware(ProductionGuardMiddleware)
+
     # Monitoring middleware (tracks request count, errors, response time)
     app.add_middleware(MonitoringMiddleware)
 
@@ -82,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(ws_router)  # WebSocket routes
     app.include_router(collab_ws_router)  # Collaboration WebSocket
     app.include_router(monitoring_ws_router)  # Monitoring WebSocket
+    app.include_router(wiki_collab_ws_router)  # Wiki collaboration WebSocket
 
     @app.get("/api/health")
     async def health():

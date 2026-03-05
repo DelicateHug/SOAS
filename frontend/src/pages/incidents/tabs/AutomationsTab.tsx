@@ -67,12 +67,18 @@ export function AutomationsTab({ incidentId }: Props) {
     },
   });
 
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
+
   const toggleEvidence = useMutation({
     mutationFn: (executionId: string) =>
       api.post(`/incidents/${incidentId}/automations/${executionId}/evidence`),
     onSuccess: () => {
+      setEvidenceError(null);
       queryClient.invalidateQueries({ queryKey: ["incident-automations", incidentId] });
       queryClient.invalidateQueries({ queryKey: ["incident-timeline", incidentId] });
+    },
+    onError: (err: any) => {
+      setEvidenceError(err?.detail || err?.error || "Failed to toggle evidence");
     },
   });
 
@@ -105,6 +111,13 @@ export function AutomationsTab({ incidentId }: Props) {
           </button>
         </div>
       </div>
+
+      {evidenceError && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400">
+          {evidenceError}
+          <button onClick={() => setEvidenceError(null)} className="ml-2 text-red-300 hover:text-red-200">&times;</button>
+        </div>
+      )}
 
       {/* Execution history */}
       <div>

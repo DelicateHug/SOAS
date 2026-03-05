@@ -24,7 +24,7 @@ export function LoginPage() {
     e.preventDefault();
     setError("");
     try {
-      const result = await login(username, password);
+      const result = await login(username.trim(), password);
       if (result.mfa_required && result.mfa_token) {
         setMfaToken(result.mfa_token);
       } else if (result.must_reset_password) {

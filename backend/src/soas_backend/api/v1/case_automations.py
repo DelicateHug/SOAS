@@ -8,15 +8,16 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from soas_backend.api.deps import get_current_user, require_permission
+from soas_backend.api.deps import get_current_user, get_redis_pool, require_permission
 from soas_backend.database import get_db
 from soas_backend.models.automation import Automation
-from soas_backend.models.case import Case
+from soas_backend.models.case import Case, CaseIncident
 from soas_backend.models.case_file import CaseFile
 from soas_backend.models.case_note import CaseNote
 from soas_backend.models.execution import ExecutionLog
 from soas_backend.models.timeline import TimelineEntry
 from soas_backend.models.user import User
+from soas_backend.services.incident_cache import IncidentCacheService
 from soas_shared.schemas.user import UserBrief
 
 router = APIRouter(tags=["case-automations"])
@@ -123,10 +124,54 @@ async def run_automation_on_case(
     if not automation.script_path:
         raise HTTPException(status_code=400, detail="Automation has no compiled script")
 
+    # Query all linked incidents ordered by linked_at ASC
+    ci_result = await db.execute(
+        select(CaseIncident)
+        .where(CaseIncident.case_id == case_id)
+        .options(selectinload(CaseIncident.incident))
+        .order_by(CaseIncident.linked_at.asc())
+    )
+    case_incidents = ci_result.scalars().all()
+
+    # Cache each linked incident to Redis so the runtime bridge can access them
+    r = await get_redis_pool()
+    cache = IncidentCacheService(r)
+    ordered_incident_ids: list[str] = []
+    for ci in case_incidents:
+        inc = ci.incident
+        metadata = inc.metadata_ or {}
+        incident_data = {
+            "id": str(inc.id),
+            "title": inc.title,
+            "summary": inc.summary,
+            "severity": inc.severity,
+            "status": inc.status,
+            "source": inc.source,
+            "source_ref": inc.source_ref,
+            "tags": inc.tags or [],
+            "metadata": metadata,
+            **metadata,
+        }
+        await cache.cache_incident(inc.id, incident_data)
+        ordered_incident_ids.append(str(inc.id))
+
+    # Store ordered incident ID list in Redis for the worker
+    order_key = f"case:{case_id}:incident_order"
+    pipe = r.pipeline(transaction=True)
+    pipe.delete(order_key)
+    if ordered_incident_ids:
+        pipe.rpush(order_key, *ordered_incident_ids)
+    pipe.expire(order_key, 3600)
+    await pipe.execute()
+
+    # Set incident_id to first linked incident for backward-compatible get_incident_var/data
+    first_incident_id = UUID(ordered_incident_ids[0]) if ordered_incident_ids else None
+
     execution = ExecutionLog(
         automation_id=automation.id,
         triggered_by=current_user.id,
         case_id=case_id,
+        incident_id=first_incident_id,
         parameters={"manual_run": True},
         status="pending",
     )

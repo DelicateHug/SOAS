@@ -1,9 +1,12 @@
 """Direct PostgreSQL connection for workers to write execution results."""
 
+import base64
 import json as _json
+import os
 from datetime import datetime, timezone
 
 import psycopg
+import redis as sync_redis
 from psycopg.rows import dict_row
 
 from soas_workers.config import config
@@ -78,6 +81,18 @@ def get_script_path(automation_id: str) -> str | None:
             return row["script_path"] if row else None
 
 
+def get_automation_graph_data(automation_id: str) -> dict | None:
+    """Return the graph_data JSONB for an automation, or None."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT graph_data FROM automations WHERE id = %s::uuid",
+                (automation_id,),
+            )
+            row = cur.fetchone()
+            return row["graph_data"] if row and row["graph_data"] else None
+
+
 def get_automation_timeout(automation_id: str) -> int:
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -99,6 +114,31 @@ def get_execution_incident_id(execution_id: str) -> str | None:
             )
             row = cur.fetchone()
             return str(row["incident_id"]) if row and row["incident_id"] else None
+
+
+def get_execution_case_id(execution_id: str) -> str | None:
+    """Return the case_id associated with an execution, or None."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT case_id FROM execution_logs WHERE id = %s::uuid",
+                (execution_id,),
+            )
+            row = cur.fetchone()
+            return str(row["case_id"]) if row and row["case_id"] else None
+
+
+def get_case_incident_ids(case_id: str) -> list[str]:
+    """Return incident IDs linked to a case, ordered by linked_at ASC."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT incident_id FROM case_incidents
+                   WHERE case_id = %s::uuid
+                   ORDER BY linked_at ASC""",
+                (case_id,),
+            )
+            return [str(row["incident_id"]) for row in cur.fetchall()]
 
 
 def get_all_soas_vars() -> dict:
@@ -167,18 +207,64 @@ def get_user_role_ids(user_id: str) -> list[str]:
             return [str(row["role_id"]) for row in cur.fetchall()]
 
 
-def get_user_secrets_for_user(user_id: str, encryption_key: str) -> dict[str, str]:
-    """Get all decrypted user secrets for a specific user.
-
-    Called at automation dispatch time to inject secrets into the bridge code.
-    Returns {name: decrypted_value}.
-    """
-    if not encryption_key:
-        return {}
-
+def _get_server_fernet():
+    """Get a Fernet instance using the server encryption key."""
     from cryptography.fernet import Fernet
 
-    f = Fernet(encryption_key.encode())
+    key = config.USER_SECRET_ENCRYPTION_KEY
+    if not key:
+        key_path = os.environ.get("USER_SECRET_KEY_PATH", "secrets/user_secret.key")
+        if os.path.exists(key_path):
+            with open(key_path) as f:
+                key = f.read().strip()
+    if not key:
+        return None
+    return Fernet(key.encode())
+
+
+def _get_user_dek_sync(user_id: str) -> bytes | None:
+    """Get a user's DEK: try Redis cache first, then unwrap from server key."""
+    # Try Redis cache
+    try:
+        r = sync_redis.from_url(config.REDIS_URL)
+        val = r.get(f"user_dek:{user_id}")
+        if val:
+            return base64.urlsafe_b64decode(val)
+    except Exception:
+        pass
+
+    # Fallback: unwrap from server key
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT server_wrapped_dek FROM users WHERE id = %s::uuid",
+                (user_id,),
+            )
+            row = cur.fetchone()
+            if not row or not row["server_wrapped_dek"]:
+                return None
+
+    server_f = _get_server_fernet()
+    if not server_f:
+        return None
+
+    try:
+        return server_f.decrypt(row["server_wrapped_dek"].encode())
+    except Exception:
+        return None
+
+
+def get_user_secrets_for_user(user_id: str) -> dict[str, str]:
+    """Get all decrypted user secrets for a specific user.
+
+    Uses the per-user DEK (from Redis cache or server-wrapped fallback).
+    Falls back to legacy server-key decryption for pre-migration secrets.
+    Returns {name: decrypted_value}.
+    """
+    from cryptography.fernet import Fernet
+
+    dek = _get_user_dek_sync(user_id)
+    server_f = _get_server_fernet()
 
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -189,7 +275,67 @@ def get_user_secrets_for_user(user_id: str, encryption_key: str) -> dict[str, st
             secrets = {}
             for row in cur.fetchall():
                 try:
-                    secrets[row["name"]] = f.decrypt(row["encrypted_value"].encode()).decode()
+                    if dek:
+                        secrets[row["name"]] = Fernet(dek).decrypt(
+                            row["encrypted_value"].encode()
+                        ).decode()
+                    elif server_f:
+                        # Legacy fallback: decrypt with server key
+                        secrets[row["name"]] = server_f.decrypt(
+                            row["encrypted_value"].encode()
+                        ).decode()
                 except Exception:
                     pass
             return secrets
+
+
+def get_shared_secrets_for_roles(role_ids: list[str]) -> dict[str, str]:
+    """Get shared secrets accessible by the given roles.
+
+    Decrypts server_encrypted_value using the server key.
+    Returns {name: decrypted_value}.
+    """
+    if not role_ids:
+        return {}
+
+    server_f = _get_server_fernet()
+    if not server_f:
+        return {}
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            placeholders = ",".join(["%s::uuid"] * len(role_ids))
+            cur.execute(
+                f"""
+                SELECT DISTINCT us.name, us.server_encrypted_value
+                FROM user_secrets us
+                JOIN shared_secret_permissions ssp ON us.id = ssp.secret_id
+                WHERE ssp.role_id IN ({placeholders})
+                  AND ssp.can_read = true
+                  AND us.is_shared = true
+                  AND us.server_encrypted_value IS NOT NULL
+                """,
+                role_ids,
+            )
+            secrets = {}
+            for row in cur.fetchall():
+                try:
+                    secrets[row["name"]] = server_f.decrypt(
+                        row["server_encrypted_value"].encode()
+                    ).decode()
+                except Exception:
+                    pass
+            return secrets
+
+
+def get_sensitive_incident_variable_names() -> set[str]:
+    """Get names of incident variables marked as sensitive.
+
+    Used at compile time to redact sensitive values in debug traces.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT name FROM incident_variables WHERE sensitive = true"
+            )
+            return {row["name"] for row in cur.fetchall()}

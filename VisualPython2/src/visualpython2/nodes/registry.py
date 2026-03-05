@@ -23,6 +23,7 @@ class NodeTypeInfo:
         color: str,
         description: str = "",
         icon: Optional[str] = None,
+        doc_url: Optional[str] = None,
     ) -> None:
         self.node_type = node_type
         self.node_class = node_class
@@ -31,6 +32,7 @@ class NodeTypeInfo:
         self.color = color
         self.description = description
         self.icon = icon
+        self.doc_url = doc_url
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -40,6 +42,7 @@ class NodeTypeInfo:
             "color": self.color,
             "description": self.description,
             "icon": self.icon,
+            "doc_url": self.doc_url,
         }
 
 
@@ -58,6 +61,7 @@ class NodeRegistry:
         node_class: Type[BaseNode],
         description: str = "",
         icon: Optional[str] = None,
+        doc_url: Optional[str] = None,
     ) -> None:
         node_type = node_class.node_type
         name = getattr(node_class, "display_name", None) or node_class.node_type.replace("_", " ").title()
@@ -72,6 +76,7 @@ class NodeRegistry:
             color=color,
             description=description,
             icon=icon,
+            doc_url=doc_url,
         )
 
         self._node_types[node_type] = info
@@ -164,6 +169,7 @@ class NodeRegistry:
             StringConcatNode, StringSplitNode, StringReplaceNode, StringFormatNode,
             SubgraphNode, SubgraphInputNode, SubgraphOutputNode, RunAutomationNode,
             GetIncidentVarNode, SetIncidentVarNode, GetIncidentDataNode,
+            GetGroupIncidentsNode, GetGroupIncidentByIndexNode, GetGroupIncidentCountNode,
             GetSOASVarNode, SetSOASVarNode,
             GetUserSecretNode,
         )
@@ -216,6 +222,10 @@ class NodeRegistry:
         self.register(GetIncidentVarNode, "Get an incident variable from Redis/Postgres.", "shield")
         self.register(SetIncidentVarNode, "Set an incident variable in Redis.", "shield")
         self.register(GetIncidentDataNode, "Get all incident data.", "shield")
+        # Incident group nodes
+        self.register(GetGroupIncidentsNode, "Get all incidents in the case/group.", "shield")
+        self.register(GetGroupIncidentByIndexNode, "Get a specific incident by index from the group.", "shield")
+        self.register(GetGroupIncidentCountNode, "Get the number of incidents in the group.", "shield")
         # SOAS application-level variable nodes
         self.register(GetSOASVarNode, "Get a SOAS application variable (permission-restricted).", "variable")
         self.register(SetSOASVarNode, "Set a SOAS application variable (permission-restricted).", "variable")

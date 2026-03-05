@@ -256,6 +256,239 @@ def get_changed_files(local_path: str | Path, since_sha: str = "") -> list[str]:
     return [f for f in result.stdout.strip().split("\n") if f]
 
 
+# ---------------------------------------------------------------------------
+# Branch management
+# ---------------------------------------------------------------------------
+
+
+def branch_exists(local_path: str | Path, branch_name: str) -> bool:
+    """Check whether a local branch exists."""
+    result = _run(
+        ["git", "branch", "--list", branch_name],
+        cwd=local_path,
+    )
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
+def create_branch(
+    local_path: str | Path,
+    branch_name: str,
+    from_branch: str = "main",
+) -> None:
+    """Create a new branch from *from_branch*.  No-op if it already exists."""
+    if branch_exists(local_path, branch_name):
+        return
+    result = _run(["git", "branch", branch_name, from_branch], cwd=local_path)
+    if result.returncode != 0:
+        raise GitOpsError(f"git branch {branch_name} failed: {result.stderr}")
+    logger.info("Created branch %s from %s", branch_name, from_branch)
+
+
+def list_branches(local_path: str | Path) -> list[str]:
+    """Return all local branch names."""
+    result = _run(
+        ["git", "branch", "--list", "--format=%(refname:short)"],
+        cwd=local_path,
+    )
+    if result.returncode != 0:
+        return []
+    return [b for b in result.stdout.strip().split("\n") if b]
+
+
+def current_branch(local_path: str | Path) -> str:
+    """Return the currently checked-out branch name."""
+    result = _run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=local_path)
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+# ---------------------------------------------------------------------------
+# Worktree management
+# ---------------------------------------------------------------------------
+
+
+def add_worktree(
+    repo_path: str | Path,
+    worktree_path: str | Path,
+    branch_name: str,
+) -> None:
+    """Create a git worktree for *branch_name* at *worktree_path*.
+
+    The branch must already exist.  If the worktree already exists this is a
+    no-op.
+    """
+    wt = Path(worktree_path)
+    if wt.exists() and (wt / ".git").exists():
+        return  # worktree already set up
+    wt.parent.mkdir(parents=True, exist_ok=True)
+    result = _run(
+        ["git", "worktree", "add", str(wt), branch_name],
+        cwd=repo_path,
+    )
+    if result.returncode != 0:
+        stderr = result.stderr
+        if "already checked out" in stderr.lower():
+            # worktree might exist at a different path – tolerate
+            return
+        raise GitOpsError(f"git worktree add failed: {stderr}")
+    logger.info("Created worktree at %s for branch %s", wt, branch_name)
+
+
+def remove_worktree(repo_path: str | Path, worktree_path: str | Path) -> None:
+    """Remove a git worktree."""
+    result = _run(
+        ["git", "worktree", "remove", "--force", str(worktree_path)],
+        cwd=repo_path,
+    )
+    if result.returncode != 0:
+        logger.warning("Failed to remove worktree %s: %s", worktree_path, result.stderr)
+
+
+def list_worktrees(repo_path: str | Path) -> list[dict[str, str]]:
+    """List all worktrees.  Returns list of {path, branch, sha}."""
+    result = _run(["git", "worktree", "list", "--porcelain"], cwd=repo_path)
+    if result.returncode != 0:
+        return []
+    worktrees: list[dict[str, str]] = []
+    current: dict[str, str] = {}
+    for line in result.stdout.split("\n"):
+        if line.startswith("worktree "):
+            if current:
+                worktrees.append(current)
+            current = {"path": line[9:]}
+        elif line.startswith("HEAD "):
+            current["sha"] = line[5:]
+        elif line.startswith("branch "):
+            current["branch"] = line[7:].replace("refs/heads/", "")
+    if current:
+        worktrees.append(current)
+    return worktrees
+
+
+# ---------------------------------------------------------------------------
+# Commit in any path (works for both main repo and worktrees)
+# ---------------------------------------------------------------------------
+
+
+def commit_in_path(path: str | Path, message: str) -> str | None:
+    """Stage all changes and commit in *path* (repo or worktree).
+
+    Returns the commit SHA or ``None`` if nothing to commit.
+    """
+    path = Path(path)
+    _run(["git", "add", "-A"], cwd=path)
+
+    status = _run(["git", "status", "--porcelain"], cwd=path)
+    if not status.stdout.strip():
+        return None
+
+    result = _run(["git", "commit", "-m", message], cwd=path)
+    if result.returncode != 0:
+        if "nothing to commit" in result.stdout.lower():
+            return None
+        raise GitOpsError(f"git commit failed: {result.stderr}")
+
+    sha_result = _run(["git", "rev-parse", "HEAD"], cwd=path)
+    return sha_result.stdout.strip() if sha_result.returncode == 0 else None
+
+
+# ---------------------------------------------------------------------------
+# Merge
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class MergeResult:
+    status: str  # "merged", "up-to-date", "conflict"
+    conflicts: list[str]
+    sha: str | None
+
+
+def merge_branch(
+    worktree_path: str | Path,
+    source_branch: str,
+    message: str,
+    strategy_option: str | None = None,
+) -> MergeResult:
+    """Merge *source_branch* into the branch checked out at *worktree_path*.
+
+    If *strategy_option* is ``"theirs"`` the merge favours the incoming branch
+    (force-overwrite semantics).
+
+    Returns a ``MergeResult``.
+    """
+    wt = Path(worktree_path)
+    cmd = ["git", "merge", source_branch, "-m", message]
+    if strategy_option:
+        cmd.extend(["-X", strategy_option])
+
+    result = _run(cmd, cwd=wt)
+
+    if result.returncode == 0:
+        stdout = result.stdout.lower()
+        if "already up to date" in stdout:
+            return MergeResult(status="up-to-date", conflicts=[], sha=None)
+        sha_result = _run(["git", "rev-parse", "HEAD"], cwd=wt)
+        sha = sha_result.stdout.strip() if sha_result.returncode == 0 else None
+        return MergeResult(status="merged", conflicts=[], sha=sha)
+
+    # Merge failed – likely a conflict
+    stderr = result.stderr + result.stdout
+    if "conflict" in stderr.lower() or "merge conflict" in stderr.lower():
+        # Collect conflicted files
+        ls_result = _run(["git", "diff", "--name-only", "--diff-filter=U"], cwd=wt)
+        conflicts = [f for f in ls_result.stdout.strip().split("\n") if f]
+        # Abort merge to keep worktree clean
+        _run(["git", "merge", "--abort"], cwd=wt)
+        return MergeResult(status="conflict", conflicts=conflicts, sha=None)
+
+    raise GitOpsError(f"git merge failed: {stderr}")
+
+
+# ---------------------------------------------------------------------------
+# Cross-branch reads and diffs
+# ---------------------------------------------------------------------------
+
+
+def get_file_at_branch(
+    repo_path: str | Path,
+    branch_name: str,
+    file_path: str,
+) -> str | None:
+    """Read a file's contents at a specific branch without checkout.
+
+    Uses ``git show branch:path``.  Returns ``None`` if the file does not
+    exist on that branch.
+    """
+    result = _run(
+        ["git", "show", f"{branch_name}:{file_path}"],
+        cwd=repo_path,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout
+
+
+def diff_branches(
+    repo_path: str | Path,
+    branch_a: str,
+    branch_b: str,
+) -> list[str]:
+    """List file paths that differ between two branches."""
+    result = _run(
+        ["git", "diff", "--name-only", branch_a, branch_b],
+        cwd=repo_path,
+    )
+    if result.returncode != 0:
+        return []
+    return [f for f in result.stdout.strip().split("\n") if f]
+
+
+def branch_commit_sha(repo_path: str | Path, branch_name: str) -> str | None:
+    """Get the HEAD commit SHA of a branch."""
+    result = _run(["git", "rev-parse", branch_name], cwd=repo_path)
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
 def is_repo(local_path: str | Path) -> bool:
     """Check if a path is a git repository."""
     result = _run(["git", "rev-parse", "--is-inside-work-tree"], cwd=local_path)

@@ -60,6 +60,7 @@ async def _page_to_read(page, svc: WikiService) -> WikiPageRead:
         status=page.status,
         version=page.version,
         icon=page.icon,
+        linked_node_type=page.linked_node_type,
         created_by=_user_brief(page.creator),
         updated_by=_user_brief(page.updater),
         child_count=child_count,
@@ -80,6 +81,7 @@ async def _page_to_list_item(page, svc: WikiService) -> WikiPageListItem:
         status=page.status,
         version=page.version,
         icon=page.icon,
+        linked_node_type=page.linked_node_type,
         created_by=_user_brief(page.creator),
         updated_by=_user_brief(page.updater),
         child_count=child_count,
@@ -199,6 +201,7 @@ async def create_wiki_page(
         status=body.status,
         icon=body.icon,
         slug=body.slug,
+        linked_node_type=body.linked_node_type,
     )
     return await _page_to_read(page, svc)
 

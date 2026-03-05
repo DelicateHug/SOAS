@@ -18,6 +18,7 @@ const typeColors: Record<string, string> = {
   automation_run: "bg-cyan-500",
   automation_result: "bg-teal-500",
   evidence: "bg-amber-500",
+  evidence_marked: "bg-amber-400",
   escalation: "bg-red-500",
   external_update: "bg-orange-500",
   linked: "bg-indigo-500",

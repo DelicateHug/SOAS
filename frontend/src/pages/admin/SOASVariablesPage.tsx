@@ -9,10 +9,12 @@ interface SOASVariable {
   description: string | null;
   value: unknown;
   is_secret: boolean;
-  created_by: string;
+  created_by: string | null;
   updated_by: string | null;
   created_at: string;
   updated_at: string;
+  source?: "soas_var" | "shared_secret";
+  owner_username?: string | null;
 }
 
 interface SOASVariablePermission {
@@ -47,7 +49,7 @@ export function SOASVariablesPage() {
 
   const { data: varsResponse, isLoading } = useQuery({
     queryKey: ["soas-variables"],
-    queryFn: () => api.get<PaginatedResponse<SOASVariable>>("/soas-variables?per_page=100"),
+    queryFn: () => api.get<PaginatedResponse<SOASVariable>>("/soas-variables?per_page=100&include_shared=true"),
   });
 
   const variables = varsResponse?.data ?? [];
@@ -170,7 +172,21 @@ export function SOASVariablesPage() {
             <tbody className="divide-y divide-[hsl(var(--border))]">
               {variables.map((v) => (
                 <tr key={v.id} className="hover:bg-[hsl(var(--accent))]/50">
-                  <td className="px-4 py-2 font-mono text-xs">{v.name}</td>
+                  <td className="px-4 py-2 font-mono text-xs">
+                    <span className="flex items-center gap-1.5">
+                      {v.name}
+                      {v.source === "shared_secret" && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/20 text-blue-400">
+                          Shared
+                        </span>
+                      )}
+                    </span>
+                    {v.owner_username && (
+                      <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                        by {v.owner_username}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-2 text-[hsl(var(--muted-foreground))] max-w-[200px] truncate">
                     {v.description || "-"}
                   </td>
@@ -185,33 +201,37 @@ export function SOASVariablesPage() {
                     )}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => setPermVar(v)}
-                        className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
-                        title="Permissions"
-                      >
-                        <Shield className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => openEdit(v)}
-                        className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete variable "${v.name}"?`)) {
-                            deleteVar.mutate(v.id);
-                          }
-                        }}
-                        className="p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {v.source === "shared_secret" ? (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))] italic">managed by owner</span>
+                    ) : (
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setPermVar(v)}
+                          className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                          title="Permissions"
+                        >
+                          <Shield className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openEdit(v)}
+                          className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete variable "${v.name}"?`)) {
+                              deleteVar.mutate(v.id);
+                            }
+                          }}
+                          className="p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

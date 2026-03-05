@@ -19,6 +19,7 @@ interface BackendCatalogEntry {
   color: string;
   description: string;
   icon: string | null;
+  doc_url: string | null;
   input_ports: BackendPortDef[];
   output_ports: BackendPortDef[];
   properties: BackendPropertyDef[];
@@ -39,6 +40,8 @@ interface BackendPropertyDef {
   ui_type?: string;
   description?: string;
   placeholder?: string;
+  options?: Array<string | { value: string; label: string }>;
+  visible_when?: Record<string, string[]>;
 }
 
 /** Convert port name to a clean display label */
@@ -66,6 +69,8 @@ function mapProperty(prop: BackendPropertyDef): NodePropertyDef {
     default: prop.default_value,
     ...(prop.description ? { description: prop.description } : {}),
     ...(prop.placeholder ? { placeholder: prop.placeholder } : {}),
+    ...(prop.options ? { options: prop.options } : {}),
+    ...(prop.visible_when ? { visible_when: prop.visible_when } : {}),
   };
 
   // Check for special UI type hints from the backend
@@ -74,6 +79,8 @@ function mapProperty(prop: BackendPropertyDef): NodePropertyDef {
     automation_input_select: "automation_input_select",
     soas_variable_select: "soas_variable_select",
     incident_variable_select: "incident_variable_select",
+    user_secret_select: "user_secret_select",
+    select: "select",
   };
 
   if (prop.ui_type && prop.ui_type in uiTypeMap) {
@@ -99,6 +106,7 @@ function mapEntry(entry: BackendCatalogEntry): NodeCatalogEntry {
     category: entry.category,
     description: entry.description,
     color: entry.color,
+    doc_url: entry.doc_url,
     inputs: entry.input_ports.map(mapPort),
     outputs: entry.output_ports.map(mapPort),
     properties: entry.properties.map(mapProperty),

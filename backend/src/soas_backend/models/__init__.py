@@ -33,7 +33,8 @@ from soas_backend.models.form_submission import FormSubmission
 from soas_backend.models.issue import Issue, IssueChecklistItem, IssueLink, IssueNote
 from soas_backend.models.wiki import WikiPage, WikiPagePermission, WikiPageVersion
 from soas_backend.models.git_sync_log import GitSyncLog
-from soas_backend.models.user_secret import UserSecret
+from soas_backend.models.user_secret import SharedSecretPermission, UserSecret
+from soas_backend.models.change_request import ChangeRequest
 
 __all__ = [
     "AppSetting",
@@ -88,4 +89,6 @@ __all__ = [
     "WikiPagePermission",
     "GitSyncLog",
     "UserSecret",
+    "SharedSecretPermission",
+    "ChangeRequest",
 ]

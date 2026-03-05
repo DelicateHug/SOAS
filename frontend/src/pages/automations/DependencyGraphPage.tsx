@@ -135,7 +135,6 @@ function buildFlowElements(
 
   const nodes: Node[] = data.nodes.map((n) => {
     const pos = positions.get(n.id) ?? { x: 0, y: 0 };
-    const isAutomation = n.type === "automation";
     const isFocused = n.id === focusedId;
 
     return {
@@ -160,10 +159,8 @@ function buildFlowElements(
           : "1px solid hsl(var(--border))",
         boxShadow: isFocused
           ? "0 0 0 3px hsla(var(--primary) / 0.25)"
-          : "0 1px 3px hsla(0 0% 0% / 0.1)",
-        background: isAutomation
-          ? "hsl(210 80% 96%)"
-          : "hsl(140 70% 95%)",
+          : "0 1px 3px hsla(0 0% 0% / 0.15)",
+        background: "hsl(var(--card, var(--background)))",
         color: "hsl(var(--foreground))",
         fontSize: "12px",
         display: "flex",
@@ -180,8 +177,9 @@ function buildFlowElements(
     type: "smoothstep",
     animated: true,
     style: {
-      stroke: "hsl(var(--muted-foreground))",
-      strokeWidth: 1.5,
+      stroke: "hsl(var(--primary))",
+      strokeWidth: 2,
+      opacity: 0.6,
     },
   }));
 
@@ -204,14 +202,14 @@ interface DepNodeData {
 function DependencyNode({ data }: { data: DepNodeData }) {
   const isAutomation = data.nodeType === "automation";
   const badgeBg = isAutomation
-    ? "bg-blue-100 text-blue-800"
-    : "bg-green-100 text-green-800";
+    ? "bg-blue-500/20 text-blue-400"
+    : "bg-green-500/20 text-green-400";
 
   return (
     <>
       <Handle type="target" position={Position.Left} />
-      <div className="flex flex-col gap-1">
-        <div className="font-medium text-sm truncate" title={data.label}>
+      <div className="flex flex-col gap-1.5">
+        <div className="font-semibold text-sm truncate text-[hsl(var(--foreground))]" title={data.label}>
           {data.label}
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -219,7 +217,7 @@ function DependencyNode({ data }: { data: DepNodeData }) {
             {isAutomation ? "automation" : "code block"}
           </span>
           {data.status && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] font-medium">
               {data.status}
             </span>
           )}
@@ -248,8 +246,11 @@ export function DependencyGraphPage() {
   const navigate = useNavigate();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["dependency-graph"],
-    queryFn: () => api.get<DependencyGraphData>("/automations/dependency-graph"),
+    queryKey: ["dependency-graph", automationId ?? "all"],
+    queryFn: () => {
+      const params = automationId ? `?automation_id=${automationId}` : "";
+      return api.get<DependencyGraphData>(`/automations/dependency-graph${params}`);
+    },
   });
 
   const { initialNodes, initialEdges } = useMemo(() => {

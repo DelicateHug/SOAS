@@ -18,6 +18,7 @@ class IncidentVariable(Base):
     name: Mapped[str] = mapped_column(String(200), unique=True, nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     default_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    sensitive: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )

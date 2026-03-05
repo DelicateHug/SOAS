@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from soas_shared.schemas.common import BaseSchema
 
@@ -11,6 +11,11 @@ from soas_shared.schemas.common import BaseSchema
 class LoginRequest(BaseSchema):
     username: str
     password: str
+
+    @field_validator("username")
+    @classmethod
+    def strip_username(cls, v: str) -> str:
+        return v.strip()
 
 
 class LoginResponse(BaseSchema):

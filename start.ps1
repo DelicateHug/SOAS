@@ -5,14 +5,16 @@
 
 .DESCRIPTION
     This script handles first-time setup and ongoing startup:
-      1. Checks prerequisites (Docker, OpenSSL, Node.js)
-      2. Generates JWT signing keys if missing
-      3. Creates .env from .env.example if missing
-      4. Installs frontend npm dependencies if needed
-      5. Builds and starts all Docker containers
+      1. Validates git branch for dev/prod mode
+      2. Checks prerequisites (Docker, OpenSSL, Node.js)
+      3. Generates JWT signing keys if missing
+      4. Creates .env from .env.example if missing
+      5. Installs frontend npm dependencies if needed
+      6. Builds and starts all Docker containers
 
 .PARAMETER Dev
     Start in development mode with hot-reload (volume mounts + vite dev server).
+    Expects the 'dev' branch by default but allows any branch with local changes.
 
 .PARAMETER Build
     Force rebuild of all Docker images before starting.
@@ -23,20 +25,54 @@
 .PARAMETER Rebuild
     Stop all containers, force rebuild all images, then start everything.
 
+.PARAMETER Reset
+    Factory reset: destroy ALL containers AND volumes (database, Redis, etc.),
+    rebuild from scratch, and create a default admin/admin user.
+
+.PARAMETER NoAdmin
+    Use with -Reset to skip creating the default admin user. The first user
+    can then register through the app's registration page.
+
+.PARAMETER Sync
+    Pull latest changes from the remote before starting.
+    In dev mode: uses pull --rebase, auto-stashes local changes.
+    In prod mode: uses pull --ff-only (fails if diverged).
+
+.PARAMETER InitBranches
+    Create 'dev' branch from the current branch, push to origin, and install
+    git hooks. Safe to run multiple times (idempotent).
+
+.PARAMETER Branch
+    Override the expected branch name for validation.
+    Default: 'dev' for -Dev mode, 'main' for prod mode.
+
 .EXAMPLE
-    .\start.ps1            # Production-like start
-    .\start.ps1 -Dev       # Dev mode with hot reload
-    .\start.ps1 -Build     # Force rebuild all images
-    .\start.ps1 -Down      # Stop everything
-    .\start.ps1 -Rebuild   # Down + rebuild + start
+    .\start.ps1                     # Production start (must be on main, clean tree)
+    .\start.ps1 -Dev                # Dev mode with hot reload
+    .\start.ps1 -Dev -Sync          # Dev mode: sync with remote, then start
+    .\start.ps1 -Sync               # Prod mode: sync with remote, then start
+    .\start.ps1 -Build              # Force rebuild all images
+    .\start.ps1 -Down               # Stop everything
+    .\start.ps1 -Rebuild            # Down + rebuild + start
+    .\start.ps1 -Reset              # Factory reset + admin user
+    .\start.ps1 -Reset -NoAdmin     # Factory reset, register first user via app
+    .\start.ps1 -InitBranches       # One-time setup: create dev branch + git hooks
+    .\start.ps1 -Branch main -Dev   # Dev mode but allow running from main branch
 #>
 
 param(
     [switch]$Dev,
     [switch]$Build,
     [switch]$Down,
-    [switch]$Rebuild
+    [switch]$Rebuild,
+    [switch]$Reset,
+    [switch]$NoAdmin,
+    [switch]$Sync,
+    [switch]$InitBranches,
+    [string]$Branch
 )
+
+$CreateAdmin = $false
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = $PSScriptRoot
@@ -60,15 +96,211 @@ if ($Down) {
 }
 
 # -------------------------------------------------------------------
-# 0b. Handle -Rebuild (down + force build + start)
+# 0b. Handle -Reset (destroy everything + rebuild fresh)
 # -------------------------------------------------------------------
-if ($Rebuild) {
+if ($Reset) {
+    Write-Step "RESET: Destroying all containers and volumes..."
+    Push-Location $ProjectRoot
+    docker compose down -v
+    Pop-Location
+    Write-Ok "All containers and volumes removed."
+    $Build = $true
+    if (-not $NoAdmin) { $CreateAdmin = $true }
+}
+
+# -------------------------------------------------------------------
+# 0c. Handle -Rebuild (down + force build + start)
+# -------------------------------------------------------------------
+if ($Rebuild -and -not $Reset) {
     Write-Step "Stopping all containers for rebuild..."
     Push-Location $ProjectRoot
     docker compose down
     Pop-Location
     Write-Ok "Containers stopped. Will rebuild all images."
     $Build = $true
+}
+
+# -------------------------------------------------------------------
+# 0d. Handle -InitBranches (create dev branch + install hooks)
+# -------------------------------------------------------------------
+if ($InitBranches) {
+    Write-Step "Initializing branch structure..."
+
+    $gitCheck = git rev-parse --is-inside-work-tree 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Fail "Not a git repository. Cannot initialize branches."
+        exit 1
+    }
+
+    $status = git status --porcelain 2>&1
+    if ($status) {
+        Write-Fail "Working tree has uncommitted changes. Commit or stash before initializing branches."
+        exit 1
+    }
+
+    Write-Host "   Fetching from remote..." -ForegroundColor Gray
+    git fetch origin 2>&1 | Out-Null
+
+    # Create dev branch if it doesn't exist
+    $devExists = git branch --list "dev" 2>&1
+    $devRemoteExists = git ls-remote --heads origin dev 2>&1
+    if (-not $devExists.Trim()) {
+        if ($devRemoteExists.Trim()) {
+            git checkout -b dev origin/dev 2>&1 | Out-Null
+            Write-Ok "Checked out existing remote 'dev' branch."
+        } else {
+            git checkout -b dev 2>&1 | Out-Null
+            git push -u origin dev 2>&1 | Out-Null
+            Write-Ok "Created and pushed 'dev' branch."
+        }
+    } else {
+        Write-Ok "'dev' branch already exists locally."
+    }
+
+    # Switch back to main
+    git checkout main 2>&1 | Out-Null
+
+    # Install pre-commit hook
+    $hooksDir = Join-Path $ProjectRoot "hooks"
+    $hookSource = Join-Path $hooksDir "pre-commit"
+    $hookDest = Join-Path $ProjectRoot ".git" "hooks" "pre-commit"
+    if (Test-Path $hookSource) {
+        Copy-Item $hookSource $hookDest -Force
+        Write-Ok "Installed pre-commit hook (production branch warning)."
+    } else {
+        Write-Warn "No hooks/pre-commit found. Skipping hook install."
+    }
+
+    Write-Host ""
+    Write-Ok "Branch structure initialized:"
+    Write-Host "   dev  - for development (use with -Dev)" -ForegroundColor Yellow
+    Write-Host "   main - production branch (use without -Dev)" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "   Next steps:" -ForegroundColor Gray
+    Write-Host "     Dev mode:  git checkout dev && .\start.ps1 -Dev" -ForegroundColor Gray
+    Write-Host "     Prod mode: git checkout main && .\start.ps1" -ForegroundColor Gray
+
+    if (-not $Dev -and -not $Build -and -not $Down -and -not $Rebuild -and -not $Reset) {
+        exit 0
+    }
+}
+
+# -------------------------------------------------------------------
+# 0e. Git branch validation & sync
+# -------------------------------------------------------------------
+$isGitRepo = $false
+$currentBranch = ""
+$gitCheck = git rev-parse --is-inside-work-tree 2>&1
+if ($LASTEXITCODE -eq 0) { $isGitRepo = $true }
+
+if ($isGitRepo) {
+    $currentBranch = (git rev-parse --abbrev-ref HEAD 2>&1).Trim()
+
+    if ($Dev) {
+        # --- DEV MODE BRANCH LOGIC ---
+        $expectedBranch = if ($Branch) { $Branch } else { "dev" }
+
+        Write-Step "Git branch: $currentBranch"
+
+        if ($currentBranch -ne $expectedBranch) {
+            Write-Warn "Dev mode expects branch '$expectedBranch', currently on '$currentBranch'."
+            Write-Host "   Continuing anyway (dev mode allows any branch)." -ForegroundColor Gray
+            Write-Host "   Switch with: git checkout $expectedBranch" -ForegroundColor Gray
+        } else {
+            Write-Ok "On expected dev branch: $currentBranch"
+        }
+
+        # Sync in dev mode: pull with rebase to keep local commits on top
+        if ($Sync) {
+            Write-Step "Syncing with remote (dev mode)..."
+            $trackingBranch = git rev-parse --abbrev-ref "@{upstream}" 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                git fetch origin 2>&1 | Out-Null
+                $localChanges = git status --porcelain 2>&1
+                if ($localChanges) {
+                    Write-Warn "Local changes detected. Stashing before pull..."
+                    git stash push -m "auto-stash before sync $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" 2>&1 | Out-Null
+                    git pull --rebase origin $currentBranch 2>&1
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Fail "Pull --rebase failed. Resolve conflicts, then re-run."
+                        Write-Host "   Your changes are in: git stash list" -ForegroundColor Gray
+                        exit 1
+                    }
+                    git stash pop 2>&1
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Warn "Stash pop had conflicts. Resolve manually after startup."
+                    } else {
+                        Write-Ok "Synced and restored local changes."
+                    }
+                } else {
+                    git pull --rebase origin $currentBranch 2>&1
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Fail "Pull --rebase failed. Resolve conflicts, then re-run."
+                        exit 1
+                    }
+                    Write-Ok "Synced with remote."
+                }
+            } else {
+                Write-Warn "No upstream tracking branch. Skipping sync."
+                Write-Host "   Set with: git push -u origin $currentBranch" -ForegroundColor Gray
+            }
+        }
+
+    } else {
+        # --- PROD MODE BRANCH LOGIC ---
+        $expectedBranch = if ($Branch) { $Branch } else { "main" }
+
+        Write-Step "Git branch: $currentBranch (production mode)"
+
+        # STRICT: Must be on the production branch
+        if ($currentBranch -ne $expectedBranch) {
+            Write-Fail "Production mode requires branch '$expectedBranch', but currently on '$currentBranch'."
+            Write-Host ""
+            Write-Host "   Options:" -ForegroundColor Gray
+            Write-Host "     1. Switch branch:  git checkout $expectedBranch" -ForegroundColor Gray
+            Write-Host "     2. Use dev mode:   .\start.ps1 -Dev" -ForegroundColor Gray
+            Write-Host "     3. Override branch: .\start.ps1 -Branch $currentBranch" -ForegroundColor Gray
+            exit 1
+        }
+
+        # STRICT: Working tree must be clean
+        $dirtyFiles = git status --porcelain 2>&1
+        if ($dirtyFiles) {
+            Write-Fail "Production mode requires a clean working tree."
+            Write-Host ""
+            Write-Host "   Uncommitted changes detected:" -ForegroundColor Red
+            git status --short | ForEach-Object { Write-Host "     $_" -ForegroundColor Gray }
+            Write-Host ""
+            Write-Host "   Options:" -ForegroundColor Gray
+            Write-Host "     1. Commit changes:  git add . && git commit" -ForegroundColor Gray
+            Write-Host "     2. Stash changes:   git stash" -ForegroundColor Gray
+            Write-Host "     3. Use dev mode:    .\start.ps1 -Dev" -ForegroundColor Gray
+            exit 1
+        }
+        Write-Ok "Working tree is clean."
+
+        # STRICT: Check local branch is not ahead of remote (unpushed commits)
+        git fetch origin 2>&1 | Out-Null
+        $ahead = git rev-list "origin/$expectedBranch..HEAD" --count 2>&1
+        if ($LASTEXITCODE -eq 0 -and [int]$ahead -gt 0) {
+            Write-Fail "Local '$expectedBranch' is $ahead commit(s) ahead of remote."
+            Write-Host "   Production code must come from git. Push or reset your local branch." -ForegroundColor Gray
+            exit 1
+        }
+        Write-Ok "Branch is in sync with remote."
+
+        # Sync in prod mode: fast-forward only
+        if ($Sync) {
+            Write-Step "Syncing with remote (production mode)..."
+            git pull --ff-only origin $expectedBranch 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Fail "Fast-forward pull failed. Local branch has diverged from remote."
+                Write-Host "   Reset with: git reset --hard origin/$expectedBranch" -ForegroundColor Gray
+                exit 1
+            }
+            Write-Ok "Production branch updated to latest."
+        }
+    }
 }
 
 # -------------------------------------------------------------------
@@ -207,8 +439,10 @@ $composeFiles = @("-f", "docker-compose.yml")
 if ($Dev) {
     $composeFiles += @("-f", "docker-compose.dev.yml")
     Write-Host "   Mode: DEVELOPMENT (hot reload enabled)" -ForegroundColor Yellow
+    if ($isGitRepo) { Write-Host "   Branch: $currentBranch" -ForegroundColor Yellow }
 } else {
-    Write-Host "   Mode: PRODUCTION-LIKE" -ForegroundColor Green
+    Write-Host "   Mode: PRODUCTION" -ForegroundColor Green
+    if ($isGitRepo) { Write-Host "   Branch: $currentBranch" -ForegroundColor Green }
 }
 
 $composeArgs = @("compose") + $composeFiles + @("up", "-d")
@@ -262,7 +496,45 @@ docker compose ps
 Pop-Location
 
 # -------------------------------------------------------------------
-# 7. Print access info
+# 7a. Create admin user on -Reset
+# -------------------------------------------------------------------
+if ($CreateAdmin) {
+    Write-Step "Creating default admin user..."
+
+    # Wait for backend API to be fully ready (migrations + startup)
+    $backendReady = $false
+    for ($i = 0; $i -lt 30; $i++) {
+        try {
+            $health = Invoke-RestMethod -Uri "http://localhost:8000/api/health" -Method Get -ErrorAction Stop
+            if ($health.status -eq "healthy") { $backendReady = $true; break }
+        } catch { }
+        Start-Sleep -Seconds 2
+    }
+
+    if ($backendReady) {
+        try {
+            $regBody = @{
+                username     = "admin"
+                email        = "admin@soas.app"
+                display_name = "Administrator"
+                password     = "adminadmin"
+            } | ConvertTo-Json
+
+            $null = Invoke-RestMethod -Uri "http://localhost:8000/api/v1/auth/register" `
+                -Method Post -Body $regBody -ContentType "application/json" -ErrorAction Stop
+
+            Write-Ok "Admin user created  (username: admin / password: adminadmin)"
+            Write-Warn "Change this password on first login!"
+        } catch {
+            Write-Warn "Could not create admin user: $($_.Exception.Message)"
+        }
+    } else {
+        Write-Warn "Backend not ready after 60s. Create admin user manually via the registration page."
+    }
+}
+
+# -------------------------------------------------------------------
+# 7b. Print access info
 # -------------------------------------------------------------------
 $frontendPort = if ($Dev) { "5173" } else { "3000" }
 
@@ -281,8 +553,16 @@ Write-Host ""
 if ($Dev) {
     Write-Host "  Dev mode: source changes hot-reload automatically." -ForegroundColor Yellow
 }
-Write-Host "  Stop with:    .\start.ps1 -Down" -ForegroundColor Gray
-Write-Host "  Rebuild with: .\start.ps1 -Build" -ForegroundColor Gray
-Write-Host "  Full rebuild: .\start.ps1 -Rebuild" -ForegroundColor Gray
-Write-Host "  View logs:    docker compose logs -f [service]" -ForegroundColor Gray
+if ($isGitRepo) {
+    Write-Host "  Git branch: $currentBranch" -ForegroundColor Gray
+}
+Write-Host ""
+Write-Host "  Stop with:        .\start.ps1 -Down" -ForegroundColor Gray
+Write-Host "  Rebuild with:     .\start.ps1 -Build" -ForegroundColor Gray
+Write-Host "  Full rebuild:     .\start.ps1 -Rebuild" -ForegroundColor Gray
+Write-Host "  Factory reset:    .\start.ps1 -Reset" -ForegroundColor Gray
+Write-Host "  Init branches:    .\start.ps1 -InitBranches" -ForegroundColor Gray
+Write-Host "  Sync & start:     .\start.ps1 -Sync" -ForegroundColor Gray
+Write-Host "  Dev + sync:       .\start.ps1 -Dev -Sync" -ForegroundColor Gray
+Write-Host "  View logs:        docker compose logs -f [service]" -ForegroundColor Gray
 Write-Host ""

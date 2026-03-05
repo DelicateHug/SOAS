@@ -64,6 +64,7 @@ export interface NodeCatalogEntry {
   category: string;
   description: string;
   color: string;
+  doc_url?: string | null;
   inputs: VP2Port[];
   outputs: VP2Port[];
   properties: NodePropertyDef[];
@@ -73,11 +74,13 @@ export interface NodeCatalogEntry {
 export interface NodePropertyDef {
   name: string;
   label: string;
-  type: "string" | "number" | "boolean" | "code" | "select" | "json" | "automation_select" | "automation_input_select" | "soas_variable_select" | "incident_variable_select";
+  type: "string" | "number" | "boolean" | "code" | "select" | "json" | "automation_select" | "automation_input_select" | "soas_variable_select" | "incident_variable_select" | "user_secret_select";
   default?: unknown;
-  options?: string[];
+  options?: Array<string | { value: string; label: string }>;
   description?: string;
   placeholder?: string;
+  /** Hide this property unless the referenced property has one of the listed values */
+  visible_when?: Record<string, string[]>;
 }
 
 /** Validation error for a single node */

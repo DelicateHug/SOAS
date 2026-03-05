@@ -167,14 +167,19 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
   setEdges: (edges) => set({ edges, isDirty: true }),
 
   onNodesChange: (changes) => {
+    const hasMeaningfulChange = (changes as Array<{ type: string }>).some(
+      (c) => c.type !== "select" && c.type !== "dimensions"
+    );
     set((state) => ({
       nodes: applyNodeChanges(changes, state.nodes) as Node<CustomNodeData>[],
-      isDirty: true,
+      ...(hasMeaningfulChange ? { isDirty: true } : {}),
     }));
     const { _isRemoteUpdate, _broadcastFn } = get();
     if (!_isRemoteUpdate && _broadcastFn) {
-      const broadcastable = (changes as Array<{ type: string }>).filter(
+      const broadcastable = (changes as Array<{ type: string; dragging?: boolean }>).filter(
         (c) => c.type !== "select" && c.type !== "dimensions"
+          // Skip mid-drag position changes — final position is broadcast on drag stop
+          && !(c.type === "position" && c.dragging)
       );
       if (broadcastable.length > 0) {
         _broadcastFn("nodes_change", { changes: broadcastable });

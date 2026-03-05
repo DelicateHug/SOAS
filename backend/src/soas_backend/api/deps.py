@@ -142,3 +142,26 @@ def require_role(*role_names: str):
         return payload
 
     return _check
+
+
+# ---------------------------------------------------------------------------
+# Deployment mode guard
+# ---------------------------------------------------------------------------
+
+
+async def require_dev_mode(
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Block write operations when the platform is in production mode.
+
+    In production mode, entities are read-only. Changes must come via git sync.
+    Add this dependency to any route that modifies data.
+    """
+    from soas_backend.services.app_setting_service import AppSettingService
+    svc = AppSettingService(db)
+    mode = await svc.get_value("deployment_mode", "development")
+    if mode == "production":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform is in production mode. Editing is restricted — changes must be applied via git sync.",
+        )

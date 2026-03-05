@@ -14,10 +14,13 @@ import redis
 from soas_workers.celery_app import app
 from soas_workers.config import config
 from soas_workers.db import (
+    get_automation_graph_data,
     get_automation_timeout,
+    get_case_incident_ids,
     get_connection,
     get_execution_incident_id,
     get_script_path,
+    get_sensitive_incident_variable_names,
     update_execution_complete,
     update_execution_status,
 )
@@ -73,6 +76,18 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
     bridge_prefix = ""
     has_incident_bridge = False
 
+    # Resolve incident group: case runs get all linked incidents, single
+    # incident runs get a group of size 1.
+    case_id = parameters.get("case_id")
+    group_incident_ids: list[str] | None = None
+
+    if case_id:
+        group_incident_ids = get_case_incident_ids(case_id)
+        if not incident_id and group_incident_ids:
+            incident_id = group_incident_ids[0]
+    elif incident_id:
+        group_incident_ids = [incident_id]
+
     # Resolve triggering user for SOAS vars and user secrets
     triggering_user_id = None
     try:
@@ -104,27 +119,32 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
     except ImportError:
         role_ids = []
 
-    # SOAS application-level variables
+    # SOAS application-level variables + shared secrets
+    soas_vars: dict = {}
+    shared_secrets: dict = {}
     try:
         from visualpython2.soas_vars.runtime_bridge import generate_soas_bridge_code
-        from soas_workers.db import get_soas_vars_for_roles, get_writable_soas_vars_for_roles
+        from soas_workers.db import get_soas_vars_for_roles, get_writable_soas_vars_for_roles, get_shared_secrets_for_roles
 
         if role_ids:
             soas_vars = get_soas_vars_for_roles(role_ids)
             writable_vars = get_writable_soas_vars_for_roles(role_ids)
+            # Merge shared secrets into SOAS vars (accessible via get_soas_var)
+            shared_secrets = get_shared_secrets_for_roles(role_ids)
+            if shared_secrets:
+                soas_vars.update(shared_secrets)
             bridge_prefix += generate_soas_bridge_code(soas_vars, writable_vars)
     except ImportError:
         pass
 
-    # User secrets (per-user encrypted secrets)
+    # User secrets (per-user encrypted secrets with per-user DEK)
+    user_secrets: dict = {}
     try:
         from visualpython2.user_secrets.runtime_bridge import generate_user_secrets_bridge_code
         from soas_workers.db import get_user_secrets_for_user
 
         if triggering_user_id:
-            user_secrets = get_user_secrets_for_user(
-                triggering_user_id, config.USER_SECRET_ENCRYPTION_KEY,
-            )
+            user_secrets = get_user_secrets_for_user(triggering_user_id)
             if user_secrets:
                 bridge_prefix += generate_user_secrets_bridge_code(user_secrets)
     except ImportError:
@@ -145,7 +165,10 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
             from visualpython2.incident_vars.runtime_bridge import (
                 generate_incident_bridge_code,
             )
-            bridge_prefix += generate_incident_bridge_code(incident_id)
+            bridge_prefix += generate_incident_bridge_code(
+                incident_id,
+                group_incident_ids=group_incident_ids,
+            )
             has_incident_bridge = True
         except ImportError:
             pass
@@ -160,6 +183,12 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
             "    pass\n"
             "def get_incident_data():\n"
             "    return {}\n"
+            "def get_group_incidents():\n"
+            "    return []\n"
+            "def get_group_incident(index):\n"
+            "    raise IndexError(f'Incident index {index} out of range (group size: 0)')\n"
+            "def get_group_incident_count():\n"
+            "    return 0\n"
             "# --- End Stubs ---\n\n"
         )
 
@@ -188,6 +217,8 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
     env["REDIS_URL"] = config.REDIS_URL
     if incident_id:
         env["SOAS_INCIDENT_ID"] = incident_id
+    if case_id:
+        env["SOAS_CASE_ID"] = case_id
     # Sub-automation support: inject API credentials and runtime module path
     env["SOAS_API_URL"] = config.SOAS_API_URL
     env["SOAS_API_TOKEN"] = api_token or config.SOAS_API_TOKEN
@@ -202,9 +233,45 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
     runtime_dir = docker_runtime if os.path.isdir(docker_runtime) else local_runtime
     env["PYTHONPATH"] = runtime_dir + os.pathsep + env.get("PYTHONPATH", "")
 
+    # Debug trace file for per-node I/O capture
+    os.makedirs(config.SANDBOX_WORKDIR, exist_ok=True)
+    debug_tmp = tempfile.NamedTemporaryFile(
+        mode="w", suffix="_debug.json", dir=config.SANDBOX_WORKDIR, delete=False,
+    )
+    debug_file_path = debug_tmp.name
+    debug_tmp.close()
+    env["SOAS_DEBUG_FILE"] = debug_file_path
+
     # Set up Redis pubsub for real-time output
     r = redis.from_url(config.REDIS_URL)
     pubsub_channel = f"execution:{execution_id}:output"
+
+    # Collect sensitive values for stdout/stderr scrubbing
+    _scrub_values: list[str] = []
+    if user_secrets:
+        _scrub_values.extend(str(v) for v in user_secrets.values() if v and len(str(v)) >= 3)
+    if shared_secrets:
+        _scrub_values.extend(str(v) for v in shared_secrets.values() if v and len(str(v)) >= 3)
+    if incident_id:
+        _sens_names = get_sensitive_incident_variable_names()
+        if _sens_names:
+            for _iid in (group_incident_ids or [incident_id]):
+                for _name in _sens_names:
+                    _raw = r.hget(f"incident:{_iid}:data", _name)
+                    if _raw:
+                        try:
+                            _decoded = json.loads(_raw if isinstance(_raw, str) else _raw.decode())
+                            s = str(_decoded) if _decoded is not None else ""
+                            if len(s) >= 3:
+                                _scrub_values.append(s)
+                        except Exception:
+                            pass
+    _scrub_values.sort(key=len, reverse=True)
+
+    def _scrub_line(line: str) -> str:
+        for v in _scrub_values:
+            line = line.replace(v, "***")
+        return line
 
     start_time = time.monotonic()
     stdout_lines: list[str] = []
@@ -226,7 +293,7 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
             for line in iter(proc.stdout.readline, ""):
                 if not line:
                     break
-                stripped = line.rstrip("\n")
+                stripped = _scrub_line(line.rstrip("\n"))
                 stdout_lines.append(stripped)
                 r.publish(
                     pubsub_channel,
@@ -239,7 +306,7 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
             for line in iter(proc.stderr.readline, ""):
                 if not line:
                     break
-                stripped = line.rstrip("\n")
+                stripped = _scrub_line(line.rstrip("\n"))
                 stderr_lines.append(stripped)
                 r.publish(
                     pubsub_channel,
@@ -297,6 +364,25 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
         duration_ms = int((time.monotonic() - start_time) * 1000)
         final_status = "completed" if proc.returncode == 0 else "failed"
 
+        # Read debug trace file for per-node I/O data
+        result_data = None
+        try:
+            if os.path.exists(debug_file_path):
+                with open(debug_file_path, "r") as f:
+                    content = f.read()
+                if content.strip():
+                    node_trace = json.loads(content)
+                    graph_data = get_automation_graph_data(automation_id)
+                    if graph_data:
+                        result_data = {
+                            "debug": {
+                                "graph_data": graph_data,
+                                "node_trace": node_trace,
+                            }
+                        }
+        except Exception:
+            pass
+
         # Publish completion
         r.publish(
             pubsub_channel,
@@ -310,6 +396,7 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
             stderr="\n".join(stderr_lines)[:50000] or None,
             exit_code=proc.returncode,
             duration_ms=duration_ms,
+            result_data=result_data,
         )
 
         return {
@@ -329,9 +416,13 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
         return {"success": False, "error": str(e)}
 
     finally:
-        # Clean up temp bridge file if one was created
+        # Clean up temp files
         if tmp_bridge_path:
             try:
                 os.unlink(tmp_bridge_path)
             except OSError:
                 pass
+        try:
+            os.unlink(debug_file_path)
+        except OSError:
+            pass

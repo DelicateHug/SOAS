@@ -16,7 +16,6 @@ const MIN_HEIGHT = 60;
 interface IssueAnnotationsProps {
   issues: GraphIssueItem[];
   onSaveAnnotation: (issueId: string, annotation: GraphAnnotation) => void;
-  onIssuesChanged?: () => void;
   onDoubleClickIssue?: (issueId: string) => void;
 }
 
@@ -31,7 +30,7 @@ type DragState = {
   startH: number;
 };
 
-export function IssueAnnotations({ issues, onSaveAnnotation, onIssuesChanged, onDoubleClickIssue }: IssueAnnotationsProps) {
+export function IssueAnnotations({ issues, onSaveAnnotation, onDoubleClickIssue }: IssueAnnotationsProps) {
   const { x: viewX, y: viewY, zoom } = useViewport();
   const navigate = useNavigate();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -99,7 +98,6 @@ export function IssueAnnotations({ issues, onSaveAnnotation, onIssuesChanged, on
         // Only save if there was actual movement
         if (Math.abs(ev.clientX - e.clientX) > 2 || Math.abs(ev.clientY - e.clientY) > 2) {
           onSaveAnnotation(issue.id, updated);
-          onIssuesChanged?.();
         }
 
         setLocalOverrides((prev) => {
@@ -113,7 +111,7 @@ export function IssueAnnotations({ issues, onSaveAnnotation, onIssuesChanged, on
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     },
-    [zoom, onSaveAnnotation, onIssuesChanged]
+    [zoom, onSaveAnnotation]
   );
 
   const handleMouseEnter = useCallback((issueId: string) => {
@@ -129,7 +127,7 @@ export function IssueAnnotations({ issues, onSaveAnnotation, onIssuesChanged, on
   if (issues.length === 0) return null;
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">
       {issues.map((issue) => {
         const ann = issue.graph_annotation;
         const override = localOverrides[issue.id];
@@ -149,28 +147,28 @@ export function IssueAnnotations({ issues, onSaveAnnotation, onIssuesChanged, on
         return (
           <div
             key={issue.id}
-            className="absolute pointer-events-auto"
+            className="absolute pointer-events-none"
             style={{
               transform: `translate(${screenX}px, ${screenY}px)`,
               width: screenW,
               height: screenH,
             }}
-            onMouseEnter={() => handleMouseEnter(issue.id)}
-            onMouseLeave={handleMouseLeave}
-            onDoubleClick={() => onDoubleClickIssue?.(issue.id)}
           >
-            {/* Annotation box */}
+            {/* Annotation box — visual only, clicks pass through to nodes */}
             <div
               className={`w-full h-full border-2 rounded-md flex flex-col p-1.5 overflow-hidden transition-colors ${
                 isDragging
                   ? "border-amber-400 bg-amber-500/20"
-                  : "border-amber-500/60 bg-amber-500/10 hover:border-amber-400/80 hover:bg-amber-500/15"
+                  : "border-amber-500/60 bg-amber-500/10"
               }`}
             >
-              {/* Drag handle header */}
+              {/* Drag handle header — only interactive part */}
               <div
-                className="flex items-center gap-1 mb-0.5 cursor-grab active:cursor-grabbing"
+                className="flex items-center gap-1 mb-0.5 cursor-grab active:cursor-grabbing pointer-events-auto"
                 onMouseDown={(e) => handleMouseDown(e, issue, "move")}
+                onMouseEnter={() => handleMouseEnter(issue.id)}
+                onMouseLeave={handleMouseLeave}
+                onDoubleClick={() => onDoubleClickIssue?.(issue.id)}
               >
                 <GripVertical
                   className="w-3 h-3 text-amber-400/60 shrink-0"
@@ -210,7 +208,7 @@ export function IssueAnnotations({ issues, onSaveAnnotation, onIssuesChanged, on
 
             {/* Resize handle (bottom-right corner) */}
             <div
-              className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize"
+              className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize pointer-events-auto"
               onMouseDown={(e) => handleMouseDown(e, issue, "resize")}
             >
               <svg

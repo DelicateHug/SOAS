@@ -4,8 +4,10 @@ import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { DocumentationViewer } from "@/components/DocumentationViewer";
-import { Edit, Clock, Tag, ChevronRight, BookOpen, Trash2 } from "lucide-react";
-import type { WikiPage, WikiBreadcrumb } from "@/types/api";
+import { Edit, Clock, Tag, ChevronRight, BookOpen, Trash2, Users } from "lucide-react";
+import { DynamicIcon } from "@/components/ui/DynamicIcon";
+import { NodePreview } from "@/components/wiki/NodePreview";
+import type { WikiPage, WikiBreadcrumb, WikiPageListItem, PaginatedResponse } from "@/types/api";
 
 export function WikiPageView() {
   const { slug } = useParams<{ slug: string }>();
@@ -23,6 +25,18 @@ export function WikiPageView() {
     queryFn: () => api.get<WikiBreadcrumb[]>(`/wiki/${page!.id}/breadcrumbs`),
     enabled: !!page?.id,
   });
+
+  const { data: childPagesData } = useQuery({
+    queryKey: ["wiki-children", page?.id],
+    queryFn: () => api.get<PaginatedResponse<WikiPageListItem>>(`/wiki?parent_id=${page!.id}&per_page=50`),
+    enabled: !!page?.id && (page?.child_count ?? 0) > 0,
+  });
+
+  const childPages = childPagesData?.data.map((c) => ({
+    title: c.title,
+    slug: c.slug,
+    icon: c.icon,
+  }));
 
   const handleDelete = async () => {
     if (!page) return;
@@ -72,10 +86,10 @@ export function WikiPageView() {
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-0.5">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            {page.icon && <span>{page.icon}</span>}
+            <DynamicIcon name={page.icon} className="w-6 h-6 shrink-0" />
             {page.title}
           </h1>
           <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-[hsl(var(--muted-foreground))]">
@@ -97,8 +111,19 @@ export function WikiPageView() {
             {page.child_count > 0 && (
               <span>{page.child_count} subpages</span>
             )}
+            {page.active_editors > 0 && (
+              <span className="flex items-center gap-1 text-green-400">
+                <Users className="w-3.5 h-3.5" />
+                {page.active_editors} editing now
+              </span>
+            )}
           </div>
         </div>
+
+        {/* Node preview in header gap */}
+        {page.linked_node_type && (
+          <NodePreview nodeType={page.linked_node_type} compact />
+        )}
 
         <div className="flex items-center gap-2 shrink-0">
           <Link
@@ -130,7 +155,7 @@ export function WikiPageView() {
 
       {/* Tags */}
       {page.tags.length > 0 && (
-        <div className="flex gap-1.5 mb-6">
+        <div className="flex gap-1.5">
           {page.tags.map((t) => (
             <span
               key={t}
@@ -144,9 +169,9 @@ export function WikiPageView() {
       )}
 
       {/* Content */}
-      <div className="border border-[hsl(var(--border))] rounded-lg p-6">
+      <div className="border border-[hsl(var(--border))] rounded-lg pt-3 px-6 pb-6">
         {page.content ? (
-          <DocumentationViewer content={page.content} />
+          <DocumentationViewer content={page.content} childPages={childPages} />
         ) : (
           <div className="text-center py-8 text-[hsl(var(--muted-foreground))]">
             This page has no content yet.{" "}

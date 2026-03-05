@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { BookOpen, Plus, Search, ChevronRight, ChevronDown, Tag } from "lucide-react";
+import { DynamicIcon } from "@/components/ui/DynamicIcon";
 import type { PaginatedResponse, WikiPageListItem, WikiTreeNode, WikiSearchResult } from "@/types/api";
 
 // ─── Tree sidebar ───
@@ -29,7 +30,7 @@ function TreeNode({ node, depth = 0 }: { node: WikiTreeNode; depth?: number }) {
         ) : (
           <span className="w-4 shrink-0" />
         )}
-        {node.icon && <span className="shrink-0">{node.icon}</span>}
+        <DynamicIcon name={node.icon} className="w-4 h-4 shrink-0 text-[hsl(var(--muted-foreground))]" />
         <Link
           to={`/wiki/${node.slug}`}
           className="truncate flex-1 text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))]"
@@ -240,7 +241,7 @@ export function WikiListPage() {
                 >
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium flex items-center gap-2">
-                      {pg.icon && <span>{pg.icon}</span>}
+                      <DynamicIcon name={pg.icon} className="w-4 h-4 shrink-0" />
                       {pg.title}
                     </h3>
                     <span className={`text-xs px-2 py-0.5 rounded ${

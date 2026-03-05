@@ -23,7 +23,7 @@ function CustomNodeComponentInner({ data, selected }: NodeProps) {
   return (
     <div
       className={`
-        rounded-lg shadow-md border transition-all
+        rounded-lg shadow-md border transition-[border-color,box-shadow] duration-150
         bg-[#1a1a2e]
         ${selected ? "shadow-lg shadow-blue-500/20 border-blue-500" : "border-[#2a2a3e]"}
       `}

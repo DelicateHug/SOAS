@@ -46,6 +46,7 @@ services:
       WEBAUTHN_RP_NAME: SOC on a Stick
       WEBAUTHN_ORIGIN: http://localhost:3000
       CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
+      USER_SECRET_ENCRYPTION_KEY: ${USER_SECRET_ENCRYPTION_KEY:-}
     ports:
       - "8000:8000"
     depends_on:
@@ -72,6 +73,7 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       AUTOMATIONS_DIR: /app/automations
       SOAS_API_URL: http://backend:8000/api/v1
+      USER_SECRET_ENCRYPTION_KEY: ${USER_SECRET_ENCRYPTION_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

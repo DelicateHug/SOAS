@@ -25,6 +25,7 @@ def _to_read(v) -> IncidentVariableRead:
         name=v.name,
         description=v.description,
         default_enabled=v.default_enabled,
+        sensitive=v.sensitive,
         created_by=v.created_by,
         created_at=v.created_at,
         updated_at=v.updated_at,
@@ -68,6 +69,7 @@ async def create_variable(
         name=body.name,
         description=body.description,
         default_enabled=body.default_enabled,
+        sensitive=body.sensitive,
         created_by=current_user.id,
     )
     return _to_read(variable)
@@ -87,6 +89,8 @@ async def update_variable(
         kwargs["description"] = body.description
     if body.default_enabled is not None:
         kwargs["default_enabled"] = body.default_enabled
+    if body.sensitive is not None:
+        kwargs["sensitive"] = body.sensitive
 
     variable = await svc.update(variable_id, **kwargs)
     if not variable:

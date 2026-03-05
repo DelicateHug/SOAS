@@ -1,14 +1,19 @@
 """SOAS application-level variable endpoints."""
 
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import select
+
 from soas_backend.api.deps import get_current_user, require_permission
 from soas_backend.database import get_db
+from soas_backend.models.role import UserRole
 from soas_backend.models.user import User
 from soas_backend.services.soas_variable_service import SOASVariableService
+from soas_backend.services.user_secret_service import UserSecretService
 from soas_shared.schemas.common import PaginatedResponse, PaginationMeta
 from soas_shared.schemas.soas_variable import (
     SOASVariableCreate,
@@ -39,13 +44,41 @@ def _to_read(v, mask_secret: bool = False) -> SOASVariableRead:
 async def list_variables(
     page: int = Query(1, ge=1),
     per_page: int = Query(25, ge=1, le=100),
+    include_shared: bool = Query(True),
+    current_user: User = Depends(get_current_user),
     _: dict = Depends(require_permission("soas_variable", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     svc = SOASVariableService(db)
     variables, total = await svc.list_variables(page, per_page)
+    data = [_to_read(v) for v in variables]
+
+    # Append shared secrets visible to current user's roles
+    if include_shared:
+        role_result = await db.execute(
+            select(UserRole.role_id).where(UserRole.user_id == current_user.id)
+        )
+        role_ids = [row[0] for row in role_result.all()]
+        if role_ids:
+            secret_svc = UserSecretService(db)
+            shared = await secret_svc.get_shared_for_roles(role_ids)
+            for item in shared:
+                data.append(SOASVariableRead(
+                    id=item["id"],
+                    name=item["name"],
+                    description=item["description"],
+                    value=item["value"],
+                    is_secret=item["sensitive"],
+                    created_by=None,
+                    created_at=datetime.min,
+                    updated_at=datetime.min,
+                    source="shared_secret",
+                    owner_username=item["owner_username"],
+                ))
+            total += len(shared)
+
     return PaginatedResponse(
-        data=[_to_read(v) for v in variables],
+        data=data,
         meta=PaginationMeta(
             total=total,
             page=page,

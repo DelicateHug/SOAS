@@ -26,10 +26,12 @@ class SOASVariableRead(BaseSchema):
     description: str | None = None
     value: Any = None
     is_secret: bool = False
-    created_by: UUID
+    created_by: UUID | None = None
     updated_by: UUID | None = None
     created_at: datetime
     updated_at: datetime
+    source: str = "soas_var"
+    owner_username: str | None = None
 
 
 class SOASVariablePermissionEntry(BaseSchema):

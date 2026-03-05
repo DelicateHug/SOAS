@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from soas_backend.api.deps import get_current_user, require_permission
 from soas_backend.database import get_db
 from soas_backend.models.case_note import CaseNote
+from soas_backend.models.execution import ExecutionLog
 from soas_backend.models.incident_note import IncidentNote
 from soas_backend.models.timeline import TimelineEntry
 from soas_backend.models.user import User
@@ -95,6 +96,7 @@ async def add_incident_comment(
 async def toggle_timeline_evidence(
     incident_id: UUID,
     entry_id: UUID,
+    current_user: User = Depends(get_current_user),
     _: dict = Depends(require_permission("timeline", "create")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -116,6 +118,29 @@ async def toggle_timeline_evidence(
         linked_note = note_result.scalar_one_or_none()
         if linked_note:
             linked_note.is_evidence = entry.is_evidence
+
+    # Also toggle linked execution if present
+    if entry.details and entry.details.get("execution_id"):
+        exec_result = await db.execute(
+            select(ExecutionLog).where(ExecutionLog.id == UUID(entry.details["execution_id"]))
+        )
+        linked_exec = exec_result.scalar_one_or_none()
+        if linked_exec:
+            linked_exec.is_evidence = entry.is_evidence
+
+    # Create audit trail entry
+    action = "marked as evidence" if entry.is_evidence else "unmarked as evidence"
+    db.add(TimelineEntry(
+        incident_id=incident_id,
+        entry_type="evidence_marked",
+        content=f"Manually {action}: {entry.content}",
+        details={
+            "source_entry_id": str(entry.id),
+            "source_type": entry.entry_type,
+            "is_evidence": entry.is_evidence,
+        },
+        created_by=current_user.id,
+    ))
 
     await db.flush()
 
@@ -171,6 +196,7 @@ async def add_case_comment(
 async def toggle_case_timeline_evidence(
     case_id: UUID,
     entry_id: UUID,
+    current_user: User = Depends(get_current_user),
     _: dict = Depends(require_permission("timeline", "create")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -192,6 +218,29 @@ async def toggle_case_timeline_evidence(
         linked_note = note_result.scalar_one_or_none()
         if linked_note:
             linked_note.is_evidence = entry.is_evidence
+
+    # Also toggle linked execution if present
+    if entry.details and entry.details.get("execution_id"):
+        exec_result = await db.execute(
+            select(ExecutionLog).where(ExecutionLog.id == UUID(entry.details["execution_id"]))
+        )
+        linked_exec = exec_result.scalar_one_or_none()
+        if linked_exec:
+            linked_exec.is_evidence = entry.is_evidence
+
+    # Create audit trail entry
+    action = "marked as evidence" if entry.is_evidence else "unmarked as evidence"
+    db.add(TimelineEntry(
+        case_id=case_id,
+        entry_type="evidence_marked",
+        content=f"Manually {action}: {entry.content}",
+        details={
+            "source_entry_id": str(entry.id),
+            "source_type": entry.entry_type,
+            "is_evidence": entry.is_evidence,
+        },
+        created_by=current_user.id,
+    ))
 
     await db.flush()
 

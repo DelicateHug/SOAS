@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -26,6 +26,9 @@ class WikiPage(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="published")
     version: Mapped[int] = mapped_column(Integer, default=1)
     icon: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    linked_node_type: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True)
+    yjs_state: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    active_editors: Mapped[int] = mapped_column(Integer, server_default="0", default=0)
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
