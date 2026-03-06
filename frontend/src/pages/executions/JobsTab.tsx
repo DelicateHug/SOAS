@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import {
@@ -81,20 +82,24 @@ function ActionMenu({
   } | null>(null);
   const queryClient = useQueryClient();
 
-  const toggleMutation = useMutation({
+  const toggleMutation = useToastMutation({
     mutationFn: () =>
       api.post(
         `/jobs/${job.id}/${job.is_enabled ? "disable" : "enable"}`,
         {}
       ),
+    loadingMessage: `${job.is_enabled ? "Disabling" : "Enabling"} job...`,
+    successMessage: `Job ${job.is_enabled ? "disabled" : "enabled"}.`,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       setOpen(false);
     },
   });
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useToastMutation({
     mutationFn: () => api.delete(`/jobs/${job.id}`),
+    loadingMessage: "Deleting job...",
+    successMessage: "Job deleted.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       setOpen(false);

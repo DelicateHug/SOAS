@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
+import { useBranchAwareList } from "@/hooks/useBranchAwareList";
+import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
@@ -42,15 +45,18 @@ export function AutomationListPage() {
   const [permissionsAutomationId, setPermissionsAutomationId] = useState<string | null>(null);
   const [deletingAutomationId, setDeletingAutomationId] = useState<string | null>(null);
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useToastMutation({
     mutationFn: (id: string) => api.request(`/automations/${id}`, { method: "DELETE" }),
+    loadingMessage: "Deleting automation...",
+    successMessage: "Automation deleted.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["automations"] });
       setDeletingAutomationId(null);
     },
   });
 
-  const { data, isLoading } = useQuery({
+  const { items: branchItems, pendingCreates, raw: data, isLoading } = useBranchAwareList<AutomationItem, PaginatedResponse<AutomationItem>>({
+    entityType: "automation",
     queryKey: ["automations", filters],
     queryFn: () => {
       const params = new URLSearchParams();
@@ -59,6 +65,8 @@ export function AutomationListPage() {
       params.set("per_page", "25");
       return api.get<PaginatedResponse<AutomationItem>>(`/automations?${params}`);
     },
+    getId: (a) => a.id,
+    getData: (r) => r.data,
   });
 
   return (
@@ -103,7 +111,7 @@ export function AutomationListPage() {
       {/* Table */}
       {isLoading ? (
         <div className="text-center py-8">Loading...</div>
-      ) : data?.data.length === 0 ? (
+      ) : branchItems.length === 0 && pendingCreates.length === 0 ? (
         <div className="flex flex-col items-center py-12 text-[hsl(var(--muted-foreground))]">
           <Zap className="w-12 h-12 mb-3" />
           <p>No automations yet</p>
@@ -137,16 +145,34 @@ export function AutomationListPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[hsl(var(--border))]">
-                {data?.data.map((automation) => (
+                {pendingCreates.map((cr) => (
+                  <tr key={cr.id} className="bg-green-500/5">
+                    <td className="px-4 py-3">
+                      <PendingCreateBadge changeRequest={cr} />
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium">
+                      {(cr as unknown as { snapshot?: { name?: string } }).snapshot?.name ?? cr.title}
+                    </td>
+                    <td className="px-4 py-3">-</td>
+                    <td className="px-4 py-3">-</td>
+                    <td className="px-4 py-3">-</td>
+                    <td className="px-4 py-3">-</td>
+                    <td className="px-4 py-3" />
+                  </tr>
+                ))}
+                {branchItems.map(({ item: automation, branchStatus, changeRequest }) => (
                   <tr
                     key={automation.id}
-                    className="hover:bg-[hsl(var(--accent))] transition-colors"
+                    className={`hover:bg-[hsl(var(--accent))] transition-colors ${branchStatus === "pending_delete" ? "opacity-50 line-through" : ""}`}
                   >
                     <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[automation.status]}`}
-                      >
-                        {automation.status}
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[automation.status]}`}
+                        >
+                          {automation.status}
+                        </span>
+                        <BranchStatusBadge branchStatus={branchStatus} changeRequest={changeRequest} />
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -398,9 +424,11 @@ function ToggleStatusButton({
   const isActive = automation.status === "active";
   const newStatus = isActive ? "disabled" : "active";
 
-  const toggle = useMutation({
+  const toggle = useToastMutation({
     mutationFn: () =>
       api.patch(`/automations/${automation.id}`, { status: newStatus }),
+    loadingMessage: `${isActive ? "Disabling" : "Activating"} automation...`,
+    successMessage: `Automation ${isActive ? "disabled" : "activated"}.`,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["automations"] });
       onDone();
@@ -466,7 +494,7 @@ function EditConfigurationModal({
     }
   }, [detail, timeoutLoaded]);
 
-  const saveMutation = useMutation({
+  const saveMutation = useToastMutation({
     mutationFn: () => {
       return api.patch(`/automations/${automation.id}`, {
         name: form.name,
@@ -476,6 +504,8 @@ function EditConfigurationModal({
         tags: form.tags,
       });
     },
+    loadingMessage: "Saving configuration...",
+    successMessage: "Configuration saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["automations"] });
       queryClient.invalidateQueries({ queryKey: ["automation", automation.id] });

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -39,12 +40,14 @@ export function FormsTab({ caseId }: Props) {
   const definitions = definitionsResponse?.data ?? [];
   const selectedDefinition = definitions.find((d) => d.id === selectedFormId);
 
-  const submitForm = useMutation({
+  const submitForm = useToastMutation({
     mutationFn: () =>
       api.post(`/cases/${caseId}/form-submissions`, {
         form_definition_id: selectedFormId,
         data: formData,
       }),
+    loadingMessage: "Saving form...",
+    successMessage: "Form saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["case-form-submissions", caseId],
@@ -58,9 +61,11 @@ export function FormsTab({ caseId }: Props) {
     },
   });
 
-  const deleteSubmission = useMutation({
+  const deleteSubmission = useToastMutation({
     mutationFn: (submissionId: string) =>
       api.delete(`/cases/${caseId}/form-submissions/${submissionId}`),
+    loadingMessage: "Deleting submission...",
+    successMessage: "Submission deleted.",
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["case-form-submissions", caseId],
@@ -68,11 +73,13 @@ export function FormsTab({ caseId }: Props) {
     },
   });
 
-  const toggleEvidence = useMutation({
+  const toggleEvidence = useToastMutation({
     mutationFn: (submissionId: string) =>
       api.post<CaseFormSubmission>(
         `/cases/${caseId}/form-submissions/${submissionId}/evidence`
       ),
+    loadingMessage: "Updating evidence...",
+    successMessage: "Evidence updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["case-form-submissions", caseId],

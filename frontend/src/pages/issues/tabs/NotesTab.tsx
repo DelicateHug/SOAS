@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { formatDate } from "@/lib/utils";
@@ -23,35 +24,43 @@ export function NotesTab({ issueId, issueCreatorId }: Props) {
     queryFn: () => api.get<IssueNote[]>(`/issues/${issueId}/notes`),
   });
 
-  const createNote = useMutation({
+  const createNote = useToastMutation({
     mutationFn: () =>
       api.post(`/issues/${issueId}/notes`, { content: newNote }),
+    loadingMessage: "Saving note...",
+    successMessage: "Note saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue-notes", issueId] });
       setNewNote("");
     },
   });
 
-  const updateNote = useMutation({
+  const updateNote = useToastMutation({
     mutationFn: (noteId: string) =>
       api.patch(`/issues/${issueId}/notes/${noteId}`, { content: editContent }),
+    loadingMessage: "Saving note...",
+    successMessage: "Note saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue-notes", issueId] });
       setEditingId(null);
     },
   });
 
-  const deleteNote = useMutation({
+  const deleteNote = useToastMutation({
     mutationFn: (noteId: string) =>
       api.request(`/issues/${issueId}/notes/${noteId}`, { method: "DELETE" }),
+    loadingMessage: "Deleting note...",
+    successMessage: "Note deleted.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue-notes", issueId] });
     },
   });
 
-  const toggleEvidence = useMutation({
+  const toggleEvidence = useToastMutation({
     mutationFn: (noteId: string) =>
       api.post(`/issues/${issueId}/notes/${noteId}/evidence`, {}),
+    loadingMessage: "Updating evidence...",
+    successMessage: "Evidence updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue-notes", issueId] });
     },

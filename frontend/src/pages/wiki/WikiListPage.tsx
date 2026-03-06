@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
-import { BookOpen, Plus, Search, ChevronRight, ChevronDown, Tag } from "lucide-react";
+import { BookOpen, Plus, Search, ChevronRight, ChevronDown, Tag, GitBranch, Trash2 } from "lucide-react";
 import { DynamicIcon } from "@/components/ui/DynamicIcon";
-import type { PaginatedResponse, WikiPageListItem, WikiTreeNode, WikiSearchResult } from "@/types/api";
+import type { PaginatedResponse, WikiPageListItem, WikiTreeNode, WikiSearchResult, ChangeRequestDetail } from "@/types/api";
 
 // ─── Tree sidebar ───
 
@@ -54,6 +54,7 @@ function TreeNode({ node, depth = 0 }: { node: WikiTreeNode; depth?: number }) {
 export function WikiListPage() {
   const { hasPermission } = useAuthStore();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [tagFilter, setTagFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -65,6 +66,16 @@ export function WikiListPage() {
     queryKey: ["wiki-tree"],
     queryFn: () => api.get<WikiTreeNode[]>("/wiki/tree"),
   });
+
+  // Fetch pending wiki page creates (CRs with action=create, entity_id=null)
+  const { data: activeCRs } = useQuery({
+    queryKey: ["change-requests", "active", "wiki_page"],
+    queryFn: () => api.get<ChangeRequestDetail[]>("/change-requests/active?entity_type=wiki_page"),
+  });
+  const pendingCreates = useMemo(
+    () => (activeCRs ?? []).filter((cr) => cr.action === "create" && !cr.entity_id),
+    [activeCRs],
+  );
 
   // Fetch page list
   const { data, isLoading } = useQuery({
@@ -113,11 +124,47 @@ export function WikiListPage() {
             </Link>
           )}
         </div>
+        {/* Pending creates in sidebar */}
+        {pendingCreates.map((cr) => {
+          const snap = cr.snapshot as Record<string, unknown> | undefined;
+          return (
+            <div
+              key={cr.id}
+              className="flex items-center gap-1 py-1 px-2 rounded-md hover:bg-[hsl(var(--accent))] text-sm group"
+              style={{ paddingLeft: "8px" }}
+            >
+              <GitBranch className="w-3.5 h-3.5 shrink-0 text-green-400" />
+              <Link
+                to={`/wiki/new?draft=${cr.id}`}
+                className="truncate flex-1 text-green-400 hover:text-green-300"
+              >
+                {(snap?.title as string) || cr.title}
+              </Link>
+              <span className="text-[10px] px-1 py-0.5 rounded bg-green-500/20 text-green-400 font-medium shrink-0">
+                {cr.status === "draft" ? "Draft" : cr.status}
+              </span>
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!window.confirm("Delete this draft? This cannot be undone.")) return;
+                  try {
+                    await api.delete(`/change-requests/${cr.id}`);
+                    queryClient.invalidateQueries({ queryKey: ["change-requests"] });
+                  } catch { /* ignore */ }
+                }}
+                className="hidden group-hover:flex w-4 h-4 items-center justify-center shrink-0 text-red-400 hover:text-red-300"
+                title="Delete draft"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          );
+        })}
         {tree && tree.length > 0 ? (
           tree.map((node) => <TreeNode key={node.id} node={node} />)
-        ) : (
+        ) : pendingCreates.length === 0 ? (
           <p className="text-sm text-[hsl(var(--muted-foreground))]">No pages yet</p>
-        )}
+        ) : null}
       </aside>
 
       {/* Main content */}
@@ -217,7 +264,7 @@ export function WikiListPage() {
           )
         ) : isLoading ? (
           <div className="text-center py-8">Loading...</div>
-        ) : data?.data.length === 0 ? (
+        ) : (data?.data.length === 0 && pendingCreates.length === 0) ? (
           <div className="flex flex-col items-center py-12 text-[hsl(var(--muted-foreground))]">
             <BookOpen className="w-12 h-12 mb-3" />
             <p>No wiki pages yet</p>
@@ -233,6 +280,59 @@ export function WikiListPage() {
         ) : (
           <>
             <div className="grid gap-3">
+              {/* Pending creates from change requests */}
+              {pendingCreates.map((cr) => {
+                const snap = cr.snapshot as Record<string, unknown> | undefined;
+                const crTitle = (snap?.title as string) || cr.title;
+                const crTags = (snap?.tags as string[]) ?? [];
+                return (
+                  <div
+                    key={cr.id}
+                    className="border border-green-500/30 rounded-lg p-4 bg-green-500/5 hover:bg-green-500/10 transition-colors relative"
+                  >
+                    <Link to={`/wiki/new?draft=${cr.id}`} className="block">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium flex items-center gap-2">
+                          <GitBranch className="w-4 h-4 shrink-0 text-green-400" />
+                          {crTitle}
+                        </h3>
+                        <span className="text-xs px-2 py-0.5 rounded bg-green-500/15 text-green-400">
+                          {cr.status}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-4 mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+                        <span>By {cr.creator?.display_name ?? "Unknown"}</span>
+                        <span>Created {formatDate(cr.created_at)}</span>
+                      </div>
+                      {crTags.length > 0 && (
+                        <div className="flex gap-1 mt-2">
+                          {crTags.map((t) => (
+                            <span key={t} className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-[hsl(var(--accent))] rounded">
+                              <Tag className="w-3 h-3" />
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </Link>
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm("Delete this draft? This cannot be undone.")) return;
+                        try {
+                          await api.delete(`/change-requests/${cr.id}`);
+                          queryClient.invalidateQueries({ queryKey: ["change-requests"] });
+                        } catch { /* ignore */ }
+                      }}
+                      className="absolute top-3 right-3 p-1.5 rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                      title="Delete draft"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* Existing wiki pages */}
               {data?.data.map((pg) => (
                 <Link
                   key={pg.id}

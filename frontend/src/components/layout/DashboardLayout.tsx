@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { ToastContainer } from "@/components/ui/Toast";
 import { useAuthStore } from "@/stores/authStore";
 import { useTokenExpiration, type UrgencyLevel } from "@/hooks/useTokenExpiration";
 import { useDeploymentMode } from "@/hooks/useDeploymentMode";
@@ -278,6 +279,7 @@ export function DashboardLayout() {
           <Outlet />
         </div>
       </main>
+      <ToastContainer />
     </div>
   );
 }

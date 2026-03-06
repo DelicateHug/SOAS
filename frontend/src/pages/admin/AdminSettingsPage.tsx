@@ -1,16 +1,32 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
+import { useDeploymentMode } from "@/hooks/useDeploymentMode";
+import { BranchStatusBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { Shield, ShieldAlert, Fingerprint, Key, GitBranch, CheckCircle2, XCircle } from "lucide-react";
-import type { GitSyncConfig } from "@/types/api";
+import type { GitSyncConfig, ChangeRequestDetail } from "@/types/api";
 
 export function AdminSettingsPage() {
   const user = useAuthStore((s) => s.user);
+  const { isDevMode } = useDeploymentMode();
+  const { data: settingsCRs } = useQuery({
+    queryKey: ["change-requests", "active", "app_settings"],
+    queryFn: () => api.get<ChangeRequestDetail[]>("/change-requests/active?entity_type=app_settings"),
+    enabled: isDevMode,
+    staleTime: 10_000,
+  });
+  const hasSettingsCR = (settingsCRs?.length ?? 0) > 0;
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold mb-6">Security Settings</h1>
+      <div className="flex items-center gap-2 mb-6">
+        <h1 className="text-2xl font-bold">Security Settings</h1>
+        {hasSettingsCR && settingsCRs?.[0] && (
+          <BranchStatusBadge branchStatus="modified" changeRequest={settingsCRs[0]} />
+        )}
+      </div>
 
       <div className="space-y-6">
         <GitSyncSection />
@@ -62,9 +78,11 @@ function GitSyncSection() {
   // Initialize form when config loads
   const currentForm = form ?? config;
 
-  const saveMut = useMutation({
+  const saveMut = useToastMutation({
     mutationFn: (data: Partial<GitSyncConfig>) =>
       api.put("/git-sync/config", data),
+    loadingMessage: "Saving git sync config...",
+    successMessage: "Git sync configuration saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["git-sync-config"] });
       queryClient.invalidateQueries({ queryKey: ["git-sync-status"] });
@@ -72,21 +90,27 @@ function GitSyncSection() {
     },
   });
 
-  const testMut = useMutation({
+  const testMut = useToastMutation({
     mutationFn: (data: {
       remote_url: string;
       auth_type: string;
       auth_token: string;
       ssh_key_path: string;
     }) => api.post<{ ok: boolean; message: string }>("/git-sync/test", data),
+    loadingMessage: "Testing connection...",
+    successMessage: false,
+    errorMessage: false,
     onSuccess: (data) => setTestResult(data),
     onError: () =>
       setTestResult({ ok: false, message: "Connection test failed" }),
   });
 
-  const initMut = useMutation({
+  const initMut = useToastMutation({
     mutationFn: () =>
       api.post<{ ok: boolean; message: string }>("/git-sync/initialize", {}),
+    loadingMessage: "Initializing repository...",
+    successMessage: false,
+    errorMessage: false,
     onSuccess: (data) => {
       setInitResult(data);
       queryClient.invalidateQueries({ queryKey: ["git-sync-status"] });
@@ -95,7 +119,7 @@ function GitSyncSection() {
       setInitResult({ ok: false, message: "Initialization failed" }),
   });
 
-  const importMut = useMutation({
+  const importMut = useToastMutation({
     mutationFn: () =>
       api.post<{
         id: string;
@@ -103,6 +127,8 @@ function GitSyncSection() {
         entities_pulled: number;
         duration_ms: number;
       }>("/git-sync/import", {}),
+    loadingMessage: "Importing from git...",
+    successMessage: (data) => `Import complete: ${data.entities_pulled} entities imported.`,
     onSuccess: (data) => {
       setImportResult({
         ok: true,
@@ -497,7 +523,7 @@ function LoginSecuritySection() {
   const isDirty =
     maxAttemptsVal !== null || lockoutMinVal !== null;
 
-  const saveMut = useMutation({
+  const saveMut = useToastMutation({
     mutationFn: async () => {
       const promises: Promise<unknown>[] = [];
       if (maxAttemptsVal !== null) {
@@ -516,6 +542,8 @@ function LoginSecuritySection() {
       }
       await Promise.all(promises);
     },
+    loadingMessage: "Saving login security settings...",
+    successMessage: "Login security settings saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["settings", "max_failed_login_attempts"],
@@ -602,8 +630,10 @@ function MfaSection({ isMfaEnabled }: { isMfaEnabled: boolean }) {
   const [totpCode, setTotpCode] = useState("");
   const [error, setError] = useState("");
 
-  const setupMfa = useMutation({
+  const setupMfa = useToastMutation({
     mutationFn: () => api.post<{ secret: string; totp_uri: string }>("/auth/mfa/setup"),
+    loadingMessage: "Setting up MFA...",
+    successMessage: false,
     onSuccess: (data) => {
       setQrUri(data.totp_uri);
       setSecret(data.secret);
@@ -611,8 +641,11 @@ function MfaSection({ isMfaEnabled }: { isMfaEnabled: boolean }) {
     },
   });
 
-  const verifySetup = useMutation({
+  const verifySetup = useToastMutation({
     mutationFn: () => api.post("/auth/mfa/verify-setup", { totp_code: totpCode }),
+    loadingMessage: false,
+    successMessage: "MFA enabled successfully.",
+    errorMessage: false,
     onSuccess: () => {
       setStep("idle");
       setTotpCode("");
@@ -700,7 +733,7 @@ function WebAuthnSection() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
-  const registerWebAuthn = useMutation({
+  const registerWebAuthn = useToastMutation({
     mutationFn: async () => {
       // Step 1: Get registration options from server
       const options = await api.post<PublicKeyCredentialCreationOptions>(
@@ -739,6 +772,9 @@ function WebAuthnSection() {
         type: attestationResponse.type,
       });
     },
+    loadingMessage: "Registering passkey...",
+    successMessage: "Passkey registered successfully.",
+    errorMessage: false,
     onSuccess: () => {
       setStatus("Passkey registered successfully!");
       setError("");

@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
+import { useBranchAwareList } from "@/hooks/useBranchAwareList";
+import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import { Plus, Trash2, Edit2, X, ToggleLeft, ToggleRight } from "lucide-react";
 
@@ -30,17 +33,15 @@ export function IncidentVariablesPage() {
   const [formDefaultEnabled, setFormDefaultEnabled] = useState(true);
   const [formSensitive, setFormSensitive] = useState(false);
 
-  const { data: varsResponse, isLoading } = useQuery({
+  const { items: branchItems, pendingCreates, isLoading } = useBranchAwareList<IncidentVariable, PaginatedResponse<IncidentVariable>>({
+    entityType: "incident_variable",
     queryKey: ["incident-variables"],
-    queryFn: () =>
-      api.get<PaginatedResponse<IncidentVariable>>(
-        "/incident-variables?per_page=100"
-      ),
+    queryFn: () => api.get<PaginatedResponse<IncidentVariable>>("/incident-variables?per_page=100"),
+    getId: (v) => v.id,
+    getData: (r) => r.data,
   });
 
-  const variables = varsResponse?.data ?? [];
-
-  const createVar = useMutation({
+  const createVar = useToastMutation({
     mutationFn: () =>
       api.post("/incident-variables", {
         name: formName,
@@ -48,6 +49,8 @@ export function IncidentVariablesPage() {
         default_enabled: formDefaultEnabled,
         sensitive: formSensitive,
       }),
+    loadingMessage: "Creating variable...",
+    successMessage: "Variable created.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident-variables"] });
       resetForm();
@@ -55,7 +58,7 @@ export function IncidentVariablesPage() {
     },
   });
 
-  const updateVar = useMutation({
+  const updateVar = useToastMutation({
     mutationFn: () => {
       if (!editingVar) return Promise.reject("No variable");
       return api.patch(`/incident-variables/${editingVar.id}`, {
@@ -64,6 +67,8 @@ export function IncidentVariablesPage() {
         sensitive: formSensitive,
       });
     },
+    loadingMessage: "Updating variable...",
+    successMessage: "Variable updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident-variables"] });
       resetForm();
@@ -71,17 +76,21 @@ export function IncidentVariablesPage() {
     },
   });
 
-  const deleteVar = useMutation({
+  const deleteVar = useToastMutation({
     mutationFn: (id: string) => api.delete(`/incident-variables/${id}`),
+    loadingMessage: "Deleting variable...",
+    successMessage: "Variable deleted.",
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["incident-variables"] }),
   });
 
-  const toggleDefault = useMutation({
+  const toggleDefault = useToastMutation({
     mutationFn: (v: IncidentVariable) =>
       api.patch(`/incident-variables/${v.id}`, {
         default_enabled: !v.default_enabled,
       }),
+    loadingMessage: false,
+    successMessage: "Default status updated.",
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["incident-variables"] }),
   });
@@ -125,7 +134,7 @@ export function IncidentVariablesPage() {
 
       {isLoading ? (
         <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
-      ) : variables.length === 0 ? (
+      ) : branchItems.length === 0 && pendingCreates.length === 0 ? (
         <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
           <p>No incident variables defined yet.</p>
           <p className="text-sm mt-1">
@@ -151,9 +160,28 @@ export function IncidentVariablesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--border))]">
-              {variables.map((v) => (
-                <tr key={v.id} className="hover:bg-[hsl(var(--accent))]/50">
-                  <td className="px-4 py-2 font-mono text-xs">{v.name}</td>
+              {pendingCreates.map((cr) => (
+                <tr key={cr.id} className="bg-green-500/5">
+                  <td className="px-4 py-2 font-mono text-xs">
+                    <span className="flex items-center gap-1.5">
+                      {(cr as unknown as { snapshot?: { name?: string } }).snapshot?.name ?? cr.title}
+                      <PendingCreateBadge changeRequest={cr} />
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-[hsl(var(--muted-foreground))]">-</td>
+                  <td className="px-4 py-2 text-center">-</td>
+                  <td className="px-4 py-2 text-center">-</td>
+                  <td className="px-4 py-2 text-right text-xs text-[hsl(var(--muted-foreground))] italic">pending</td>
+                </tr>
+              ))}
+              {branchItems.map(({ item: v, branchStatus, changeRequest }) => (
+                <tr key={v.id} className={`hover:bg-[hsl(var(--accent))]/50 ${branchStatus === "pending_delete" ? "opacity-50 line-through" : ""}`}>
+                  <td className="px-4 py-2 font-mono text-xs">
+                    <span className="flex items-center gap-1.5">
+                      {v.name}
+                      <BranchStatusBadge branchStatus={branchStatus} changeRequest={changeRequest} />
+                    </span>
+                  </td>
                   <td className="px-4 py-2 text-[hsl(var(--muted-foreground))] max-w-[300px] truncate">
                     {v.description || "-"}
                   </td>

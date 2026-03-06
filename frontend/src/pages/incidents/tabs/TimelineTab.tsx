@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { formatDate, formatDateUTC } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -65,21 +66,25 @@ export function TimelineTab({ incidentId }: Props) {
 
   const formatTimestamp = showUtc ? formatDateUTC : formatDate;
 
-  const addComment = useMutation({
+  const addComment = useToastMutation({
     mutationFn: (content: string) =>
       api.post(`/incidents/${incidentId}/timeline`, {
         entry_type: "comment",
         content,
       }),
+    loadingMessage: false,
+    successMessage: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident-timeline", incidentId] });
       setComment("");
     },
   });
 
-  const toggleEvidence = useMutation({
+  const toggleEvidence = useToastMutation({
     mutationFn: (entryId: string) =>
       api.post<TimelineEntry>(`/incidents/${incidentId}/timeline/${entryId}/evidence`),
+    loadingMessage: "Updating evidence...",
+    successMessage: "Evidence updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident-timeline", incidentId] });
       queryClient.invalidateQueries({ queryKey: ["incident-notes", incidentId] });

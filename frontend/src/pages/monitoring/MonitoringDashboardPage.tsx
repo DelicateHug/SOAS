@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { formatDate } from "@/lib/utils";
@@ -341,16 +342,20 @@ function AlertsPanel({ isAdmin }: { isAdmin: boolean }) {
     refetchInterval: 15000,
   });
 
-  const acknowledgeMut = useMutation({
+  const acknowledgeMut = useToastMutation({
     mutationFn: (id: string) =>
       api.post(`/monitoring/alerts/${id}/acknowledge`, {}),
+    loadingMessage: "Acknowledging alert...",
+    successMessage: "Alert acknowledged.",
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["monitoring-alerts"] }),
   });
 
-  const resolveMut = useMutation({
+  const resolveMut = useToastMutation({
     mutationFn: (id: string) =>
       api.post(`/monitoring/alerts/${id}/resolve`, {}),
+    loadingMessage: "Resolving alert...",
+    successMessage: "Alert resolved.",
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["monitoring-alerts"] }),
   });
@@ -458,17 +463,21 @@ function AlertRulesPanel() {
     queryFn: () => api.get<AlertRule[]>("/monitoring/alert-rules"),
   });
 
-  const toggleMut = useMutation({
+  const toggleMut = useToastMutation({
     mutationFn: (rule: AlertRule) =>
       api.patch(`/monitoring/alert-rules/${rule.id}`, {
         is_enabled: !rule.is_enabled,
       }),
+    loadingMessage: "Updating rule...",
+    successMessage: "Rule updated.",
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["monitoring-alert-rules"] }),
   });
 
-  const deleteMut = useMutation({
+  const deleteMut = useToastMutation({
     mutationFn: (id: string) => api.delete(`/monitoring/alert-rules/${id}`),
+    loadingMessage: "Deleting rule...",
+    successMessage: "Rule deleted.",
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["monitoring-alert-rules"] }),
   });
@@ -569,9 +578,11 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
     cooldown_seconds: 300,
   });
 
-  const createMut = useMutation({
+  const createMut = useToastMutation({
     mutationFn: (data: typeof form) =>
       api.post("/monitoring/alert-rules", data),
+    loadingMessage: "Creating rule...",
+    successMessage: "Alert rule created.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["monitoring-alert-rules"] });
       onClose();
@@ -825,11 +836,13 @@ function AgentsPanel({ isAdmin }: { isAdmin: boolean }) {
     refetchInterval: 15000,
   });
 
-  const toggleMut = useMutation({
+  const toggleMut = useToastMutation({
     mutationFn: (agent: MonitoringAgent) =>
       api.patch(`/monitoring/agents/${agent.id}`, {
         is_enabled: !agent.is_enabled,
       }),
+    loadingMessage: "Updating agent...",
+    successMessage: "Agent updated.",
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["monitoring-agents"] }),
   });
@@ -962,8 +975,10 @@ function GitSyncPanel({ isAdmin }: { isAdmin: boolean }) {
     refetchInterval: 30000,
   });
 
-  const syncMut = useMutation({
+  const syncMut = useToastMutation({
     mutationFn: () => api.post("/git-sync/sync", {}),
+    loadingMessage: "Syncing...",
+    successMessage: "Git sync complete.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["git-sync-status"] });
       queryClient.invalidateQueries({ queryKey: ["git-sync-logs"] });

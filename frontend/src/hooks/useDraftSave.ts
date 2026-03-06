@@ -47,6 +47,7 @@ export function useDraftSave({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["change-request"] });
+      queryClient.invalidateQueries({ queryKey: ["change-requests"] });
     },
   });
 
@@ -54,11 +55,12 @@ export function useDraftSave({
     mutationFn: (crId) => api.post(`/change-requests/${crId}/submit`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["change-request"] });
+      queryClient.invalidateQueries({ queryKey: ["change-requests"] });
     },
   });
 
-  const save = async (snapshot: Record<string, unknown>) => {
-    await draftMutation.mutateAsync(snapshot);
+  const save = async (snapshot: Record<string, unknown>): Promise<ChangeRequestDetail> => {
+    return draftMutation.mutateAsync(snapshot);
   };
 
   return {

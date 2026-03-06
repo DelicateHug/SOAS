@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { ArrowLeft, Loader2, Search } from "lucide-react";
 import type { UserRead, IssueLinkTargetType } from "@/types/api";
@@ -14,6 +15,7 @@ const TARGET_TYPE_LABELS: Record<IssueLinkTargetType, string> = {
   normalization_rule: "Normalization Rule",
   case: "Incident Group",
   execution_log: "Execution",
+  wiki_page: "Wiki Page",
 };
 
 interface EntityOption {
@@ -31,6 +33,7 @@ const ENTITY_ENDPOINTS: Record<string, string> = {
   normalization_rule: "/normalization/rules",
   case: "/cases?per_page=100",
   execution_log: "/executions?per_page=100",
+  wiki_page: "/wiki?per_page=100",
 };
 
 function extractEntityOptions(type: string, data: unknown): EntityOption[] {
@@ -54,6 +57,8 @@ function extractEntityOptions(type: string, data: unknown): EntityOption[] {
         return { id: item.id, label: item.title, sub: item.status };
       case "execution_log":
         return { id: item.id, label: item.automation_name ?? item.id.slice(0, 8), sub: item.status };
+      case "wiki_page":
+        return { id: item.id, label: item.title, sub: item.status };
       default:
         return { id: item.id, label: item.name ?? item.title ?? item.id };
     }
@@ -68,10 +73,11 @@ export function CreateIssuePage() {
   const initialLinkType = searchParams.get("linkType") as IssueLinkTargetType | null;
   const initialLinkId = searchParams.get("linkId");
   const initialLinkName = searchParams.get("linkName");
+  const initialDescription = searchParams.get("description");
 
   const [form, setForm] = useState({
     title: "",
-    description: "",
+    description: initialDescription ? `> ${initialDescription}\n\n` : "",
     assigned_to: "" as string,
   });
 
@@ -111,7 +117,7 @@ export function CreateIssuePage() {
     );
   }, [entityOptions, entityFilter]);
 
-  const create = useMutation({
+  const create = useToastMutation({
     mutationFn: () => {
       const links = linkType && linkId
         ? [{ target_type: linkType, target_id: linkId }]
@@ -123,6 +129,8 @@ export function CreateIssuePage() {
         links,
       });
     },
+    loadingMessage: "Creating issue...",
+    successMessage: "Issue created.",
     onSuccess: (data: { id: string }) => {
       navigate(`/issues/${data.id}`);
     },

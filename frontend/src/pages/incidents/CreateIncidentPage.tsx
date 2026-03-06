@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { TagInput } from "@/components/ui/TagInput";
 import type { IncidentSeverity } from "@/types/api";
@@ -15,7 +15,7 @@ export function CreateIncidentPage() {
     tags: [] as string[],
   });
 
-  const create = useMutation({
+  const create = useToastMutation({
     mutationFn: () =>
       api.post<{ id: string }>("/incidents", {
         title: form.title,
@@ -24,6 +24,8 @@ export function CreateIncidentPage() {
         source: form.source || undefined,
         tags: form.tags,
       }),
+    loadingMessage: "Creating incident...",
+    successMessage: "Incident created.",
     onSuccess: (data: { id: string }) => {
       navigate(`/incidents/${data.id}`);
     },

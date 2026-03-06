@@ -1,5 +1,6 @@
 import { useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -25,12 +26,14 @@ export function FilesTab({ caseId }: Props) {
     queryFn: () => api.get<CaseFile[]>(`/cases/${caseId}/files`),
   });
 
-  const uploadFile = useMutation({
+  const uploadFile = useToastMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
       return api.upload<CaseFile>(`/cases/${caseId}/files`, formData);
     },
+    loadingMessage: "Uploading file...",
+    successMessage: "File uploaded.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case-files", caseId] });
       queryClient.invalidateQueries({ queryKey: ["case-timeline", caseId] });
@@ -38,17 +41,21 @@ export function FilesTab({ caseId }: Props) {
     },
   });
 
-  const deleteFile = useMutation({
+  const deleteFile = useToastMutation({
     mutationFn: (fileId: string) =>
       api.delete(`/cases/${caseId}/files/${fileId}`),
+    loadingMessage: "Deleting file...",
+    successMessage: "File deleted.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case-files", caseId] });
     },
   });
 
-  const toggleEvidence = useMutation({
+  const toggleEvidence = useToastMutation({
     mutationFn: (fileId: string) =>
       api.post<CaseFile>(`/cases/${caseId}/files/${fileId}/evidence`),
+    loadingMessage: "Updating evidence...",
+    successMessage: "Evidence updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case-files", caseId] });
       queryClient.invalidateQueries({ queryKey: ["case-timeline", caseId] });

@@ -1,14 +1,19 @@
 """Role and permission management endpoints."""
 
+import uuid
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soas_backend.api.deps import get_current_user, require_permission
 from soas_backend.database import get_db
+from soas_backend.models.role import Role
 from soas_backend.models.user import User
+from soas_backend.services.change_request_service import ChangeRequestService
 from soas_backend.services.rbac_service import RBACService
+from soas_shared.schemas.change_request import ChangeRequestDetail, UserBrief
 from soas_shared.schemas.role import (
     PermissionRead,
     RoleCreate,
@@ -146,7 +151,31 @@ async def update_role(
     )
 
 
-@router.post("/users/{user_id}/roles", status_code=status.HTTP_201_CREATED)
+def _cr_to_detail(cr) -> ChangeRequestDetail:
+    return ChangeRequestDetail(
+        id=cr.id,
+        entity_type=cr.entity_type,
+        entity_id=cr.entity_id,
+        action=cr.action,
+        title=cr.title,
+        status=cr.status,
+        snapshot=cr.snapshot,
+        diff_summary=cr.diff_summary,
+        review_comment=cr.review_comment,
+        git_branch=cr.git_branch,
+        git_sha=cr.git_sha,
+        target_tier=cr.target_tier,
+        created_by=cr.created_by,
+        creator=None,
+        reviewed_by=cr.reviewed_by,
+        reviewer=None,
+        created_at=cr.created_at,
+        updated_at=cr.updated_at,
+        reviewed_at=cr.reviewed_at,
+    )
+
+
+@router.post("/users/{user_id}/roles", response_model=ChangeRequestDetail, status_code=status.HTTP_201_CREATED)
 async def assign_role(
     user_id: UUID,
     body: UserRoleAssign,
@@ -154,19 +183,72 @@ async def assign_role(
     _: dict = Depends(require_permission("role", "update")),
     db: AsyncSession = Depends(get_db),
 ):
-    rbac = RBACService(db)
-    await rbac.assign_role_to_user(user_id, body.role_id, assigned_by=current_user.id)
-    return {"message": "Role assigned"}
+    role = (await db.execute(select(Role).where(Role.id == body.role_id))).scalar_one_or_none()
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    target_user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Deterministic entity_id per (target_user, role) pair to allow one pending CR per slot
+    entity_id = uuid.uuid5(uuid.NAMESPACE_URL, f"user_role:{user_id}:{body.role_id}")
+
+    svc = ChangeRequestService(db)
+    try:
+        cr = await svc.upsert_draft(
+            user_id=current_user.id,
+            entity_type="user_role",
+            entity_id=entity_id,
+            action="create",
+            title=f"Assign role '{role.display_name}' to {target_user.display_name}",
+            snapshot={
+                "user_id": str(user_id),
+                "role_id": str(body.role_id),
+                "role_name": role.name,
+                "role_display_name": role.display_name,
+                "target_username": target_user.username,
+            },
+            username=current_user.username,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return _cr_to_detail(cr)
 
 
-@router.delete("/users/{user_id}/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/users/{user_id}/roles/{role_id}", response_model=ChangeRequestDetail)
 async def remove_role(
     user_id: UUID,
     role_id: UUID,
+    current_user: User = Depends(get_current_user),
     _: dict = Depends(require_permission("role", "update")),
     db: AsyncSession = Depends(get_db),
 ):
-    rbac = RBACService(db)
-    removed = await rbac.remove_role_from_user(user_id, role_id)
-    if not removed:
-        raise HTTPException(status_code=404, detail="Role assignment not found")
+    role = (await db.execute(select(Role).where(Role.id == role_id))).scalar_one_or_none()
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    target_user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    entity_id = uuid.uuid5(uuid.NAMESPACE_URL, f"user_role:{user_id}:{role_id}")
+
+    svc = ChangeRequestService(db)
+    try:
+        cr = await svc.upsert_draft(
+            user_id=current_user.id,
+            entity_type="user_role",
+            entity_id=entity_id,
+            action="delete",
+            title=f"Remove role '{role.display_name}' from {target_user.display_name}",
+            snapshot={
+                "user_id": str(user_id),
+                "role_id": str(role_id),
+                "role_name": role.name,
+                "role_display_name": role.display_name,
+                "target_username": target_user.username,
+            },
+            username=current_user.username,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return _cr_to_detail(cr)

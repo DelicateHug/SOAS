@@ -3,6 +3,7 @@
  */
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Plus,
   Search,
@@ -20,6 +21,10 @@ import {
   useToggleFavorite,
   type CodeLibraryBlock,
 } from "@/components/graph-editor/hooks/useCodeLibrary";
+import { useDeploymentMode } from "@/hooks/useDeploymentMode";
+import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
+import { api } from "@/lib/api";
+import type { ChangeRequestDetail } from "@/types/api";
 import { CodeBlockEditor } from "./CodeBlockEditor";
 import { CodeBlockPermissionsDialog } from "./components/CodeBlockPermissionsDialog";
 
@@ -46,6 +51,21 @@ export function CodeLibraryPage() {
 
   const deleteBlock = useDeleteBlock();
   const toggleFavorite = useToggleFavorite();
+
+  const { isDevMode } = useDeploymentMode();
+  const { data: activeCRs } = useQuery({
+    queryKey: ["change-requests", "active", "code_library"],
+    queryFn: () => api.get<ChangeRequestDetail[]>("/change-requests/active?entity_type=code_library"),
+    enabled: isDevMode,
+    staleTime: 10_000,
+  });
+
+  const crByEntityId = new Map<string, ChangeRequestDetail>();
+  const pendingCreates: ChangeRequestDetail[] = [];
+  for (const cr of activeCRs ?? []) {
+    if (cr.action === "create") pendingCreates.push(cr);
+    else if (cr.entity_id && !crByEntityId.has(cr.entity_id)) crByEntityId.set(cr.entity_id, cr);
+  }
 
   const blocks = data?.data || [];
   const meta = data?.meta;
@@ -109,10 +129,25 @@ export function CodeLibraryPage() {
         </div>
       ) : (
         <div className="grid gap-3">
-          {blocks.map((block) => (
+          {pendingCreates.map((cr) => (
+            <div key={cr.id} className="flex items-center gap-4 p-4 border border-green-500/30 rounded-lg bg-green-500/5">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">
+                    {(cr as unknown as { snapshot?: { name?: string } }).snapshot?.name ?? cr.title}
+                  </span>
+                  <PendingCreateBadge changeRequest={cr} />
+                </div>
+              </div>
+            </div>
+          ))}
+          {blocks.map((block) => {
+            const cr = crByEntityId.get(block.id);
+            const branchStatus = cr?.action === "delete" ? "pending_delete" as const : cr?.action === "update" ? "modified" as const : "unchanged" as const;
+            return (
             <div
               key={block.id}
-              className="flex items-center gap-4 p-4 border border-[hsl(var(--border))] rounded-lg hover:bg-[hsl(var(--accent))] transition-colors"
+              className={`flex items-center gap-4 p-4 border border-[hsl(var(--border))] rounded-lg hover:bg-[hsl(var(--accent))] transition-colors ${branchStatus === "pending_delete" ? "opacity-50" : ""}`}
             >
               {/* Favorite star */}
               <button
@@ -133,6 +168,7 @@ export function CodeLibraryPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-medium text-sm truncate">{block.name}</h3>
+                  {branchStatus !== "unchanged" && cr && <BranchStatusBadge branchStatus={branchStatus} changeRequest={cr} />}
                   <span
                     className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                       languageColors[block.language] || "bg-gray-100 text-gray-800"
@@ -188,7 +224,8 @@ export function CodeLibraryPage() {
                 </button>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import {
   formatDate,
@@ -93,9 +94,11 @@ export function CaseDetailPage() {
       api.get<{ data: UserRead[] }>("/users?per_page=100"),
   });
 
-  const updateCase = useMutation({
+  const updateCase = useToastMutation({
     mutationFn: (body: Record<string, unknown>) =>
       api.patch<CaseItem>(`/cases/${id}`, body),
+    loadingMessage: "Updating case...",
+    successMessage: "Case updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case", id] });
       queryClient.invalidateQueries({ queryKey: ["case-timeline", id] });

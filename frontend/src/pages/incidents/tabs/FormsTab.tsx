@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -41,12 +42,14 @@ export function FormsTab({ incidentId }: Props) {
   const definitions = definitionsResponse?.data ?? [];
   const selectedDefinition = definitions.find((d) => d.id === selectedFormId);
 
-  const submitForm = useMutation({
+  const submitForm = useToastMutation({
     mutationFn: () =>
       api.post(`/incidents/${incidentId}/form-submissions`, {
         form_definition_id: selectedFormId,
         data: formData,
       }),
+    loadingMessage: "Saving form...",
+    successMessage: "Form saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["incident-form-submissions", incidentId],
@@ -60,11 +63,13 @@ export function FormsTab({ incidentId }: Props) {
     },
   });
 
-  const deleteSubmission = useMutation({
+  const deleteSubmission = useToastMutation({
     mutationFn: (submissionId: string) =>
       api.delete(
         `/incidents/${incidentId}/form-submissions/${submissionId}`
       ),
+    loadingMessage: "Deleting submission...",
+    successMessage: "Submission deleted.",
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["incident-form-submissions", incidentId],
@@ -72,11 +77,13 @@ export function FormsTab({ incidentId }: Props) {
     },
   });
 
-  const toggleEvidence = useMutation({
+  const toggleEvidence = useToastMutation({
     mutationFn: (submissionId: string) =>
       api.post<FormSubmission>(
         `/incidents/${incidentId}/form-submissions/${submissionId}/evidence`
       ),
+    loadingMessage: "Updating evidence...",
+    successMessage: "Evidence updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["incident-form-submissions", incidentId],

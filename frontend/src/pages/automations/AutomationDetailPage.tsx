@@ -1,6 +1,9 @@
 import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
+import { useBranchAwareDetail } from "@/hooks/useBranchAwareDetail";
+import { BranchStatusBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import { formatDate, formatDuration } from "@/lib/utils";
 import { Play, Pencil, Network, Eye } from "lucide-react";
@@ -84,6 +87,8 @@ export function AutomationDetailPage() {
     enabled: !!id,
   });
 
+  const { hasDraft, draft, isDevMode } = useBranchAwareDetail("automation", id);
+
   const { data: executions } = useQuery({
     queryKey: ["automation-executions", id],
     queryFn: () =>
@@ -109,7 +114,7 @@ export function AutomationDetailPage() {
 
   // ── Mutations ────────────────────────────────────────────────────────
 
-  const execute = useMutation({
+  const execute = useToastMutation({
     mutationFn: () => {
       let parsedParams = {};
       try {
@@ -119,6 +124,8 @@ export function AutomationDetailPage() {
       }
       return api.post(`/automations/${id}/execute`, { parameters: parsedParams });
     },
+    loadingMessage: "Starting execution...",
+    successMessage: "Execution started.",
     onSuccess: () => {
       setShowExecuteModal(false);
       setParams("{}");
@@ -126,9 +133,11 @@ export function AutomationDetailPage() {
     },
   });
 
-  const saveDocumentation = useMutation({
+  const saveDocumentation = useToastMutation({
     mutationFn: (documentation: string) =>
       api.patch(`/automations/${id}`, { documentation }),
+    loadingMessage: "Saving documentation...",
+    successMessage: "Documentation saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["automation", id] });
     },
@@ -170,7 +179,15 @@ export function AutomationDetailPage() {
               }}
             />
           </div>
-          <h1 className="text-2xl font-bold">{automation.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{automation.name}</h1>
+            {hasDraft && draft && (
+              <BranchStatusBadge
+                branchStatus="modified"
+                changeRequest={draft as unknown as import("@/types/api").ChangeRequestItem}
+              />
+            )}
+          </div>
           {automation.description && (
             <p className="mt-2 text-[hsl(var(--muted-foreground))]">
               {automation.description}

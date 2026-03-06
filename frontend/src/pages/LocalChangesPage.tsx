@@ -1,12 +1,15 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import {
   GitBranch,
   Send,
   Undo2,
   Trash2,
-  Eye,
+  ChevronDown,
+  ChevronRight,
+  Search,
   Zap,
   BookOpen,
   Code,
@@ -17,33 +20,31 @@ import {
   Unplug,
   Radio,
   SlidersHorizontal,
-  ArrowUpToLine,
+  MessageSquare,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Circle,
+  ArrowUpCircle,
+  Filter,
 } from "lucide-react";
 import type {
   ChangeRequestItem,
   ChangeRequestListResponse,
   ChangeRequestStatus,
-  PushToDevResult,
 } from "@/types/api";
 
-const STATUS_TABS: { label: string; value: ChangeRequestStatus | "all" }[] = [
-  { label: "All", value: "all" },
-  { label: "Drafts", value: "draft" },
-  { label: "Pushed to Dev", value: "pushed_to_dev" },
-  { label: "Submitted", value: "submitted" },
-  { label: "Approved", value: "approved" },
-  { label: "Rejected", value: "rejected" },
-  { label: "Applied", value: "applied" },
-];
-
-const STATUS_COLORS: Record<ChangeRequestStatus, string> = {
-  draft: "bg-zinc-500/20 text-zinc-300",
-  pushed_to_dev: "bg-teal-500/20 text-teal-300",
-  submitted: "bg-blue-500/20 text-blue-300",
-  approved: "bg-green-500/20 text-green-300",
-  rejected: "bg-red-500/20 text-red-300",
-  applied: "bg-emerald-500/20 text-emerald-300",
-  withdrawn: "bg-yellow-500/20 text-yellow-300",
+const STATUS_CONFIG: Record<
+  ChangeRequestStatus,
+  { label: string; color: string; bg: string; icon: typeof Circle }
+> = {
+  draft: { label: "Draft", color: "text-zinc-400", bg: "bg-zinc-500/20", icon: Circle },
+  pushed_to_dev: { label: "On Dev", color: "text-teal-400", bg: "bg-teal-500/20", icon: ArrowUpCircle },
+  submitted: { label: "Submitted", color: "text-blue-400", bg: "bg-blue-500/20", icon: Send },
+  approved: { label: "Approved", color: "text-green-400", bg: "bg-green-500/20", icon: CheckCircle2 },
+  rejected: { label: "Rejected", color: "text-red-400", bg: "bg-red-500/20", icon: XCircle },
+  applied: { label: "Applied", color: "text-emerald-400", bg: "bg-emerald-500/20", icon: CheckCircle2 },
+  withdrawn: { label: "Withdrawn", color: "text-yellow-400", bg: "bg-yellow-500/20", icon: Undo2 },
 };
 
 const ENTITY_ICONS: Record<string, typeof Zap> = {
@@ -72,218 +73,497 @@ const ENTITY_LABELS: Record<string, string> = {
   normalization: "Normalization",
 };
 
-export function LocalChangesPage() {
-  const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<ChangeRequestStatus | "all">("all");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+const ACTION_LABELS: Record<string, { label: string; color: string }> = {
+  create: { label: "Create", color: "text-green-400" },
+  update: { label: "Update", color: "text-blue-400" },
+  delete: { label: "Delete", color: "text-red-400" },
+};
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["change-request", "mine", statusFilter],
-    queryFn: () => {
-      const params = new URLSearchParams({ per_page: "100" });
-      if (statusFilter !== "all") params.set("status", statusFilter);
-      return api.get<ChangeRequestListResponse>(`/change-requests/mine?${params}`);
-    },
-  });
-
-  const items = data?.data ?? [];
-
-  const submitMutation = useMutation({
-    mutationFn: (id: string) => api.post(`/change-requests/${id}/submit`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["change-request"] }),
-  });
-
-  const withdrawMutation = useMutation({
-    mutationFn: (id: string) => api.post(`/change-requests/${id}/withdraw`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["change-request"] }),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/change-requests/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["change-request"] }),
-  });
-
-  const pushToDevMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const result = await api.post<PushToDevResult>(
-        `/change-requests/${id}/push-to-dev`,
-      );
-      if (result.status === "conflict") {
-        throw new Error(`Merge conflict on: ${result.conflicts.join(", ")}`);
-      }
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["change-request"] });
-      queryClient.invalidateQueries({ queryKey: ["entity-version"] });
-    },
-  });
-
-  const renderDiffSummary = (cr: ChangeRequestItem) => {
-    if (!cr.diff_summary) return null;
-    return (
-      <div className="mt-2 space-y-1">
-        {Object.entries(cr.diff_summary).map(([field, diff]) => (
-          <div key={field} className="text-xs">
-            <span className="text-[hsl(var(--muted-foreground))]">{field}:</span>{" "}
-            <span className="text-red-400 line-through">
-              {String(diff.old ?? "").substring(0, 80)}
-            </span>{" "}
-            <span className="text-green-400">
-              {String(diff.new ?? "").substring(0, 80)}
-            </span>
+function DiffView({ diff_summary }: { diff_summary: Record<string, { old: unknown; new: unknown }> }) {
+  return (
+    <div className="rounded-md border border-[hsl(var(--border))] overflow-hidden font-mono text-xs">
+      {Object.entries(diff_summary).map(([field, diff]) => (
+        <div key={field} className="border-b border-[hsl(var(--border))] last:border-b-0">
+          <div className="px-3 py-1.5 bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] font-semibold font-sans text-xs">
+            {field}
           </div>
-        ))}
-      </div>
-    );
-  };
+          <div className="divide-y divide-[hsl(var(--border))]">
+            {diff.old != null && (
+              <div className="px-3 py-1.5 bg-red-500/5 text-red-400 whitespace-pre-wrap break-all">
+                <span className="select-none mr-2 opacity-60">-</span>
+                {String(diff.old)}
+              </div>
+            )}
+            {diff.new != null && (
+              <div className="px-3 py-1.5 bg-green-500/5 text-green-400 whitespace-pre-wrap break-all">
+                <span className="select-none mr-2 opacity-60">+</span>
+                {String(diff.new)}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: ChangeRequestStatus }) {
+  const cfg = STATUS_CONFIG[status];
+  const Icon = cfg.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.bg} ${cfg.color}`}>
+      <Icon className="w-3 h-3" />
+      {cfg.label}
+    </span>
+  );
+}
+
+function ChangeRequestCard({
+  cr,
+  isExpanded,
+  onToggle,
+  onSubmit,
+  onWithdraw,
+  onDelete,
+  isSubmitting,
+  isWithdrawing,
+  isDeleting,
+}: {
+  cr: ChangeRequestItem;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onSubmit: (id: string, comment: string) => void;
+  onWithdraw: (id: string) => void;
+  onDelete: (id: string) => void;
+  isSubmitting: boolean;
+  isWithdrawing: boolean;
+  isDeleting: boolean;
+}) {
+  const [comment, setComment] = useState("");
+  const Icon = ENTITY_ICONS[cr.entity_type] ?? FileText;
+  const action = ACTION_LABELS[cr.action] ?? { label: cr.action, color: "text-zinc-400" };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <GitBranch className="w-6 h-6 text-[hsl(var(--primary))]" />
-        <h1 className="text-2xl font-bold">Local Changes</h1>
-        <span className="text-sm text-[hsl(var(--muted-foreground))]">
-          {data?.total ?? 0} total
+    <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden transition-colors hover:border-[hsl(var(--border))]/80">
+      {/* Header - always visible */}
+      <div
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
+        onClick={onToggle}
+      >
+        {isExpanded ? (
+          <ChevronDown className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+        )}
+        <Icon className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <span className="font-medium truncate">{cr.title}</span>
+          <StatusBadge status={cr.status} />
+          <span className={`text-xs font-medium ${action.color}`}>{action.label}</span>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+          {cr.status === "draft" && (
+            <>
+              <button
+                onClick={() => onSubmit(cr.id, "")}
+                disabled={isSubmitting}
+                className="px-2.5 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-colors"
+                title="Submit for review"
+              >
+                Submit
+              </button>
+              <button
+                onClick={() => { if (confirm("Delete this draft?")) onDelete(cr.id); }}
+                disabled={isDeleting}
+                className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition-colors"
+                title="Delete draft"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+          {cr.status === "submitted" && (
+            <button
+              onClick={() => onWithdraw(cr.id)}
+              disabled={isWithdrawing}
+              className="px-2.5 py-1 rounded text-xs font-medium bg-yellow-600/80 hover:bg-yellow-600 text-white disabled:opacity-50 transition-colors"
+              title="Withdraw"
+            >
+              Withdraw
+            </button>
+          )}
+        </div>
+
+        <span className="text-xs text-[hsl(var(--muted-foreground))] shrink-0 tabular-nums">
+          {new Date(cr.updated_at).toLocaleDateString()}
         </span>
       </div>
 
-      {/* Status tabs */}
-      <div className="flex gap-1 mb-6 border-b border-[hsl(var(--border))]">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setStatusFilter(tab.value)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              statusFilter === tab.value
-                ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))]"
-                : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Expanded content */}
+      {isExpanded && (
+        <div className="border-t border-[hsl(var(--border))] px-4 py-3 space-y-3 bg-[hsl(var(--card))]/50">
+          {/* Meta info row */}
+          <div className="flex items-center gap-4 text-xs text-[hsl(var(--muted-foreground))]">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Updated {new Date(cr.updated_at).toLocaleString()}
+            </span>
+            <span>
+              {ENTITY_LABELS[cr.entity_type] ?? cr.entity_type}
+            </span>
+            {cr.git_branch && (
+              <span className="flex items-center gap-1 font-mono">
+                <GitBranch className="w-3 h-3" />
+                {cr.git_branch}
+                {cr.git_sha && <span className="opacity-60">@{cr.git_sha.substring(0, 7)}</span>}
+              </span>
+            )}
+            {cr.git_pr_url && (
+              <a
+                href={cr.git_pr_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[hsl(var(--primary))] hover:underline font-medium"
+              >
+                View PR
+              </a>
+            )}
+          </div>
+
+          {/* Comments */}
+          {(cr.submit_comment || cr.review_comment) && (
+            <div className="space-y-2">
+              {cr.submit_comment && (
+                <div className="flex items-start gap-2 p-2.5 rounded-md bg-blue-500/5 border border-blue-500/10">
+                  <MessageSquare className="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0" />
+                  <div className="text-sm">
+                    <span className="text-xs font-medium text-blue-400">Your note:</span>
+                    <p className="mt-0.5 text-[hsl(var(--foreground))]">{cr.submit_comment}</p>
+                  </div>
+                </div>
+              )}
+              {cr.review_comment && (
+                <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-500/5 border border-amber-500/10">
+                  <MessageSquare className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                  <div className="text-sm">
+                    <span className="text-xs font-medium text-amber-400">
+                      Reviewer ({cr.reviewer?.display_name ?? "Admin"}):
+                    </span>
+                    <p className="mt-0.5 text-[hsl(var(--foreground))]">{cr.review_comment}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Diff */}
+          {cr.diff_summary && Object.keys(cr.diff_summary).length > 0 && (
+            <DiffView diff_summary={cr.diff_summary} />
+          )}
+
+          {/* Submit form for drafts */}
+          {cr.status === "draft" && (
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="text"
+                placeholder="Add a note for reviewers (optional)..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    onSubmit(cr.id, comment);
+                    setComment("");
+                  }
+                }}
+                className="flex-1 px-3 py-1.5 text-sm rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
+              />
+              <button
+                onClick={() => { onSubmit(cr.id, comment); setComment(""); }}
+                disabled={isSubmitting}
+                className="px-4 py-1.5 rounded-md text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                Submit for Review
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function LocalChangesPage() {
+  const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState<ChangeRequestStatus | "all">("all");
+  const [entityFilter, setEntityFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["change-request", "mine"],
+    queryFn: () =>
+      api.get<ChangeRequestListResponse>("/change-requests/mine?per_page=200"),
+    staleTime: 0,
+    refetchInterval: 10000,
+  });
+
+  const allItems = data?.data ?? [];
+
+  // Compute filter counts from all items
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: allItems.length };
+    for (const item of allItems) {
+      counts[item.status] = (counts[item.status] ?? 0) + 1;
+    }
+    return counts;
+  }, [allItems]);
+
+  const entityTypes = useMemo(() => {
+    const types = new Set(allItems.map((i) => i.entity_type));
+    return Array.from(types).sort();
+  }, [allItems]);
+
+  // Client-side filtering
+  const items = useMemo(() => {
+    let filtered = allItems;
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((i) => i.status === statusFilter);
+    }
+    if (entityFilter !== "all") {
+      filtered = filtered.filter((i) => i.entity_type === entityFilter);
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (i) =>
+          i.title.toLowerCase().includes(q) ||
+          (ENTITY_LABELS[i.entity_type] ?? i.entity_type).toLowerCase().includes(q),
+      );
+    }
+    return filtered;
+  }, [allItems, statusFilter, entityFilter, searchQuery]);
+
+  const toggleExpanded = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const submitMutation = useToastMutation({
+    mutationFn: ({ id, comment }: { id: string; comment: string }) =>
+      api.post(`/change-requests/${id}/submit`, { comment: comment || null }),
+    loadingMessage: "Submitting for review...",
+    successMessage: "Change request submitted for review.",
+    errorMessage: (err: { detail?: string }) => err.detail || "Failed to submit.",
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["change-request"] }),
+  });
+
+  const withdrawMutation = useToastMutation({
+    mutationFn: (id: string) => api.post(`/change-requests/${id}/withdraw`),
+    loadingMessage: "Withdrawing...",
+    successMessage: "Submission withdrawn.",
+    errorMessage: (err: { detail?: string }) => err.detail || "Failed to withdraw.",
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["change-request"] }),
+  });
+
+  const deleteMutation = useToastMutation({
+    mutationFn: (id: string) => api.delete(`/change-requests/${id}`),
+    loadingMessage: "Deleting...",
+    successMessage: "Draft deleted.",
+    errorMessage: (err: { detail?: string }) => err.detail || "Failed to delete.",
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["change-request"] }),
+  });
+
+  const draftCount = statusCounts["draft"] ?? 0;
+
+  const submitAllDrafts = () => {
+    const drafts = allItems.filter((i) => i.status === "draft");
+    if (drafts.length === 0) return;
+    if (!confirm(`Submit all ${drafts.length} drafts for review?`)) return;
+    for (const draft of drafts) {
+      submitMutation.mutate({ id: draft.id, comment: "" });
+    }
+  };
+
+  // Group items by status for overview
+  const STATUS_ORDER: ChangeRequestStatus[] = ["draft", "submitted", "approved", "rejected", "applied", "pushed_to_dev", "withdrawn"];
+
+  return (
+    <div className="max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <GitBranch className="w-6 h-6 text-[hsl(var(--primary))]" />
+          <h1 className="text-2xl font-bold">Local Changes</h1>
+          <span className="text-sm text-[hsl(var(--muted-foreground))] tabular-nums">
+            {allItems.length} total
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {draftCount > 1 && (
+            <button
+              onClick={submitAllDrafts}
+              disabled={submitMutation.isPending}
+              className="px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-colors flex items-center gap-1.5"
+            >
+              <Send className="w-3.5 h-3.5" />
+              Submit All Drafts ({draftCount})
+            </button>
+          )}
+        </div>
       </div>
 
-      {isLoading && (
-        <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
-      )}
+      {/* Search + Filter bar */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+          <input
+            type="text"
+            placeholder="Search changes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
+          />
+        </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`p-2 rounded-md border transition-colors ${
+            showFilters || statusFilter !== "all" || entityFilter !== "all"
+              ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5"
+              : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+          }`}
+          title="Toggle filters"
+        >
+          <Filter className="w-4 h-4" />
+        </button>
+      </div>
 
-      {!isLoading && items.length === 0 && (
-        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
-          <GitBranch className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>No change requests found.</p>
-          <p className="text-sm mt-1">
-            Changes made in production mode are saved as drafts here.
-          </p>
+      {/* Filters panel */}
+      {showFilters && (
+        <div className="mb-4 p-3 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] space-y-3">
+          {/* Status pills */}
+          <div>
+            <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5 block">Status</label>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setStatusFilter("all")}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                  statusFilter === "all"
+                    ? "bg-[hsl(var(--primary))] text-white"
+                    : "bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                }`}
+              >
+                All ({statusCounts.all ?? 0})
+              </button>
+              {STATUS_ORDER.filter((s) => statusCounts[s]).map((s) => {
+                const cfg = STATUS_CONFIG[s];
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                      statusFilter === s
+                        ? `${cfg.bg} ${cfg.color} ring-1 ring-current`
+                        : `bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]`
+                    }`}
+                  >
+                    {cfg.label} ({statusCounts[s]})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Entity type filter */}
+          {entityTypes.length > 1 && (
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5 block">Type</label>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setEntityFilter("all")}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    entityFilter === "all"
+                      ? "bg-[hsl(var(--primary))] text-white"
+                      : "bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  }`}
+                >
+                  All
+                </button>
+                {entityTypes.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setEntityFilter(t)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                      entityFilter === t
+                        ? "bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] ring-1 ring-[hsl(var(--primary))]"
+                        : "bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                    }`}
+                  >
+                    {ENTITY_LABELS[t] ?? t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      <div className="space-y-3">
-        {items.map((cr) => {
-          const Icon = ENTITY_ICONS[cr.entity_type] ?? FileText;
-          const isExpanded = expandedId === cr.id;
+      {/* Loading */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-16">
+          <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
 
-          return (
-            <div
-              key={cr.id}
-              className="border border-[hsl(var(--border))] rounded-lg p-4"
-            >
-              <div className="flex items-start gap-3">
-                <Icon className="w-5 h-5 mt-0.5 text-[hsl(var(--muted-foreground))] shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-medium truncate">{cr.title}</h3>
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[cr.status]}`}
-                    >
-                      {cr.status}
-                    </span>
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {ENTITY_LABELS[cr.entity_type] ?? cr.entity_type}
-                    </span>
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {cr.action}
-                    </span>
-                  </div>
+      {/* Empty state */}
+      {!isLoading && items.length === 0 && (
+        <div className="text-center py-16 text-[hsl(var(--muted-foreground))]">
+          <GitBranch className="w-12 h-12 mx-auto mb-3 opacity-20" />
+          {allItems.length === 0 ? (
+            <>
+              <p className="font-medium">No changes yet</p>
+              <p className="text-sm mt-1 max-w-sm mx-auto">
+                When you make changes in production mode, they'll be saved as drafts here for review before going live.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium">No matching changes</p>
+              <p className="text-sm mt-1">Try adjusting your filters or search query.</p>
+              <button
+                onClick={() => { setStatusFilter("all"); setEntityFilter("all"); setSearchQuery(""); }}
+                className="mt-3 text-sm text-[hsl(var(--primary))] hover:underline"
+              >
+                Clear all filters
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                    Updated {new Date(cr.updated_at).toLocaleString()}
-                    {cr.git_branch && (
-                      <span className="ml-2">
-                        <GitBranch className="w-3 h-3 inline mr-0.5" />
-                        {cr.git_branch}
-                        {cr.git_sha && (
-                          <span className="ml-1 font-mono">{cr.git_sha.substring(0, 7)}</span>
-                        )}
-                      </span>
-                    )}
-                  </p>
-
-                  {cr.review_comment && (
-                    <p className="text-sm mt-2 p-2 rounded bg-[hsl(var(--accent))]">
-                      <span className="font-medium">Review:</span> {cr.review_comment}
-                    </p>
-                  )}
-
-                  {isExpanded && renderDiffSummary(cr)}
-                </div>
-
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : cr.id)}
-                    className="p-1.5 rounded hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))]"
-                    title="View details"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-
-                  {cr.status === "draft" && (
-                    <>
-                      <button
-                        onClick={() => pushToDevMutation.mutate(cr.id)}
-                        disabled={pushToDevMutation.isPending}
-                        className="p-1.5 rounded hover:bg-teal-500/20 text-teal-400"
-                        title="Push to Dev"
-                      >
-                        <ArrowUpToLine className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => submitMutation.mutate(cr.id)}
-                        disabled={submitMutation.isPending}
-                        className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400"
-                        title="Submit for review"
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm("Delete this draft?")) deleteMutation.mutate(cr.id);
-                        }}
-                        disabled={deleteMutation.isPending}
-                        className="p-1.5 rounded hover:bg-red-500/20 text-red-400"
-                        title="Delete draft"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
-
-                  {cr.status === "submitted" && (
-                    <button
-                      onClick={() => withdrawMutation.mutate(cr.id)}
-                      disabled={withdrawMutation.isPending}
-                      className="p-1.5 rounded hover:bg-yellow-500/20 text-yellow-400"
-                      title="Withdraw submission"
-                    >
-                      <Undo2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      {/* Change request list */}
+      <div className="space-y-2">
+        {items.map((cr) => (
+          <ChangeRequestCard
+            key={cr.id}
+            cr={cr}
+            isExpanded={expandedIds.has(cr.id)}
+            onToggle={() => toggleExpanded(cr.id)}
+            onSubmit={(id, comment) => submitMutation.mutate({ id, comment })}
+            onWithdraw={(id) => withdrawMutation.mutate(id)}
+            onDelete={(id) => deleteMutation.mutate(id)}
+            isSubmitting={submitMutation.isPending}
+            isWithdrawing={withdrawMutation.isPending}
+            isDeleting={deleteMutation.isPending}
+          />
+        ))}
       </div>
     </div>
   );

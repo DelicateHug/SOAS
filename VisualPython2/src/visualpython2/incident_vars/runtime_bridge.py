@@ -15,6 +15,7 @@ import json
 def generate_incident_bridge_code(
     incident_id: str,
     group_incident_ids: list[str] | None = None,
+    sensitive_var_names: set[str] | None = None,
 ) -> str:
     """Generate Python code block injected at the top of compiled scripts.
 
@@ -26,6 +27,8 @@ def generate_incident_bridge_code(
         incident_id: The UUID of the primary incident (index 0) to bind to.
         group_incident_ids: Ordered list of all incident IDs in the group.
             Defaults to [incident_id] when None.
+        sensitive_var_names: Set of incident variable names that should be
+            wrapped in SensitiveValue (masks on str/repr/print).
 
     Returns:
         Python source code string to prepend to the compiled script.
@@ -34,32 +37,43 @@ def generate_incident_bridge_code(
         group_incident_ids = [incident_id]
 
     group_ids_json = json.dumps(group_incident_ids)
+    sensitive_repr = json.dumps(sorted(sensitive_var_names)) if sensitive_var_names else "[]"
 
     return (
         "# --- Incident Variable Bridge ---\n"
         "import json as _json\n"
         "import os as _os\n"
         "import redis as _redis\n"
+        "from sensitive_value import SensitiveValue as _SV\n"
         f'_incident_id = "{incident_id}"\n'
         '_incident_redis = _redis.from_url(_os.environ.get("REDIS_URL", "redis://localhost:6379/0"))\n'
         '_incident_redis_key = f"incident:{_incident_id}:data"\n'
+        f"_sensitive_incident_vars = set(_json.loads({repr(sensitive_repr)}))\n"
+        "\n"
+        "def _wrap_incident_dict(d):\n"
+        '    """Wrap sensitive fields in a dict with SensitiveValue."""\n'
+        "    return {k: _SV(v) if k in _sensitive_incident_vars and v is not None else v for k, v in d.items()}\n"
         "\n"
         "def get_incident_var(name, default=None):\n"
         '    """Get an incident variable (Redis first, returns default if missing)."""\n'
         "    val = _incident_redis.hget(_incident_redis_key, name)\n"
         "    if val is not None:\n"
-        "        return _json.loads(val)\n"
+        "        result = _json.loads(val)\n"
+        "        if name in _sensitive_incident_vars and result is not None:\n"
+        "            return _SV(result)\n"
+        "        return result\n"
         "    return default\n"
         "\n"
         "def set_incident_var(name, value):\n"
         '    """Set an incident variable in Redis."""\n'
-        "    _incident_redis.hset(_incident_redis_key, name, _json.dumps(value, default=str))\n"
+        "    _raw = value.unwrap() if hasattr(value, 'unwrap') else value\n"
+        "    _incident_redis.hset(_incident_redis_key, name, _json.dumps(_raw, default=str))\n"
         '    _incident_redis.sadd(f"incident:{_incident_id}:dirty_vars", name)\n'
         "\n"
         "def get_incident_data():\n"
         '    """Get all incident data as a dict."""\n'
         "    data = _incident_redis.hgetall(_incident_redis_key)\n"
-        "    return {k.decode(): _json.loads(v) for k, v in data.items()}\n"
+        "    return _wrap_incident_dict({k.decode(): _json.loads(v) for k, v in data.items()})\n"
         "# --- End Incident Variable Bridge ---\n"
         "\n"
         "# --- Incident Group Bridge ---\n"
@@ -72,7 +86,7 @@ def generate_incident_bridge_code(
         '        key = f"incident:{iid}:data"\n'
         "        raw = _incident_redis.hgetall(key)\n"
         "        if raw:\n"
-        "            result.append({k.decode(): _json.loads(v) for k, v in raw.items()})\n"
+        "            result.append(_wrap_incident_dict({k.decode(): _json.loads(v) for k, v in raw.items()}))\n"
         "        else:\n"
         '            result.append({"id": iid})\n'
         "    return result\n"
@@ -85,7 +99,7 @@ def generate_incident_bridge_code(
         '    key = f"incident:{iid}:data"\n'
         "    raw = _incident_redis.hgetall(key)\n"
         "    if raw:\n"
-        "        return {k.decode(): _json.loads(v) for k, v in raw.items()}\n"
+        "        return _wrap_incident_dict({k.decode(): _json.loads(v) for k, v in raw.items()})\n"
         '    return {"id": iid}\n'
         "\n"
         "def get_group_incident_count():\n"

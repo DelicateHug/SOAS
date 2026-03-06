@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -22,9 +23,11 @@ export function NotesTab({ caseId }: Props) {
     queryFn: () => api.get<CaseNote[]>(`/cases/${caseId}/notes`),
   });
 
-  const createNote = useMutation({
+  const createNote = useToastMutation({
     mutationFn: (content: string) =>
       api.post(`/cases/${caseId}/notes`, { content }),
+    loadingMessage: "Saving note...",
+    successMessage: "Note saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case-notes", caseId] });
       queryClient.invalidateQueries({ queryKey: ["case-timeline", caseId] });
@@ -33,9 +36,11 @@ export function NotesTab({ caseId }: Props) {
     },
   });
 
-  const updateNote = useMutation({
+  const updateNote = useToastMutation({
     mutationFn: ({ noteId, content }: { noteId: string; content: string }) =>
       api.patch(`/cases/${caseId}/notes/${noteId}`, { content }),
+    loadingMessage: "Saving note...",
+    successMessage: "Note saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case-notes", caseId] });
       queryClient.invalidateQueries({ queryKey: ["case-timeline", caseId] });
@@ -43,18 +48,22 @@ export function NotesTab({ caseId }: Props) {
     },
   });
 
-  const deleteNote = useMutation({
+  const deleteNote = useToastMutation({
     mutationFn: (noteId: string) =>
       api.delete(`/cases/${caseId}/notes/${noteId}`),
+    loadingMessage: "Deleting note...",
+    successMessage: "Note deleted.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case-notes", caseId] });
       queryClient.invalidateQueries({ queryKey: ["case-timeline", caseId] });
     },
   });
 
-  const toggleEvidence = useMutation({
+  const toggleEvidence = useToastMutation({
     mutationFn: (noteId: string) =>
       api.post<CaseNote>(`/cases/${caseId}/notes/${noteId}/evidence`),
+    loadingMessage: "Updating evidence...",
+    successMessage: "Evidence updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case-notes", caseId] });
       queryClient.invalidateQueries({ queryKey: ["case-timeline", caseId] });

@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { Trash2 } from "lucide-react";
 
@@ -29,8 +30,10 @@ export function AdminUserSecretsPage() {
 
   const secrets = secretsResponse?.data ?? [];
 
-  const deleteSecret = useMutation({
+  const deleteSecret = useToastMutation({
     mutationFn: (id: string) => api.delete(`/user-secrets/admin/${id}`),
+    loadingMessage: "Deleting secret...",
+    successMessage: "Secret deleted.",
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["admin-user-secrets"] }),
   });

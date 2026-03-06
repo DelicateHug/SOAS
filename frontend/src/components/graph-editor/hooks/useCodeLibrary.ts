@@ -2,7 +2,8 @@
  * TanStack Query hooks for the Code Library feature.
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 
 export interface CodeBlockPortDef {
@@ -111,7 +112,9 @@ export function useCodeLibraryCategories() {
 /** Create a new block */
 export function useCreateBlock() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useToastMutation({
+    loadingMessage: "Saving code block...",
+    successMessage: "Code block saved.",
     mutationFn: (data: {
       name: string;
       code?: string;
@@ -131,7 +134,9 @@ export function useCreateBlock() {
 /** Update a block */
 export function useUpdateBlock() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useToastMutation({
+    loadingMessage: "Saving code block...",
+    successMessage: "Code block saved.",
     mutationFn: ({
       blockId,
       ...data
@@ -155,7 +160,9 @@ export function useUpdateBlock() {
 /** Delete a block */
 export function useDeleteBlock() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useToastMutation({
+    loadingMessage: "Deleting code block...",
+    successMessage: "Code block deleted.",
     mutationFn: (blockId: string) => api.delete(`/code-library/${blockId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["code-library"] });
@@ -166,7 +173,9 @@ export function useDeleteBlock() {
 /** Toggle favorite on a block */
 export function useToggleFavorite() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useToastMutation({
+    loadingMessage: false,
+    successMessage: false,
     mutationFn: (blockId: string) =>
       api.post<{ is_favorited: boolean }>(`/code-library/${blockId}/favorite`),
     onSuccess: () => {
@@ -178,7 +187,9 @@ export function useToggleFavorite() {
 /** Create a category */
 export function useCreateCategory() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useToastMutation({
+    loadingMessage: false,
+    successMessage: "Category created.",
     mutationFn: (data: { name: string; parent_id?: string; sort_order?: number }) =>
       api.post<CodeLibraryUserCategory>("/code-library/categories", data),
     onSuccess: () => {
@@ -191,7 +202,9 @@ export function useCreateCategory() {
 /** Update a category */
 export function useUpdateCategory() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useToastMutation({
+    loadingMessage: false,
+    successMessage: "Category updated.",
     mutationFn: ({
       categoryId,
       ...data
@@ -211,7 +224,9 @@ export function useUpdateCategory() {
 /** Delete a category */
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useToastMutation({
+    loadingMessage: false,
+    successMessage: "Category deleted.",
     mutationFn: (categoryId: string) => api.delete(`/code-library/categories/${categoryId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["code-library", "categories"] });
@@ -223,7 +238,9 @@ export function useDeleteCategory() {
 /** Assign a block to a user category */
 export function useAssignBlockCategory() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useToastMutation({
+    loadingMessage: false,
+    successMessage: false,
     mutationFn: ({
       blockId,
       categoryId,

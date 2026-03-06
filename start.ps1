@@ -373,8 +373,11 @@ if ((Test-Path $privateKey) -and (Test-Path $publicKey)) {
         New-Item -ItemType Directory -Path $secretsDir -Force | Out-Null
     }
 
+    $savedPref = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     openssl genrsa -out $privateKey 2048 2>$null
     openssl rsa -in $privateKey -pubout -out $publicKey 2>$null
+    $ErrorActionPreference = $savedPref
 
     if ((Test-Path $privateKey) -and (Test-Path $publicKey)) {
         Write-Ok "JWT keys generated in secrets/"
@@ -401,6 +404,32 @@ if (Test-Path $envFile) {
     Write-Warn "No .env or .env.example found. Docker Compose will use defaults."
 }
 
+# Auto-generate USER_SECRET_ENCRYPTION_KEY if it's still the placeholder
+if (Test-Path $envFile) {
+    $envContent = Get-Content $envFile -Raw
+    if ($envContent -match "USER_SECRET_ENCRYPTION_KEY=<generate-a-fernet-key>") {
+        $fernetKey = $null
+        $savedPref = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        if (Get-Command python -ErrorAction SilentlyContinue) {
+            $fernetKey = python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" 2>$null
+        } elseif (Get-Command python3 -ErrorAction SilentlyContinue) {
+            $fernetKey = python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" 2>$null
+        }
+        $ErrorActionPreference = $savedPref
+        if ($fernetKey) {
+            $fernetKey = $fernetKey.Trim()
+            $envContent = $envContent -replace "USER_SECRET_ENCRYPTION_KEY=<generate-a-fernet-key>", "USER_SECRET_ENCRYPTION_KEY=$fernetKey"
+            Set-Content $envFile $envContent -NoNewline
+            Write-Ok "Generated USER_SECRET_ENCRYPTION_KEY in .env"
+        } else {
+            Write-Warn "Python not found - could not auto-generate Fernet key."
+            Write-Host "   Set USER_SECRET_ENCRYPTION_KEY in .env manually:" -ForegroundColor Gray
+            Write-Host "   python -c `"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())`"" -ForegroundColor Gray
+        }
+    }
+}
+
 # -------------------------------------------------------------------
 # 4. Install frontend dependencies if needed
 # -------------------------------------------------------------------
@@ -415,7 +444,10 @@ if (Test-Path $nodeModules) {
     if (Get-Command npm -ErrorAction SilentlyContinue) {
         Write-Host "   Running npm install..." -ForegroundColor Gray
         Push-Location $frontendDir
+        $savedPref = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
         npm install --loglevel=warn 2>&1 | Out-Null
+        $ErrorActionPreference = $savedPref
         Pop-Location
         if (Test-Path $nodeModules) {
             Write-Ok "Frontend dependencies installed."

@@ -7,7 +7,7 @@ import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from soas_backend.api.deps import get_current_user, get_redis, require_permission
+from soas_backend.api.deps import get_current_user, get_redis, require_permission, require_role
 from soas_backend.database import get_db
 from soas_backend.models.user import User
 from soas_backend.services.alerting_service import AlertingService
@@ -330,3 +330,72 @@ async def quorum_status(
     """Get backend quorum status."""
     svc = QuorumService(r)
     return await svc.get_quorum_status()
+
+
+# ---------------------------------------------------------------------------
+# In-Memory Request Log
+# ---------------------------------------------------------------------------
+
+
+@router.get("/request-log/stats")
+async def request_log_stats(
+    _: dict = Depends(require_permission("monitoring", "read")),
+):
+    """Get request/error buffer counts."""
+    from soas_backend.middleware.request_log import get_stats
+    return get_stats()
+
+
+@router.get("/request-log/errors")
+async def request_log_errors(
+    limit: int = Query(50, ge=1, le=500),
+    _: dict = Depends(require_permission("monitoring", "read")),
+):
+    """Get recent error records from the in-memory buffer."""
+    from soas_backend.middleware.request_log import get_errors
+    errors = get_errors()
+    return [
+        {
+            "request_id": r.request_id,
+            "method": r.method,
+            "path": r.path,
+            "status_code": r.status_code,
+            "duration_ms": r.duration_ms,
+            "timestamp": r.timestamp,
+            "detail": r.detail,
+        }
+        for r in errors[-limit:]
+    ]
+
+
+@router.get("/request-log/requests")
+async def request_log_requests(
+    limit: int = Query(100, ge=1, le=2000),
+    _: dict = Depends(require_role("admin")),
+):
+    """Get recent request records from the in-memory buffer (admin only)."""
+    from soas_backend.middleware.request_log import get_requests
+    requests = get_requests()
+    return [
+        {
+            "request_id": r.request_id,
+            "method": r.method,
+            "path": r.path,
+            "status_code": r.status_code,
+            "duration_ms": r.duration_ms,
+            "timestamp": r.timestamp,
+        }
+        for r in requests[-limit:]
+    ]
+
+
+@router.post("/request-log/clear")
+async def request_log_clear(
+    _: dict = Depends(require_role("admin")),
+):
+    """Manually clear both request log buffers."""
+    from soas_backend.middleware.request_log import cleanup_if_healthy
+    cleared = cleanup_if_healthy()
+    if not cleared:
+        return {"message": "Buffers not cleared — errors still present", "cleared": False}
+    return {"message": "Both buffers cleared", "cleared": True}

@@ -552,7 +552,8 @@ export type IssueLinkTargetType =
   | "code_library_block"
   | "normalization_rule"
   | "case"
-  | "execution_log";
+  | "execution_log"
+  | "wiki_page";
 
 export interface GraphAnnotation {
   x: number;
@@ -816,9 +817,11 @@ export interface ChangeRequestItem {
   title: string;
   status: ChangeRequestStatus;
   diff_summary: Record<string, { old: unknown; new: unknown }> | null;
+  submit_comment: string | null;
   review_comment: string | null;
   git_branch: string | null;
   git_sha: string | null;
+  git_pr_url: string | null;
   target_tier: string;
   created_by: string;
   creator: UserBrief | null;

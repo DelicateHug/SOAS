@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import {
   formatDate,
@@ -25,9 +26,11 @@ export function OverviewTab({ caseData, caseId }: Props) {
   const queryClient = useQueryClient();
   const [showLinkPopover, setShowLinkPopover] = useState(false);
 
-  const unlinkIncident = useMutation({
+  const unlinkIncident = useToastMutation({
     mutationFn: (incidentId: string) =>
       api.delete(`/cases/${caseId}/incidents/${incidentId}`),
+    loadingMessage: "Unlinking incident...",
+    successMessage: "Incident unlinked.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case", caseId] });
       queryClient.invalidateQueries({ queryKey: ["cases"] });
@@ -35,9 +38,11 @@ export function OverviewTab({ caseData, caseId }: Props) {
     },
   });
 
-  const linkIncident = useMutation({
+  const linkIncident = useToastMutation({
     mutationFn: (incidentId: string) =>
       api.post(`/cases/${caseId}/incidents`, { incident_id: incidentId }),
+    loadingMessage: "Linking incident...",
+    successMessage: "Incident linked.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case", caseId] });
       queryClient.invalidateQueries({ queryKey: ["cases"] });

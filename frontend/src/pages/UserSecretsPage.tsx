@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { Plus, Trash2, Edit2, Eye, EyeOff, X, Share2 } from "lucide-react";
 
@@ -56,7 +57,7 @@ export function UserSecretsPage() {
 
   const secrets = secretsResponse?.data ?? [];
 
-  const createSecret = useMutation({
+  const createSecret = useToastMutation({
     mutationFn: () =>
       api.post("/user-secrets", {
         name: formName,
@@ -64,6 +65,8 @@ export function UserSecretsPage() {
         value: formValue,
         sensitive: formSensitive,
       }),
+    loadingMessage: "Saving secret...",
+    successMessage: "Secret saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-secrets"] });
       resetForm();
@@ -71,7 +74,7 @@ export function UserSecretsPage() {
     },
   });
 
-  const updateSecret = useMutation({
+  const updateSecret = useToastMutation({
     mutationFn: () => {
       if (!editingSecret) return Promise.reject("No secret");
       const body: Record<string, unknown> = {};
@@ -80,6 +83,8 @@ export function UserSecretsPage() {
         body.description = formDescription || null;
       return api.patch(`/user-secrets/${editingSecret.id}`, body);
     },
+    loadingMessage: "Saving secret...",
+    successMessage: "Secret saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-secrets"] });
       resetForm();
@@ -87,8 +92,10 @@ export function UserSecretsPage() {
     },
   });
 
-  const deleteSecret = useMutation({
+  const deleteSecret = useToastMutation({
     mutationFn: (id: string) => api.delete(`/user-secrets/${id}`),
+    loadingMessage: "Deleting secret...",
+    successMessage: "Secret deleted.",
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user-secrets"] }),
   });
 
@@ -382,7 +389,7 @@ function ShareModal({ secret, onClose }: { secret: UserSecret; onClose: () => vo
     setInitialized(true);
   }
 
-  const shareMutation = useMutation({
+  const shareMutation = useToastMutation({
     mutationFn: () => {
       const roleIds = Array.from(selectedRoles);
       if (roleIds.length === 0) {
@@ -393,6 +400,8 @@ function ShareModal({ secret, onClose }: { secret: UserSecret; onClose: () => vo
       }
       return api.post(`/user-secrets/${secret.id}/share`, { role_ids: roleIds });
     },
+    loadingMessage: "Saving sharing settings...",
+    successMessage: "Sharing settings saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-secrets"] });
       queryClient.invalidateQueries({ queryKey: ["secret-share-perms", secret.id] });

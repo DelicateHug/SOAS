@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import type { IssueDetail } from "@/types/api";
@@ -38,12 +39,14 @@ export function OverviewTab({ issue, canEdit }: Props) {
   const [addLinkId, setAddLinkId] = useState("");
   const [showAddLink, setShowAddLink] = useState(false);
 
-  const addLink = useMutation({
+  const addLink = useToastMutation({
     mutationFn: () =>
       api.post(`/issues/${issue.id}/links`, {
         target_type: addLinkType,
         target_id: addLinkId,
       }),
+    loadingMessage: "Adding link...",
+    successMessage: "Link added.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue", issue.id] });
       setAddLinkType("");
@@ -52,9 +55,11 @@ export function OverviewTab({ issue, canEdit }: Props) {
     },
   });
 
-  const removeLink = useMutation({
+  const removeLink = useToastMutation({
     mutationFn: (linkId: string) =>
       api.request(`/issues/${issue.id}/links/${linkId}`, { method: "DELETE" }),
+    loadingMessage: "Removing link...",
+    successMessage: "Link removed.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue", issue.id] });
     },

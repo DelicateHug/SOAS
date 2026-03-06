@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import * as Y from "yjs";
+import * as awarenessProtocol from "y-protocols/awareness";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -25,13 +26,22 @@ interface CollabMessage {
   [key: string]: unknown;
 }
 
+/** Minimal provider interface that CollaborationCursor expects */
+export interface AwarenessProvider {
+  awareness: awarenessProtocol.Awareness;
+}
+
 export interface UseWikiCollaborationReturn {
   /** The Y.js document for Tiptap collaboration */
   ydoc: Y.Doc;
+  /** Awareness provider for CollaborationCursor */
+  provider: AwarenessProvider;
   /** Connected collaborators (excluding self) */
   collaborators: WikiCollaborator[];
   /** Whether the WebSocket is connected */
   isConnected: boolean;
+  /** Whether the initial session state has been received and applied */
+  sessionReady: boolean;
   /** Send a Y.js update to other clients */
   broadcastUpdate: (update: Uint8Array, fullState: Uint8Array) => void;
   /** Send a field update (title, tags, status, etc.) */
@@ -75,6 +85,7 @@ export function useWikiCollaboration(
     new Map()
   );
   const [isConnected, setIsConnected] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,12 +95,21 @@ export function useWikiCollaboration(
   const maxReconnectAttempts = 5;
   const deliberateClose = useRef(false);
 
-  // Stable Y.js doc per page
+  // Stable Y.js doc per page – recreated only when pageId actually changes
+  // (NOT in effect cleanup, which would break React StrictMode double-mount).
   const ydocRef = useRef<Y.Doc | null>(null);
-  if (!ydocRef.current) {
+  const awarenessRef = useRef<awarenessProtocol.Awareness | null>(null);
+  const providerRef = useRef<AwarenessProvider | null>(null);
+  const prevPageIdRef = useRef<string | undefined>();
+  if (pageId !== prevPageIdRef.current) {
+    if (ydocRef.current) ydocRef.current.destroy();
     ydocRef.current = new Y.Doc();
+    awarenessRef.current = new awarenessProtocol.Awareness(ydocRef.current);
+    providerRef.current = { awareness: awarenessRef.current };
+    prevPageIdRef.current = pageId;
   }
-  const ydoc = ydocRef.current;
+  const ydoc = ydocRef.current!;
+  const provider = providerRef.current!;
 
   // Callback ref for field updates from remote
   const onFieldUpdateRef = useRef<((field: string, value: unknown) => void) | null>(null);
@@ -100,6 +120,11 @@ export function useWikiCollaboration(
   const handleMessageRef = useRef<(msg: CollabMessage) => void>(() => {});
   const handleMessage = useCallback(
     (msg: CollabMessage) => {
+      // Always read ydocRef.current so we never operate on a destroyed doc
+      // (prevents stale closure issues with React StrictMode double-mount).
+      const doc = ydocRef.current;
+      if (!doc) return;
+
       switch (msg.type) {
         case "session_state": {
           // Initial state: set collaborators and apply Y.js state
@@ -115,11 +140,12 @@ export function useWikiCollaboration(
           if (msg.yjs_state) {
             try {
               const state = base64ToUint8(msg.yjs_state as string);
-              Y.applyUpdate(ydoc, state);
+              Y.applyUpdate(doc, state, "remote");
             } catch {
               // Ignore invalid state
             }
           }
+          setSessionReady(true);
           break;
         }
 
@@ -147,15 +173,32 @@ export function useWikiCollaboration(
           break;
 
         case "yjs_update": {
-          // Apply remote Y.js update
+          // Apply remote Y.js update (origin="remote" prevents re-broadcast)
           try {
             const updateData = msg.update as string;
             if (updateData) {
               const update = base64ToUint8(updateData);
-              Y.applyUpdate(ydoc, update);
+              Y.applyUpdate(doc, update, "remote");
+            }
+          } catch (err) {
+            console.error("[WikiCollab] yjs_update error", err);
+          }
+          break;
+        }
+
+        case "awareness_update": {
+          // Apply remote awareness (cursor positions, user info)
+          try {
+            const data = msg.data as string;
+            if (data && awarenessRef.current) {
+              awarenessProtocol.applyAwarenessUpdate(
+                awarenessRef.current,
+                base64ToUint8(data),
+                "remote"
+              );
             }
           } catch {
-            // Ignore malformed updates
+            // Ignore invalid awareness
           }
           break;
         }
@@ -168,7 +211,7 @@ export function useWikiCollaboration(
           break;
       }
     },
-    [myUserId, ydoc]
+    [myUserId]
   );
 
   handleMessageRef.current = handleMessage;
@@ -214,6 +257,32 @@ export function useWikiCollaboration(
       );
     }
   }, []);
+
+  // -----------------------------------------------------------------------
+  // Awareness: broadcast local cursor/selection changes to other clients
+  // -----------------------------------------------------------------------
+  useEffect(() => {
+    const awareness = awarenessRef.current;
+    if (!awareness) return;
+
+    const handler = (
+      { added, updated, removed }: { added: number[]; updated: number[]; removed: number[] },
+      origin: unknown
+    ) => {
+      if (origin === "remote") return;
+      const changed = added.concat(updated).concat(removed);
+      const update = awarenessProtocol.encodeAwarenessUpdate(awareness, changed);
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({ type: "awareness_update", data: uint8ToBase64(update) })
+        );
+      }
+    };
+    awareness.on("update", handler);
+    return () => {
+      awareness.off("update", handler);
+    };
+  }, [pageId]);
 
   // -----------------------------------------------------------------------
   // WebSocket connection with reconnection
@@ -304,10 +373,13 @@ export function useWikiCollaboration(
         ) {
           // Save final Y.js state before disconnect
           try {
-            const state = Y.encodeStateAsUpdate(ydoc);
-            wsRef.current.send(
-              JSON.stringify({ type: "save_yjs_state", state: uint8ToBase64(state) })
-            );
+            const doc = ydocRef.current;
+            if (doc) {
+              const state = Y.encodeStateAsUpdate(doc);
+              wsRef.current.send(
+                JSON.stringify({ type: "save_yjs_state", state: uint8ToBase64(state) })
+              );
+            }
           } catch {
             // Best effort
           }
@@ -317,10 +389,10 @@ export function useWikiCollaboration(
       }
       setCollaborators(new Map());
       setIsConnected(false);
-
-      // Destroy and recreate ydoc for next mount
-      ydoc.destroy();
-      ydocRef.current = new Y.Doc();
+      setSessionReady(false);
+      // NOTE: ydoc is NOT destroyed here — its lifecycle is managed during
+      // render (via prevPageIdRef) so StrictMode double-mounts reuse the
+      // same doc and the Tiptap editor stays in sync.
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId]);
@@ -332,8 +404,10 @@ export function useWikiCollaboration(
 
   return {
     ydoc,
+    provider,
     collaborators: collaboratorList,
     isConnected,
+    sessionReady,
     broadcastUpdate,
     broadcastFieldUpdate,
     saveHtml,

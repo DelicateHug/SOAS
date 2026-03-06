@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -ExecutionPolicy Bypass -File .start.ps1 -Dev)",
+      "Read(//tmp/**)",
+      "Read(//c/Users/DylanSmart/Documents/Projects/Github/SOAS/$TEMP/**)",
+      "Read(//c/Users/DylanSmart/AppData/Local/Temp/claude/**)",
+      "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\DylanSmart\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-DylanSmart-Documents-Projects-Github-SOAS\\\\tasks\\\\bwl3ovbrk.output''\")",
+      "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\DYLANS~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-DylanSmart-Documents-Projects-Github-SOAS\\\\tasks\\\\bg6x1z99g.output''\")",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File start.ps1 -Dev)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File start.ps1 -Dev -Build)",
+      "Bash(xargs grep -l -i \"register\\\\|login\\\\|auth\")",
+      "Bash(curl -s http://localhost:8000/api/v1/auth/registration-open)",
+      "Bash(curl -s http://localhost:8000/api/health)",
+      "Bash(powershell.exe -Command \"Invoke-RestMethod -Uri ''http://localhost:8000/api/health'' -Method Get\")",
+      "Bash(powershell.exe -Command \"Invoke-RestMethod -Uri ''http://localhost:8000/api/v1/auth/registration-open'' -Method Get\")",
+      "Bash(docker exec soas-worker python -c \"from cryptography.fernet import Fernet; print\\(Fernet.generate_key\\(\\).decode\\(\\)\\)\")",
+      "Bash(docker restart soas-backend)",
+      "Bash(docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend)",
+      "Bash(powershell.exe -Command \"\\(Invoke-RestMethod -Uri ''http://localhost:8000/api/v1/auth/registration-open'' -Method Get\\) | ConvertTo-Json\")",
+      "Bash(powershell.exe -Command \":*)",
+      "Bash(powershell.exe -Command \"Invoke-RestMethod -Uri ''http://localhost:8000/api/v1/auth/register'' -Method Post -Body ''{\"\"username\"\":\"\"admin\"\",\"\"email\"\":\"\"admin@soas.app\"\",\"\"display_name\"\":\"\"Administrator\"\",\"\"password\"\":\"\"adminadmin\"\"}'' -ContentType ''application/json''\")"
+    ]
+  }
+}

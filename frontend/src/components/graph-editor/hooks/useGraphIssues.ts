@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import type { GraphIssueItem, GraphAnnotation } from "@/types/api";
 
@@ -36,7 +37,9 @@ export function useGraphIssues(automationId: string | undefined, onAnnotationSav
     return data.filter((i) => !initial.has(i.id));
   }, [data]);
 
-  const updateAnnotation = useMutation({
+  const updateAnnotation = useToastMutation({
+    loadingMessage: false,
+    successMessage: false,
     mutationFn: ({
       issueId,
       annotation,

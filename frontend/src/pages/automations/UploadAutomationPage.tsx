@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { Upload, ArrowLeft } from "lucide-react";
 
@@ -12,7 +12,7 @@ export function UploadAutomationPage() {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
 
-  const uploadMutation = useMutation({
+  const uploadMutation = useToastMutation({
     mutationFn: async () => {
       if (!file) throw new Error("No file selected");
 
@@ -33,6 +33,8 @@ export function UploadAutomationPage() {
         status: "draft",
       });
     },
+    loadingMessage: "Uploading automation...",
+    successMessage: "Automation uploaded.",
     onSuccess: (data) => {
       navigate(`/automations/${data.id}`);
     },

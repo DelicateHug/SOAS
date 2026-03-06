@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { formatDate, issueStatusColors, issueStatusLabels } from "@/lib/utils";
@@ -33,18 +34,22 @@ export function IssueDetailPage() {
     queryFn: () => api.get<{ data: UserRead[] }>("/users?per_page=100"),
   });
 
-  const updateIssue = useMutation({
+  const updateIssue = useToastMutation({
     mutationFn: (fields: Record<string, unknown>) =>
       api.patch(`/issues/${id}`, fields),
+    loadingMessage: "Updating issue...",
+    successMessage: "Issue updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue", id] });
       queryClient.invalidateQueries({ queryKey: ["issues"] });
     },
   });
 
-  const deleteIssue = useMutation({
+  const deleteIssue = useToastMutation({
     mutationFn: () =>
       api.request(`/issues/${id}`, { method: "DELETE" }),
+    loadingMessage: "Deleting issue...",
+    successMessage: "Issue deleted.",
     onSuccess: () => {
       navigate("/issues");
     },

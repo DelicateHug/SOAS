@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { useGraphEditorStore } from "../stores/graphEditorStore";
 import { toBackendFormat } from "../utils/graphConversion";
@@ -279,7 +279,9 @@ export function useTestRun(automationId: string | undefined) {
     [addSystemLine, fetchOutputAndComplete, setIsTestRunning, startPolling, stopPolling]
   );
 
-  const mutation = useMutation({
+  const mutation = useToastMutation({
+    loadingMessage: false,
+    successMessage: false,
     mutationFn: async (testContext?: TestContext) => {
       if (!automationId) throw new Error("No automation ID");
 

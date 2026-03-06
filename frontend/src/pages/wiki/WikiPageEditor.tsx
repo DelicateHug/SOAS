@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
@@ -8,11 +8,12 @@ import { useWikiCollaboration } from "@/components/wiki/useWikiCollaboration";
 import { useAuthStore } from "@/stores/authStore";
 import { useEntityDraft } from "@/hooks/useEntityDraft";
 import { useDraftSave } from "@/hooks/useDraftSave";
+import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
 import { TagInput } from "@/components/ui/TagInput";
 import { TierSelector } from "@/components/ui/TierSelector";
 import { useEntityVersion } from "@/hooks/useEntityVersion";
-import { Save, ArrowLeft, Send, GitBranch, GitMerge } from "lucide-react";
-import type { WikiPage, WikiTreeNode, PushToDevResult } from "@/types/api";
+import { Save, ArrowLeft, Send, GitBranch, GitMerge, Trash2 } from "lucide-react";
+import type { WikiPage, WikiTreeNode, PushToDevResult, ChangeRequestDetail } from "@/types/api";
 
 interface NodeCatalogEntry {
   type: string;
@@ -36,6 +37,8 @@ function getUserColor(userId: string): string {
 
 export function WikiPageEditor() {
   const { slug } = useParams<{ slug?: string }>();
+  const [searchParams] = useSearchParams();
+  const draftCrId = searchParams.get("draft");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -59,11 +62,19 @@ export function WikiPageEditor() {
     enabled: isEdit,
   });
 
-  // Collaboration: only enabled when editing an existing page
-  const collaboration = useWikiCollaboration(isEdit ? page?.id : undefined);
+  // Load an existing draft CR by ID (for resuming pending creates via ?draft=crId)
+  const { data: draftCr } = useQuery({
+    queryKey: ["change-request", draftCrId],
+    queryFn: () => api.get<ChangeRequestDetail>(`/change-requests/${draftCrId}`),
+    enabled: !!draftCrId && !isEdit,
+  });
 
-  // Draft system: route saves through change requests when in prod mode
-  const { draft: activeDraft, hasDraft } = useEntityDraft("wiki_page", page?.id);
+  // Collaboration: enabled for both existing pages and pending creates (via draft CR ID)
+  const collabRoomId = isEdit ? page?.id : (draftCrId ? `draft-${draftCrId}` : undefined);
+  const collaboration = useWikiCollaboration(collabRoomId);
+
+  // Draft system: route saves through change requests
+  const { draft: fetchedDraft, hasDraft: fetchedHasDraft } = useEntityDraft("wiki_page", page?.id);
   const draftSave = useDraftSave({
     entityType: "wiki_page",
     entityId: page?.id ?? null,
@@ -80,8 +91,36 @@ export function WikiPageEditor() {
     },
   });
 
+  // For new pages, useEntityDraft returns nothing (no entity_id yet).
+  // Fall back to: 1) CR loaded via ?draft= param, 2) last saved CR from draftSave.
+  const activeDraft = fetchedDraft ?? draftCr ?? draftSave.lastDraft;
+  const hasDraft = fetchedHasDraft || !!draftCr || !!draftSave.lastDraft;
+
   // Branch versioning: view entity at different tiers
   const entityVersion = useEntityVersion("wiki_page", page?.id, isEdit);
+
+  const [isDiscarding, setIsDiscarding] = useState(false);
+  const handleDiscardDraft = async () => {
+    if (!activeDraft) return;
+    if (!window.confirm("Discard this draft? This cannot be undone.")) return;
+    setIsDiscarding(true);
+    try {
+      await api.delete(`/change-requests/${activeDraft.id}`);
+      queryClient.invalidateQueries({ queryKey: ["change-request"] });
+      queryClient.invalidateQueries({ queryKey: ["change-requests"] });
+      if (isEdit) {
+        // Reload from live data
+        queryClient.invalidateQueries({ queryKey: ["wiki-page", slug] });
+        window.location.reload();
+      } else {
+        navigate("/wiki");
+      }
+    } catch (err) {
+      console.error("Failed to discard draft:", err);
+    } finally {
+      setIsDiscarding(false);
+    }
+  };
 
   const [isPushingToDev, setIsPushingToDev] = useState(false);
   const handlePushToDev = async () => {
@@ -160,6 +199,21 @@ export function WikiPageEditor() {
     }
   }, [page, activeDraft]);
 
+  // Populate form from a pending-create CR loaded via ?draft= param
+  useEffect(() => {
+    if (!isEdit && draftCr?.snapshot) {
+      const snap = draftCr.snapshot as Record<string, unknown>;
+      setTitle((snap.title as string) ?? "");
+      setPageSlug((snap.slug as string) ?? "");
+      setContent((snap.content as string) ?? "");
+      setParentId((snap.parent_id as string) ?? "");
+      setTags((snap.tags as string[]) ?? []);
+      setStatus((snap.status as string) ?? "published");
+      setIcon((snap.icon as string) ?? "");
+      setLinkedNodeType((snap.linked_node_type as string) ?? "");
+    }
+  }, [isEdit, draftCr]);
+
   // Flatten tree for parent selector
   function flattenTree(nodes: WikiTreeNode[], depth = 0): Array<{ id: string; title: string; depth: number }> {
     const items: Array<{ id: string; title: string; depth: number }> = [];
@@ -173,36 +227,36 @@ export function WikiPageEditor() {
 
   const parentOptions = tree ? flattenTree(tree) : [];
 
-  // Broadcast field changes to collaborators
+  // Broadcast field changes to collaborators (works for both edit and new pages with collab)
   const handleTitleChange = useCallback((value: string) => {
     setTitle(value);
-    if (isEdit) collaboration.broadcastFieldUpdate("title", value);
-  }, [isEdit, collaboration]);
+    collaboration.broadcastFieldUpdate("title", value);
+  }, [collaboration]);
 
   const handleTagsChange = useCallback((value: string[]) => {
     setTags(value);
-    if (isEdit) collaboration.broadcastFieldUpdate("tags", value);
-  }, [isEdit, collaboration]);
+    collaboration.broadcastFieldUpdate("tags", value);
+  }, [collaboration]);
 
   const handleStatusChange = useCallback((value: string) => {
     setStatus(value);
-    if (isEdit) collaboration.broadcastFieldUpdate("status", value);
-  }, [isEdit, collaboration]);
+    collaboration.broadcastFieldUpdate("status", value);
+  }, [collaboration]);
 
   const handleIconChange = useCallback((value: string) => {
     setIcon(value);
-    if (isEdit) collaboration.broadcastFieldUpdate("icon", value);
-  }, [isEdit, collaboration]);
+    collaboration.broadcastFieldUpdate("icon", value);
+  }, [collaboration]);
 
   const handleParentChange = useCallback((value: string) => {
     setParentId(value);
-    if (isEdit) collaboration.broadcastFieldUpdate("parentId", value);
-  }, [isEdit, collaboration]);
+    collaboration.broadcastFieldUpdate("parentId", value);
+  }, [collaboration]);
 
   const handleLinkedNodeChange = useCallback((value: string) => {
     setLinkedNodeType(value);
-    if (isEdit) collaboration.broadcastFieldUpdate("linkedNodeType", value);
-  }, [isEdit, collaboration]);
+    collaboration.broadcastFieldUpdate("linkedNodeType", value);
+  }, [collaboration]);
 
   const handleSave = async () => {
     if (!title.trim()) return;
@@ -223,8 +277,15 @@ export function WikiPageEditor() {
     try {
       // All saves go through the change request / draft system.
       // Only admins applying an approved CR writes to live data.
-      await draftSave.save(snapshot);
+      const savedCr = await draftSave.save(snapshot);
       queryClient.invalidateQueries({ queryKey: ["change-request"] });
+      queryClient.invalidateQueries({ queryKey: ["change-requests"] });
+
+      // After first save of a new page, navigate to ?draft=crId so
+      // subsequent saves upsert the same CR instead of creating duplicates.
+      if (!isEdit && savedCr && !draftCrId) {
+        navigate(`/wiki/new?draft=${savedCr.id}`, { replace: true });
+      }
     } catch (err) {
       console.error("Failed to save wiki page:", err);
     } finally {
@@ -251,10 +312,10 @@ export function WikiPageEditor() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-2xl font-bold">
-            {isEdit ? "Edit Page" : "New Page"}
+            {isEdit ? "Edit Page" : (title.trim() || "New Page")}
           </h1>
           {/* Collaboration status */}
-          {isEdit && collaboration.isConnected && (
+          {collaboration.isConnected && (
             <div className="flex items-center gap-1.5 ml-2">
               <div className="h-2 w-2 rounded-full bg-green-500" />
               <span className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -264,8 +325,16 @@ export function WikiPageEditor() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          {hasDraft && activeDraft && activeDraft.status === "draft" && (
+          {hasDraft && activeDraft && (activeDraft.status === "draft" || activeDraft.status === "submitted") && (
             <>
+              <button
+                onClick={handleDiscardDraft}
+                disabled={isDiscarding}
+                className="flex items-center gap-2 px-4 py-2 border border-red-500/30 text-red-400 rounded-md hover:bg-red-500/10 text-sm disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                {isDiscarding ? "Discarding..." : "Discard Draft"}
+              </button>
               <button
                 onClick={handlePushToDev}
                 disabled={isPushingToDev}
@@ -307,12 +376,25 @@ export function WikiPageEditor() {
       )}
 
       {/* Draft banner */}
-      {hasDraft && (
-        <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-          <GitBranch className="w-4 h-4 text-blue-400 shrink-0" />
-          <span className="text-sm text-blue-300">
-            You have an unpublished draft ({activeDraft?.status}).
-            {activeDraft?.status === "rejected" && activeDraft?.review_comment && (
+      {hasDraft && activeDraft && (
+        <div className={`flex items-center gap-2 mb-4 p-3 rounded-lg border ${
+          activeDraft.status === "submitted" ? "bg-yellow-500/10 border-yellow-500/20"
+            : activeDraft.status === "rejected" ? "bg-red-500/10 border-red-500/20"
+            : "bg-blue-500/10 border-blue-500/20"
+        }`}>
+          <GitBranch className={`w-4 h-4 shrink-0 ${
+            activeDraft.status === "submitted" ? "text-yellow-400"
+              : activeDraft.status === "rejected" ? "text-red-400"
+              : "text-blue-400"
+          }`} />
+          <span className={`text-sm ${
+            activeDraft.status === "submitted" ? "text-yellow-300"
+              : activeDraft.status === "rejected" ? "text-red-300"
+              : "text-blue-300"
+          }`}>
+            Unpublished draft ({activeDraft.status}).
+            {activeDraft.creator && ` Started by ${activeDraft.creator.display_name}.`}
+            {activeDraft.status === "rejected" && activeDraft.review_comment && (
               <> Review comment: &ldquo;{activeDraft.review_comment}&rdquo;</>
             )}
           </span>
@@ -428,14 +510,19 @@ export function WikiPageEditor() {
 
       {/* Content editor */}
       <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
-        {isEdit && page ? (
+        {collabRoomId ? (
           <CollaborativeMarkdownEditor
             collaboration={collaboration}
             userName={userName}
             userColor={userColor}
             placeholder="Start writing your wiki page content..."
             onChange={setContent}
-            initialContent={activeDraft?.snapshot?.content as string | undefined}
+            initialContent={
+              (activeDraft?.snapshot?.content as string | undefined) ??
+              (isEdit ? page?.content : undefined)
+            }
+            wikiPageId={isEdit ? page?.id : undefined}
+            wikiPageTitle={title}
           />
         ) : (
           <MarkdownEditor
@@ -445,6 +532,17 @@ export function WikiPageEditor() {
           />
         )}
       </div>
+
+      {/* Linked issues panel (existing pages only) */}
+      {isEdit && page && (
+        <div className="mt-6 border border-[hsl(var(--border))] rounded-lg p-4">
+          <EntityIssuesPanel
+            targetType="wiki_page"
+            targetId={page.id}
+            targetName={title || page.title}
+          />
+        </div>
+      )}
     </div>
   );
 }

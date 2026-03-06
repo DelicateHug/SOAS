@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
+import { useBranchAwareList } from "@/hooks/useBranchAwareList";
+import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import { Plus, Trash2, X, ChevronDown, ChevronRight, ArrowUp, ArrowDown } from "lucide-react";
 import type {
@@ -17,9 +20,12 @@ export function WebhookSourcesPage() {
   const [formDescription, setFormDescription] = useState("");
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
 
-  const { data: sources, isLoading } = useQuery({
+  const { items: branchSources, pendingCreates, isLoading } = useBranchAwareList<WebhookSourceListItem, WebhookSourceListItem[]>({
+    entityType: "webhook_source",
     queryKey: ["webhook-sources"],
     queryFn: () => api.get<WebhookSourceListItem[]>("/webhook-sources"),
+    getId: (s) => s.id,
+    getData: (r) => r,
   });
 
   const { data: automationsData } = useQuery({
@@ -29,12 +35,14 @@ export function WebhookSourcesPage() {
   });
   const automations = automationsData?.data || [];
 
-  const createSource = useMutation({
+  const createSource = useToastMutation({
     mutationFn: () =>
       api.post("/webhook-sources", {
         name: formName,
         description: formDescription || null,
       }),
+    loadingMessage: "Creating source...",
+    successMessage: "Webhook source created.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["webhook-sources"] });
       setFormName("");
@@ -43,12 +51,14 @@ export function WebhookSourcesPage() {
     },
   });
 
-  const deleteSource = useMutation({
+  const deleteSource = useToastMutation({
     mutationFn: (id: string) => api.delete(`/webhook-sources/${id}`),
+    loadingMessage: "Deleting source...",
+    successMessage: "Webhook source deleted.",
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["webhook-sources"] }),
   });
 
-  const linkAutomation = useMutation({
+  const linkAutomation = useToastMutation({
     mutationFn: ({
       sourceId,
       automationId,
@@ -62,22 +72,26 @@ export function WebhookSourcesPage() {
         automation_id: automationId,
         run_order: runOrder,
       }),
+    loadingMessage: false,
+    successMessage: "Automation linked.",
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["webhook-source", vars.sourceId] });
       queryClient.invalidateQueries({ queryKey: ["webhook-sources"] });
     },
   });
 
-  const unlinkAutomation = useMutation({
+  const unlinkAutomation = useToastMutation({
     mutationFn: ({ sourceId, automationId }: { sourceId: string; automationId: string }) =>
       api.delete(`/webhook-sources/${sourceId}/automations/${automationId}`),
+    loadingMessage: false,
+    successMessage: "Automation unlinked.",
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["webhook-source", vars.sourceId] });
       queryClient.invalidateQueries({ queryKey: ["webhook-sources"] });
     },
   });
 
-  const updateOrder = useMutation({
+  const updateOrder = useToastMutation({
     mutationFn: ({
       sourceId,
       automationId,
@@ -90,6 +104,8 @@ export function WebhookSourcesPage() {
       api.patch(`/webhook-sources/${sourceId}/automations/${automationId}`, {
         run_order,
       }),
+    loadingMessage: false,
+    successMessage: false,
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["webhook-source", vars.sourceId] });
     },
@@ -157,16 +173,24 @@ export function WebhookSourcesPage() {
       {/* Sources list */}
       {isLoading ? (
         <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
-      ) : !sources || sources.length === 0 ? (
+      ) : branchSources.length === 0 && pendingCreates.length === 0 ? (
         <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
           <p>No sources created yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {sources.map((source) => (
+          {pendingCreates.map((cr) => (
+            <div key={cr.id} className="border border-green-500/30 rounded-lg bg-green-500/5 px-4 py-3 flex items-center gap-2">
+              <span className="font-medium text-sm">{(cr as unknown as { snapshot?: { name?: string } }).snapshot?.name ?? cr.title}</span>
+              <PendingCreateBadge changeRequest={cr} />
+            </div>
+          ))}
+          {branchSources.map(({ item: source, branchStatus, changeRequest }) => (
             <SourceRow
               key={source.id}
               source={source}
+              branchStatus={branchStatus}
+              branchChangeRequest={changeRequest}
               automations={automations}
               expanded={expandedSource === source.id}
               onToggle={() =>
@@ -203,6 +227,8 @@ function SourceRow({
   onLinkAutomation,
   onUnlinkAutomation,
   onReorder,
+  branchStatus,
+  branchChangeRequest,
 }: {
   source: WebhookSourceListItem;
   automations: AutomationItem[];
@@ -212,6 +238,8 @@ function SourceRow({
   onLinkAutomation: (automationId: string, runOrder: number) => void;
   onUnlinkAutomation: (automationId: string) => void;
   onReorder: (automationId: string, newOrder: number) => void;
+  branchStatus?: import("@/hooks/useBranchAwareList").BranchStatus;
+  branchChangeRequest?: import("@/types/api").ChangeRequestItem;
 }) {
   const [linkId, setLinkId] = useState("");
 
@@ -249,6 +277,9 @@ function SourceRow({
         )}
         <div className="flex-1">
           <span className="text-sm font-medium">{source.name}</span>
+          {branchStatus && branchStatus !== "unchanged" && branchChangeRequest && (
+            <BranchStatusBadge branchStatus={branchStatus} changeRequest={branchChangeRequest} />
+          )}
           {source.description && (
             <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2">
               {source.description}

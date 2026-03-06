@@ -86,9 +86,6 @@ export function MarkdownEditor({
   editable = true,
   className,
 }: MarkdownEditorProps) {
-  // Debounce ref
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Stable onChange ref so we never re-create the editor when onChange changes
   const onChangeRef = useRef(onChange);
   useEffect(() => {
@@ -97,10 +94,7 @@ export function MarkdownEditor({
 
   const handleUpdate = useCallback(
     ({ editor }: { editor: ReturnType<typeof useEditor> extends infer E ? NonNullable<E> : never }) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        onChangeRef.current(editor.getHTML());
-      }, 300);
+      onChangeRef.current(editor.getHTML());
     },
     [],
   );
@@ -149,12 +143,6 @@ export function MarkdownEditor({
     }
   }, [editor, content]);
 
-  // Cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
 
   if (!editor) return null;
 

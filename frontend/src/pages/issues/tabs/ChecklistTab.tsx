@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { Plus, Trash2, Edit3, Check, X } from "lucide-react";
@@ -22,43 +23,51 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
     queryFn: () => api.get<IssueChecklistItem[]>(`/issues/${issueId}/checklist`),
   });
 
-  const addItem = useMutation({
+  const addItem = useToastMutation({
     mutationFn: () =>
       api.post(`/issues/${issueId}/checklist`, {
         content: newItemContent,
         sort_order: items?.length ?? 0,
       }),
+    loadingMessage: "Adding item...",
+    successMessage: "Item added.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue-checklist", issueId] });
       setNewItemContent("");
     },
   });
 
-  const toggleItem = useMutation({
+  const toggleItem = useToastMutation({
     mutationFn: (item: IssueChecklistItem) =>
       api.patch(`/issues/${issueId}/checklist/${item.id}`, {
         is_checked: !item.is_checked,
       }),
+    loadingMessage: false,
+    successMessage: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue-checklist", issueId] });
       queryClient.invalidateQueries({ queryKey: ["issue", issueId] });
     },
   });
 
-  const updateItem = useMutation({
+  const updateItem = useToastMutation({
     mutationFn: (itemId: string) =>
       api.patch(`/issues/${issueId}/checklist/${itemId}`, {
         content: editContent,
       }),
+    loadingMessage: "Saving item...",
+    successMessage: "Item saved.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue-checklist", issueId] });
       setEditingId(null);
     },
   });
 
-  const deleteItem = useMutation({
+  const deleteItem = useToastMutation({
     mutationFn: (itemId: string) =>
       api.request(`/issues/${issueId}/checklist/${itemId}`, { method: "DELETE" }),
+    loadingMessage: "Deleting item...",
+    successMessage: "Item deleted.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issue-checklist", issueId] });
       queryClient.invalidateQueries({ queryKey: ["issue", issueId] });

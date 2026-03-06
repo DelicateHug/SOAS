@@ -36,9 +36,11 @@ def _to_item(cr, include_snapshot: bool = False) -> ChangeRequestItem | ChangeRe
         title=cr.title,
         status=cr.status,
         diff_summary=cr.diff_summary,
+        submit_comment=cr.submit_comment,
         review_comment=cr.review_comment,
         git_branch=cr.git_branch,
         git_sha=cr.git_sha,
+        git_pr_url=cr.git_pr_url,
         target_tier=cr.target_tier,
         created_by=cr.created_by,
         creator=creator,
@@ -96,6 +98,23 @@ async def list_pending_change_requests(
 
 
 # ------------------------------------------------------------------
+# Active CRs by entity type (for branch-aware overlay)
+# ------------------------------------------------------------------
+
+
+@router.get("/active", response_model=list[ChangeRequestDetail])
+async def list_active_by_type(
+    entity_type: str = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all active (non-terminal) change requests for a given entity type."""
+    svc = ChangeRequestService(db)
+    items = await svc.list_active_by_entity_type(entity_type)
+    return [_to_item(cr, include_snapshot=True) for cr in items]
+
+
+# ------------------------------------------------------------------
 # Entity-specific lookup
 # ------------------------------------------------------------------
 
@@ -107,7 +126,12 @@ async def get_active_for_entity(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get active draft/submitted CR for a specific entity by current user."""
+    """Get active draft/submitted CR for a specific entity.
+
+    For shared-draft entity types (e.g. wiki_page), returns the shared draft
+    regardless of who created it.  For other entity types, scoped to the
+    current user.
+    """
     svc = ChangeRequestService(db)
     cr = await svc.get_active_for_entity(current_user.id, entity_type, entity_id)
     if not cr:
@@ -186,7 +210,7 @@ async def push_to_dev(
     """Push a draft change request to the shared dev branch."""
     svc = ChangeRequestService(db)
     try:
-        cr = await svc.push_to_dev(cr_id, current_user.id, current_user.username)
+        cr = await svc.push_to_dev(cr_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except PermissionError:
@@ -197,12 +221,13 @@ async def push_to_dev(
 @router.post("/{cr_id}/submit", response_model=ChangeRequestItem)
 async def submit_change_request(
     cr_id: UUID,
+    body: ChangeRequestReview | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     svc = ChangeRequestService(db)
     try:
-        cr = await svc.submit(cr_id, current_user.id)
+        cr = await svc.submit(cr_id, current_user.id, comment=body.comment if body else None)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except PermissionError:
@@ -261,12 +286,13 @@ async def reject_change_request(
 @router.post("/{cr_id}/apply", response_model=ChangeRequestItem)
 async def apply_change_request(
     cr_id: UUID,
+    body: ChangeRequestReview | None = None,
     _: dict = Depends(require_permission("change_request", "review")),
     db: AsyncSession = Depends(get_db),
 ):
     svc = ChangeRequestService(db)
     try:
-        cr = await svc.apply(cr_id)
+        cr = await svc.apply(cr_id, comment=body.comment if body else None)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return _to_item(cr)

@@ -1,5 +1,6 @@
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { severityColors, statusColors, statusDotColors, formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -57,9 +58,11 @@ export function IncidentDetailPage() {
     enabled: !!id,
   });
 
-  const transition = useMutation({
+  const transition = useToastMutation({
     mutationFn: (newStatus: string) =>
       api.post(`/incidents/${id}/transition`, { new_status: newStatus }),
+    loadingMessage: "Updating status...",
+    successMessage: "Status updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident", id] });
       queryClient.invalidateQueries({ queryKey: ["incident-timeline", id] });

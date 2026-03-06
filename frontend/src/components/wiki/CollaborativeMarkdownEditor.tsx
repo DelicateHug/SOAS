@@ -7,7 +7,6 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
-import Link from "@tiptap/extension-link";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Image from "@tiptap/extension-image";
 import { Table } from "@tiptap/extension-table";
@@ -15,8 +14,11 @@ import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
 import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { common, createLowlight } from "lowlight";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { CircleDot } from "lucide-react";
 import * as Y from "yjs";
 import { cn } from "@/lib/utils";
 import "@/components/MarkdownEditor.css";
@@ -43,6 +45,10 @@ export interface CollaborativeMarkdownEditorProps {
   onChange?: (html: string) => void;
   /** HTML content to load into the editor (e.g. from a draft snapshot) */
   initialContent?: string;
+  /** Wiki page ID for linking issues (enables "Create Issue" in selection menu) */
+  wikiPageId?: string;
+  /** Wiki page title for issue link context */
+  wikiPageTitle?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -106,6 +112,104 @@ function CollaboratorAvatars({ collaborators }: { collaborators: WikiCollaborato
 }
 
 // ---------------------------------------------------------------------------
+// Selection-based "Create Issue" floating popup
+// ---------------------------------------------------------------------------
+
+function SelectionIssuePopup({
+  editor,
+  wikiPageId,
+  wikiPageTitle,
+}: {
+  editor: ReturnType<typeof useEditor>;
+  wikiPageId: string;
+  wikiPageTitle?: string;
+}) {
+  const navigate = useNavigate();
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  const updatePosition = useCallback(() => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    if (from === to) {
+      setPos(null);
+      return;
+    }
+    // Get the bounding rect of the selection
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+      setPos(null);
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    if (rect.width === 0) {
+      setPos(null);
+      return;
+    }
+    setPos({
+      top: rect.top + window.scrollY - 40,
+      left: rect.left + window.scrollX + rect.width / 2,
+    });
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    editor.on("selectionUpdate", updatePosition);
+    return () => {
+      editor.off("selectionUpdate", updatePosition);
+    };
+  }, [editor, updatePosition]);
+
+  // Hide on click outside
+  useEffect(() => {
+    if (!pos) return;
+    const hide = (e: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+        setPos(null);
+      }
+    };
+    document.addEventListener("mousedown", hide, true);
+    return () => document.removeEventListener("mousedown", hide, true);
+  }, [pos]);
+
+  if (!pos || !editor) return null;
+
+  return (
+    <div
+      ref={popupRef}
+      className="fixed z-50 -translate-x-1/2 flex items-center gap-1 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--popover))] px-1 py-0.5 shadow-lg"
+      style={{ top: pos.top, left: pos.left }}
+    >
+      <button
+        type="button"
+        className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-orange-400 hover:bg-orange-500/10 transition-colors whitespace-nowrap"
+        onMouseDown={(e) => {
+          e.preventDefault(); // Prevent selection loss
+          const selectedText = editor.state.doc.textBetween(
+            editor.state.selection.from,
+            editor.state.selection.to,
+            " "
+          );
+          const params = new URLSearchParams({
+            linkType: "wiki_page",
+            linkId: wikiPageId,
+            linkName: wikiPageTitle || "Wiki Page",
+          });
+          if (selectedText) {
+            params.set("description", selectedText);
+          }
+          navigate(`/issues/new?${params}`);
+        }}
+      >
+        <CircleDot className="w-3.5 h-3.5" />
+        Create Issue
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -118,10 +222,13 @@ export function CollaborativeMarkdownEditor({
   className,
   onChange,
   initialContent,
+  wikiPageId,
+  wikiPageTitle,
 }: CollaborativeMarkdownEditorProps) {
-  const { ydoc, collaborators, isConnected, broadcastUpdate, saveHtml } = collaboration;
+  const navigate = useNavigate();
+  const { ydoc, provider, collaborators, isConnected, sessionReady, broadcastUpdate, saveHtml } = collaboration;
 
-  // Debounce ref for onChange / save
+  // Debounce ref for saveHtml (backend persistence)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onChangeRef = useRef(onChange);
   useEffect(() => {
@@ -146,13 +253,14 @@ export function CollaborativeMarkdownEditor({
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        undoRedo: false, // Collaboration extension provides its own undo/redo
+        link: {
+          openOnClick: false,
+          autolink: true,
+          linkOnPaste: true,
+        },
       }),
       Placeholder.configure({ placeholder }),
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-        linkOnPaste: true,
-      }),
       CodeBlockLowlight.configure({ lowlight }),
       Image,
       Table.configure({ resizable: true }),
@@ -162,27 +270,51 @@ export function CollaborativeMarkdownEditor({
       Collaboration.configure({
         document: ydoc,
       }),
+      CollaborationCursor.configure({
+        provider,
+        user: { name: _userName, color: _userColor },
+        render: (user) => {
+          const cursor = document.createElement("span");
+          cursor.classList.add("collaboration-cursor__caret");
+          cursor.style.borderColor = user.color;
+
+          const label = document.createElement("span");
+          label.classList.add("collaboration-cursor__label");
+          label.style.backgroundColor = user.color;
+          label.textContent = user.name;
+          cursor.appendChild(label);
+
+          return cursor;
+        },
+      }),
     ],
     editable,
     onUpdate: ({ editor: ed }) => {
+      const html = ed.getHTML();
+      // Update parent state immediately so save always has fresh content
+      if (onChangeRef.current) onChangeRef.current(html);
+      // Debounce backend persistence to avoid excessive writes
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        const html = ed.getHTML();
-        if (onChangeRef.current) onChangeRef.current(html);
-        // Persist HTML to backend
         saveHtml(html);
       }, 1000);
     },
   });
 
-  // Load initial content (e.g. from draft snapshot) once the editor is ready
+  // Load initial content only after session state is received and only if the
+  // Y.js document is still empty. This prevents overwriting the shared CRDT
+  // document when a second editor joins the same room.
   const initialContentApplied = useRef(false);
   useEffect(() => {
-    if (editor && initialContent && !initialContentApplied.current) {
+    if (editor && initialContent && sessionReady && !initialContentApplied.current) {
       initialContentApplied.current = true;
-      editor.commands.setContent(initialContent);
+      // Check if Y.js doc already has content (from session_state or another client)
+      const xmlFragment = ydoc.getXmlFragment("default");
+      if (xmlFragment.length === 0) {
+        editor.commands.setContent(initialContent);
+      }
     }
-  }, [editor, initialContent]);
+  }, [editor, initialContent, sessionReady, ydoc]);
 
   // Sync editable prop
   useEffect(() => {
@@ -352,6 +484,9 @@ export function CollaborativeMarkdownEditor({
 
       {/* Editor Content */}
       <EditorContent editor={editor} />
+
+      {/* Floating selection popup for "Create Issue" */}
+      {wikiPageId && <SelectionIssuePopup editor={editor} wikiPageId={wikiPageId} wikiPageTitle={wikiPageTitle} />}
     </div>
   );
 }

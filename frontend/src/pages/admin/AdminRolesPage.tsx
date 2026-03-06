@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
+import { useBranchAwareList } from "@/hooks/useBranchAwareList";
+import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import type { Role, Permission } from "@/types/api";
@@ -12,9 +15,12 @@ export function AdminRolesPage() {
   const [newRoleDisplayName, setNewRoleDisplayName] = useState("");
   const [newRoleDescription, setNewRoleDescription] = useState("");
 
-  const { data: roles, isLoading } = useQuery({
+  const { items: branchRoles, pendingCreates, isLoading } = useBranchAwareList<Role, Role[]>({
+    entityType: "role",
     queryKey: ["roles"],
     queryFn: () => api.get<Role[]>("/roles"),
+    getId: (r) => r.id,
+    getData: (r) => r,
   });
 
   const { data: allPermissions } = useQuery({
@@ -22,13 +28,15 @@ export function AdminRolesPage() {
     queryFn: () => api.get<Permission[]>("/roles/permissions"),
   });
 
-  const createRole = useMutation({
+  const createRole = useToastMutation({
     mutationFn: () =>
       api.post("/roles", {
         name: newRoleName,
         display_name: newRoleDisplayName,
         description: newRoleDescription || undefined,
       }),
+    loadingMessage: "Creating role...",
+    successMessage: "Role created.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
       setShowCreateModal(false);
@@ -38,9 +46,11 @@ export function AdminRolesPage() {
     },
   });
 
-  const updatePermissions = useMutation({
+  const updatePermissions = useToastMutation({
     mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
       api.patch(`/roles/${roleId}`, { permission_ids: permissionIds }),
+    loadingMessage: false,
+    successMessage: "Permissions updated.",
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["roles"] }),
   });
 
@@ -77,8 +87,23 @@ export function AdminRolesPage() {
         <div className="text-center py-8">Loading...</div>
       ) : (
         <div className="space-y-3">
-          {roles?.map((role) => (
-            <div key={role.id} className="border border-[hsl(var(--border))] rounded-lg">
+          {pendingCreates.map((cr) => (
+            <div key={cr.id} className="border border-green-500/30 rounded-lg bg-green-500/5">
+              <div className="w-full px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <ChevronRight className="w-4 h-4 opacity-30" />
+                  <div className="text-left">
+                    <p className="font-medium flex items-center gap-2">
+                      {(cr as unknown as { snapshot?: { display_name?: string } }).snapshot?.display_name ?? cr.title}
+                      <PendingCreateBadge changeRequest={cr} />
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {branchRoles.map(({ item: role, branchStatus, changeRequest }) => (
+            <div key={role.id} className={`border border-[hsl(var(--border))] rounded-lg ${branchStatus === "pending_delete" ? "opacity-50" : ""}`}>
               <button
                 onClick={() => setExpandedRole(expandedRole === role.id ? null : role.id)}
                 className="w-full px-4 py-3 flex items-center justify-between hover:bg-[hsl(var(--accent))]"
@@ -90,7 +115,10 @@ export function AdminRolesPage() {
                     <ChevronRight className="w-4 h-4" />
                   )}
                   <div className="text-left">
-                    <p className="font-medium">{role.display_name}</p>
+                    <p className="font-medium flex items-center gap-2">
+                      {role.display_name}
+                      <BranchStatusBadge branchStatus={branchStatus} changeRequest={changeRequest} />
+                    </p>
                     {role.description && (
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">{role.description}</p>
                     )}

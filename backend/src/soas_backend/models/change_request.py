@@ -22,9 +22,11 @@ class ChangeRequest(Base):
     snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False)
     diff_summary: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="draft")
+    submit_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     review_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     git_branch: Mapped[str | None] = mapped_column(String(200), nullable=True)
     git_sha: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    git_pr_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     target_tier: Mapped[str] = mapped_column(String(10), nullable=False, server_default="dev")
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False

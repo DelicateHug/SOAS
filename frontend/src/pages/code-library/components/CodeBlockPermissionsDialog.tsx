@@ -4,7 +4,8 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { Shield, Loader2, X } from "lucide-react";
 
@@ -93,7 +94,7 @@ export function CodeBlockPermissionsDialog({
     []
   );
 
-  const saveMutation = useMutation({
+  const saveMutation = useToastMutation({
     mutationFn: async () => {
       const body = Array.from(localPerms.entries())
         .filter(([, v]) => v.can_read || v.can_edit || v.can_use)
@@ -109,6 +110,8 @@ export function CodeBlockPermissionsDialog({
         body: JSON.stringify(body),
       });
     },
+    loadingMessage: "Saving permissions...",
+    successMessage: "Permissions saved.",
     onSuccess: () => {
       setIsDirty(false);
       queryClient.invalidateQueries({

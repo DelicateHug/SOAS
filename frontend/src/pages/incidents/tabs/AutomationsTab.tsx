@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { formatDate, formatDuration } from "@/lib/utils";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -57,9 +58,11 @@ export function AutomationsTab({ incidentId }: Props) {
       api.get<PaginatedResponse<AutomationItem>>("/automations?status=active&per_page=100"),
   });
 
-  const runAutomation = useMutation({
+  const runAutomation = useToastMutation({
     mutationFn: (automationId: string) =>
       api.post(`/incidents/${incidentId}/automations/${automationId}/run`),
+    loadingMessage: "Running automation...",
+    successMessage: "Automation started.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident-automations", incidentId] });
       queryClient.invalidateQueries({ queryKey: ["incident-timeline", incidentId] });
@@ -69,9 +72,11 @@ export function AutomationsTab({ incidentId }: Props) {
 
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
 
-  const toggleEvidence = useMutation({
+  const toggleEvidence = useToastMutation({
     mutationFn: (executionId: string) =>
       api.post(`/incidents/${incidentId}/automations/${executionId}/evidence`),
+    loadingMessage: "Updating evidence...",
+    successMessage: "Evidence updated.",
     onSuccess: () => {
       setEvidenceError(null);
       queryClient.invalidateQueries({ queryKey: ["incident-automations", incidentId] });

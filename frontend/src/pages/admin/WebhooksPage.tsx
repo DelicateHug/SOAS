@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
+import { useBranchAwareList } from "@/hooks/useBranchAwareList";
+import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { TagInput } from "@/components/ui/TagInput";
@@ -71,12 +74,13 @@ export function WebhooksPage() {
   const [formRateLimit, setFormRateLimit] = useState(60);
   const [formSourceId, setFormSourceId] = useState<string>("");
 
-  const { data: webhooksResponse, isLoading } = useQuery({
+  const { items: branchWebhooks, pendingCreates, isLoading } = useBranchAwareList<WebhookListItem, PaginatedResponse<WebhookListItem>>({
+    entityType: "webhook",
     queryKey: ["webhooks"],
     queryFn: () => api.get<PaginatedResponse<WebhookListItem>>("/webhooks?per_page=100"),
+    getId: (wh) => wh.id,
+    getData: (r) => r.data,
   });
-
-  const webhooks = webhooksResponse?.data ?? [];
 
   const { data: sourcesData } = useQuery({
     queryKey: ["webhook-sources"],
@@ -84,7 +88,7 @@ export function WebhooksPage() {
   });
   const sources = sourcesData ?? [];
 
-  const createWebhook = useMutation({
+  const createWebhook = useToastMutation({
     mutationFn: () => {
       const sourceType =
         formSourceType === "__custom" ? formCustomSourceType : formSourceType;
@@ -98,6 +102,8 @@ export function WebhooksPage() {
         rate_limit_per_minute: formRateLimit,
       });
     },
+    loadingMessage: "Creating webhook...",
+    successMessage: "Webhook created.",
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["webhooks"] });
       resetForm();
@@ -107,7 +113,7 @@ export function WebhooksPage() {
     },
   });
 
-  const updateWebhook = useMutation({
+  const updateWebhook = useToastMutation({
     mutationFn: () => {
       if (!editingWebhook) return Promise.reject("No webhook");
       const sourceType =
@@ -122,6 +128,8 @@ export function WebhooksPage() {
         rate_limit_per_minute: formRateLimit,
       });
     },
+    loadingMessage: "Updating webhook...",
+    successMessage: "Webhook updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["webhooks"] });
       resetForm();
@@ -129,20 +137,26 @@ export function WebhooksPage() {
     },
   });
 
-  const deleteWebhook = useMutation({
+  const deleteWebhook = useToastMutation({
     mutationFn: (id: string) => api.delete(`/webhooks/${id}`),
+    loadingMessage: "Deleting webhook...",
+    successMessage: "Webhook deleted.",
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["webhooks"] }),
   });
 
-  const toggleWebhook = useMutation({
+  const toggleWebhook = useToastMutation({
     mutationFn: ({ id, is_enabled }: { id: string; is_enabled: boolean }) =>
       api.patch(`/webhooks/${id}`, { is_enabled: !is_enabled }),
+    loadingMessage: false,
+    successMessage: "Webhook status updated.",
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["webhooks"] }),
   });
 
-  const regenerateToken = useMutation({
+  const regenerateToken = useToastMutation({
     mutationFn: (id: string) =>
       api.post<{ secret_token: string }>(`/webhooks/${id}/regenerate-token`),
+    loadingMessage: "Regenerating token...",
+    successMessage: "Token regenerated.",
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["webhooks"] });
       const ingestUrl = `${window.location.origin}/api/v1/webhooks/ingest/${data.secret_token}`;
@@ -206,7 +220,7 @@ export function WebhooksPage() {
 
       {isLoading ? (
         <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
-      ) : webhooks.length === 0 ? (
+      ) : branchWebhooks.length === 0 && pendingCreates.length === 0 ? (
         <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
           <p>No webhooks created yet.</p>
           <p className="text-sm mt-1">Create one to start ingesting alerts.</p>
@@ -225,9 +239,29 @@ export function WebhooksPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--border))]">
-              {webhooks.map((wh) => (
-                <tr key={wh.id} className="hover:bg-[hsl(var(--accent))]/50">
-                  <td className="px-4 py-2 font-medium">{wh.name}</td>
+              {pendingCreates.map((cr) => (
+                <tr key={cr.id} className="bg-green-500/5">
+                  <td className="px-4 py-2 font-medium">
+                    <span className="flex items-center gap-1.5">
+                      {(cr as unknown as { snapshot?: { name?: string } }).snapshot?.name ?? cr.title}
+                      <PendingCreateBadge changeRequest={cr} />
+                    </span>
+                  </td>
+                  <td className="px-4 py-2">-</td>
+                  <td className="px-4 py-2 text-center">-</td>
+                  <td className="px-4 py-2">-</td>
+                  <td className="px-4 py-2 text-right">-</td>
+                  <td className="px-4 py-2 text-right text-xs text-[hsl(var(--muted-foreground))] italic">pending</td>
+                </tr>
+              ))}
+              {branchWebhooks.map(({ item: wh, branchStatus, changeRequest }) => (
+                <tr key={wh.id} className={`hover:bg-[hsl(var(--accent))]/50 ${branchStatus === "pending_delete" ? "opacity-50 line-through" : ""}`}>
+                  <td className="px-4 py-2 font-medium">
+                    <span className="flex items-center gap-1.5">
+                      {wh.name}
+                      <BranchStatusBadge branchStatus={branchStatus} changeRequest={changeRequest} />
+                    </span>
+                  </td>
                   <td className="px-4 py-2 text-[hsl(var(--muted-foreground))]">
                     {wh.source_type}
                   </td>

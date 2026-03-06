@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { formatDate, formatDuration } from "@/lib/utils";
 import { ArrowLeft, XCircle, Send, ChevronDown, ChevronRight } from "lucide-react";
@@ -66,8 +67,10 @@ export function ExecutionDetailPage() {
     },
   });
 
-  const cancel = useMutation({
+  const cancel = useToastMutation({
     mutationFn: () => api.post(`/executions/${id}/cancel`),
+    loadingMessage: "Cancelling execution...",
+    successMessage: "Execution cancelled.",
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["execution", id] }),
   });
 

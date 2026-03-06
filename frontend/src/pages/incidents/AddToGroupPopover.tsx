@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import type { PaginatedResponse, CaseItem } from "@/types/api";
@@ -35,9 +36,11 @@ export function AddToGroupPopover({
       api.get<PaginatedResponse<CaseItem>>("/cases?per_page=100"),
   });
 
-  const link = useMutation({
+  const link = useToastMutation({
     mutationFn: (groupId: string) =>
       api.post(`/cases/${groupId}/incidents`, { incident_id: incidentId }),
+    loadingMessage: "Linking to group...",
+    successMessage: "Linked to group.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incidents"] });
       queryClient.invalidateQueries({ queryKey: ["incident-groups"] });
@@ -45,9 +48,11 @@ export function AddToGroupPopover({
     },
   });
 
-  const unlink = useMutation({
+  const unlink = useToastMutation({
     mutationFn: (groupId: string) =>
       api.delete(`/cases/${groupId}/incidents/${incidentId}`),
+    loadingMessage: "Unlinking from group...",
+    successMessage: "Unlinked from group.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incidents"] });
       queryClient.invalidateQueries({ queryKey: ["incident-groups"] });

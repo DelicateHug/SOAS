@@ -390,6 +390,35 @@ async def _apply_normalization(
 
 ApplierFunc = Callable[[AsyncSession, dict, UUID | None, str, UUID], Coroutine[Any, Any, None]]
 
+async def _apply_user_role(
+    db: AsyncSession, snapshot: dict, entity_id: UUID | None, action: str, user_id: UUID
+) -> None:
+    from soas_backend.models.role import UserRole
+    from sqlalchemy import delete as sql_delete
+
+    target_user_id = UUID(snapshot["user_id"])
+    role_id = UUID(snapshot["role_id"])
+
+    if action == "delete":
+        await db.execute(
+            sql_delete(UserRole).where(
+                UserRole.user_id == target_user_id,
+                UserRole.role_id == role_id,
+            )
+        )
+        return
+
+    # create — skip if already assigned
+    existing = await db.execute(
+        select(UserRole).where(
+            UserRole.user_id == target_user_id,
+            UserRole.role_id == role_id,
+        )
+    )
+    if not existing.scalar_one_or_none():
+        db.add(UserRole(user_id=target_user_id, role_id=role_id, assigned_by=user_id))
+
+
 APPLIER_REGISTRY: dict[str, ApplierFunc] = {
     "automation": _apply_automation,
     "wiki_page": _apply_wiki_page,
@@ -397,6 +426,7 @@ APPLIER_REGISTRY: dict[str, ApplierFunc] = {
     "soas_variable": _apply_soas_variable,
     "incident_variable": _apply_incident_variable,
     "role": _apply_role,
+    "user_role": _apply_user_role,
     "form_definition": _apply_form_definition,
     "webhook_source": _apply_webhook_source,
     "webhook": _apply_webhook,

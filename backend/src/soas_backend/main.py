@@ -19,9 +19,13 @@ from soas_backend.api.v1.router import v1_router
 from soas_backend.config import settings
 from soas_backend.middleware.monitoring import MonitoringMiddleware
 from soas_backend.middleware.production_guard import ProductionGuardMiddleware
+from soas_backend.middleware.request_id import RequestIDMiddleware
+from soas_backend.middleware.request_log import cleanup_if_healthy
 from soas_backend.services.quorum_service import QuorumService
 
 logger = logging.getLogger(__name__)
+
+REQUEST_LOG_CLEANUP_INTERVAL = 300  # 5 minutes
 
 INSTANCE_ID = str(_uuid.uuid4())
 
@@ -46,6 +50,19 @@ async def lifespan(app: FastAPI):
 
     task = asyncio.create_task(_heartbeat_loop())
 
+    # Background request log cleanup (clears buffers when no errors)
+    async def _request_log_cleanup_loop():
+        while True:
+            await asyncio.sleep(REQUEST_LOG_CLEANUP_INTERVAL)
+            try:
+                cleared = cleanup_if_healthy()
+                if cleared:
+                    logger.debug("Request log buffers cleared (no errors)")
+            except Exception:
+                logger.warning("Request log cleanup failed", exc_info=True)
+
+    log_cleanup_task = asyncio.create_task(_request_log_cleanup_loop())
+
     # Seed default data (idempotent, non-fatal)
     try:
         from soas_backend.seed import seed_defaults
@@ -57,10 +74,12 @@ async def lifespan(app: FastAPI):
 
     # Shutdown: deregister and cleanup
     task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+    log_cleanup_task.cancel()
+    for t in (task, log_cleanup_task):
+        try:
+            await t
+        except asyncio.CancelledError:
+            pass
     await quorum_svc.deregister_instance(INSTANCE_ID)
     await r.aclose()
 
@@ -85,6 +104,9 @@ def create_app() -> FastAPI:
 
     # Production mode guard (blocks writes on entity APIs in production mode)
     app.add_middleware(ProductionGuardMiddleware)
+
+    # Request ID middleware (attaches UUID to every request for tracing)
+    app.add_middleware(RequestIDMiddleware)
 
     # Monitoring middleware (tracks request count, errors, response time)
     app.add_middleware(MonitoringMiddleware)

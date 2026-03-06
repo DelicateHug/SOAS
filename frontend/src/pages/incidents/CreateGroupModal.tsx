@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { X } from "lucide-react";
 
@@ -16,7 +17,7 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
     tags: "",
   });
 
-  const create = useMutation({
+  const create = useToastMutation({
     mutationFn: () =>
       api.post<{ id: string }>("/cases", {
         title: form.title,
@@ -26,6 +27,8 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
           ? form.tags.split(",").map((t) => t.trim()).filter(Boolean)
           : [],
       }),
+    loadingMessage: "Creating group...",
+    successMessage: "Group created.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incident-groups"] });
       queryClient.invalidateQueries({ queryKey: ["cases"] });

@@ -314,10 +314,11 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
       onSuccess: () => {
         setNotification({ type: "success", message: "Code compiled successfully" });
       },
-      onError: (error: Error & { detail?: string }) => {
+      onError: (error) => {
+        const err = error as Error & { detail?: string };
         setNotification({
           type: "error",
-          message: `Compile failed: ${error.detail || error.message || "Unknown error"}`,
+          message: `Compile failed: ${err.detail || err.message || "Unknown error"}`,
         });
       },
     });
@@ -403,10 +404,11 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
           setNotification({ type: "success", message: "Graph saved successfully" });
         }
       },
-      onError: (error: Error & { detail?: string }) => {
+      onError: (error) => {
+        const err = error as Error & { detail?: string };
         setNotification({
           type: "error",
-          message: `Save failed: ${error.detail || error.message || "Unknown error"}`,
+          message: `Save failed: ${err.detail || err.message || "Unknown error"}`,
         });
       },
     });

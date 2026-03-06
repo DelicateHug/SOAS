@@ -5,7 +5,8 @@
  * writes to the live automations table.
  */
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { useGraphEditorStore } from "../stores/graphEditorStore";
 import { toBackendFormat } from "../utils/graphConversion";
@@ -22,7 +23,9 @@ export function useGraphSave(automationId: string | undefined) {
   const setIsDirty = store((s) => s.setIsDirty);
   const toVP2GraphData = store((s) => s.toVP2GraphData);
 
-  const mutation = useMutation({
+  const mutation = useToastMutation({
+    loadingMessage: false,
+    successMessage: false,
     mutationFn: async () => {
       // Read graphId from store at mutation time — it may have been set after hook creation
       const id = automationId || useGraphEditorStore.getState().graphId;

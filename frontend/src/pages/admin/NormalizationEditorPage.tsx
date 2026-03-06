@@ -1,5 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
+import { useDeploymentMode } from "@/hooks/useDeploymentMode";
+import { BranchStatusBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import type {
   NormalizationGroup,
@@ -468,7 +471,7 @@ function TestPanel({
   const [payload, setPayload] = useState(SAMPLE_PAYLOAD);
   const [result, setResult] = useState<NormalizationTestResult | null>(null);
 
-  const testMutation = useMutation({
+  const testMutation = useToastMutation({
     mutationFn: () => {
       let parsed: unknown;
       try {
@@ -480,6 +483,9 @@ function TestPanel({
         raw_payload: parsed,
       });
     },
+    loadingMessage: false,
+    successMessage: false,
+    errorMessage: false,
     onSuccess: (data) => setResult(data),
     onError: () => {
       setResult({
@@ -614,6 +620,15 @@ export function NormalizationEditorPage() {
     queryFn: () => api.get<NormalizationGroup[]>("/normalization/groups"),
   });
 
+  const { isDevMode } = useDeploymentMode();
+  const normCrQuery = useQuery({
+    queryKey: ["change-requests", "active", "normalization"],
+    queryFn: () => api.get<import("@/types/api").ChangeRequestDetail[]>("/change-requests/active?entity_type=normalization"),
+    enabled: isDevMode,
+    staleTime: 10_000,
+  });
+  const hasNormCR = (normCrQuery.data?.length ?? 0) > 0;
+
   const { data: serverRules, isLoading: rulesLoading } = useQuery({
     queryKey: ["normalization-rules"],
     queryFn: () => api.get<NormalizationRule[]>("/normalization/rules"),
@@ -644,7 +659,7 @@ export function NormalizationEditorPage() {
   // Save mutation
   // ---------------------------------------------------------------------------
 
-  const saveMutation = useMutation({
+  const saveMutation = useToastMutation({
     mutationFn: () =>
       api.request<NormalizationRule[]>("/normalization/rules/bulk", {
         method: "PUT",
@@ -652,6 +667,8 @@ export function NormalizationEditorPage() {
           rules: localRules,
         }),
       }),
+    loadingMessage: "Saving normalization rules...",
+    successMessage: "Normalization rules saved.",
     onSuccess: (savedRules) => {
       // Update local rules with server-assigned IDs
       setLocalRules(
@@ -761,6 +778,12 @@ export function NormalizationEditorPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold">Field Normalization</h1>
+          {hasNormCR && (
+            <BranchStatusBadge
+              branchStatus="modified"
+              changeRequest={normCrQuery.data?.[0]}
+            />
+          )}
           {isDirty && (
             <span className="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 text-xs font-medium">
               Unsaved changes

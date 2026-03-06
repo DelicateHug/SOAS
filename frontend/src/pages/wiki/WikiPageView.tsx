@@ -7,6 +7,7 @@ import { DocumentationViewer } from "@/components/DocumentationViewer";
 import { Edit, Clock, Tag, ChevronRight, BookOpen, Trash2, Users } from "lucide-react";
 import { DynamicIcon } from "@/components/ui/DynamicIcon";
 import { NodePreview } from "@/components/wiki/NodePreview";
+import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
 import type { WikiPage, WikiBreadcrumb, WikiPageListItem, PaginatedResponse } from "@/types/api";
 
 export function WikiPageView() {
@@ -182,6 +183,15 @@ export function WikiPageView() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Linked issues */}
+      <div className="mt-6 border border-[hsl(var(--border))] rounded-lg p-4">
+        <EntityIssuesPanel
+          targetType="wiki_page"
+          targetId={page.id}
+          targetName={page.title}
+        />
       </div>
     </div>
   );

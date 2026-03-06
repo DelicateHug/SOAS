@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { X, Loader2 } from "lucide-react";
 import type {
@@ -152,7 +153,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
     return base;
   };
 
-  const saveMutation = useMutation({
+  const saveMutation = useToastMutation({
     mutationFn: () => {
       const payload = buildPayload();
       if (isEdit) {
@@ -160,6 +161,8 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
       }
       return api.post("/jobs", payload);
     },
+    loadingMessage: "Saving job...",
+    successMessage: isEdit ? "Job updated." : "Job created.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       onClose();

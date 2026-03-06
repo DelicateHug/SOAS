@@ -8,7 +8,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Alias y-prosemirror → @tiptap/y-tiptap so the Collaboration and
+      // CollaborationCursor extensions share the same PluginKey instances.
+      "y-prosemirror": path.resolve(__dirname, "node_modules/@tiptap/y-tiptap"),
     },
+    dedupe: ["yjs", "@tiptap/y-tiptap", "prosemirror-state", "prosemirror-view", "prosemirror-model"],
   },
   build: {
     rollupOptions: {
@@ -25,6 +29,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    watch: {
+      usePolling: true,
+      interval: 1000,
+    },
     proxy: {
       "/api": {
         target: process.env.VITE_API_URL || "http://localhost:8000",

@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDeploymentMode } from "@/hooks/useDeploymentMode";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UserCheck, UserX, Shield, UserPlus, Copy, Check } from "lucide-react";
-import type { PaginatedResponse, Role } from "@/types/api";
+import type { PaginatedResponse, Role, ChangeRequestDetail } from "@/types/api";
+import { useToast } from "@/stores/toastStore";
+import { useToastMutation } from "@/hooks/useToastMutation";
 
 interface UserRead {
   id: string;
@@ -32,6 +35,7 @@ export function AdminUsersPage() {
   const [createError, setCreateError] = useState("");
   const [createdUser, setCreatedUser] = useState<AdminUserCreateResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users", page],
@@ -44,32 +48,59 @@ export function AdminUsersPage() {
     queryFn: () => api.get<Role[]>("/roles"),
   });
 
-  const toggleActive = useMutation({
+  const { isDevMode } = useDeploymentMode();
+  const { data: userRoleCRs } = useQuery({
+    queryKey: ["change-requests", "active", "user_role"],
+    queryFn: () => api.get<ChangeRequestDetail[]>("/change-requests/active?entity_type=user_role"),
+    enabled: isDevMode,
+    staleTime: 10_000,
+  });
+
+  // Group user_role CRs by target user_id
+  const pendingRolesByUser = new Map<string, ChangeRequestDetail[]>();
+  for (const cr of userRoleCRs ?? []) {
+    const userId = cr.snapshot?.user_id as string | undefined;
+    if (userId) {
+      const list = pendingRolesByUser.get(userId) ?? [];
+      list.push(cr);
+      pendingRolesByUser.set(userId, list);
+    }
+  }
+
+  const toggleActive = useToastMutation({
     mutationFn: (user: UserRead) =>
       user.is_active
         ? api.delete(`/admin/users/${user.id}`)
         : api.patch(`/admin/users/${user.id}`, { is_active: true }),
+    successMessage: "User status updated.",
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
   });
 
-  const assignRole = useMutation({
-    mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) =>
-      api.post(`/roles/users/${userId}/roles`, { role_id: roleId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      setShowRoleModal(false);
-    },
-  });
+  const handleAssignRole = async (userId: string, roleId: string) => {
+    setShowRoleModal(false);
+    toast("info", "Creating change request...");
+    try {
+      await api.post(`/roles/users/${userId}/roles`, { role_id: roleId });
+      toast("success", "Change request created. Go to Local Changes to submit for approval.");
+    } catch (err: unknown) {
+      const detail = (err as { detail?: string })?.detail;
+      toast("error", detail || "Failed to create change request.");
+    }
+  };
 
-  const removeRole = useMutation({
+  const removeRole = useToastMutation({
     mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) =>
       api.delete(`/roles/users/${userId}/roles/${roleId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+    loadingMessage: "Creating change request...",
+    successMessage: "Change request created. Go to Local Changes to submit it for admin approval.",
+    errorMessage: (err: { detail?: string }) => err.detail || "Failed to create change request for role removal.",
   });
 
-  const createUser = useMutation({
+  const createUser = useToastMutation({
     mutationFn: (data: { username: string; email: string; display_name: string }) =>
       api.post<AdminUserCreateResponse>("/admin/users", data),
+    successMessage: false,
+    errorMessage: false,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setCreatedUser(data);
@@ -153,6 +184,23 @@ export function AdminUsersPage() {
                             title="Click to remove"
                           >
                             {roleName}
+                          </span>
+                        );
+                      })}
+                      {(pendingRolesByUser.get(user.id) ?? []).map((cr) => {
+                        const snap = cr as unknown as { snapshot?: { role_display_name?: string } };
+                        const label = snap.snapshot?.role_display_name ?? "role";
+                        return (
+                          <span
+                            key={cr.id}
+                            className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                              cr.action === "create"
+                                ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                : "bg-red-500/20 text-red-400 border border-red-500/30 line-through"
+                            }`}
+                            title={`Pending ${cr.action}: ${label} (${cr.status})`}
+                          >
+                            {cr.action === "create" ? "+" : "-"}{label}
                           </span>
                         );
                       })}
@@ -347,19 +395,29 @@ export function AdminUsersPage() {
               Assign Role to {selectedUser.display_name}
             </h2>
             <div className="space-y-2 max-h-64 overflow-auto">
-              {roles?.map((role) => (
-                <button
-                  key={role.id}
-                  onClick={() => assignRole.mutate({ userId: selectedUser.id, roleId: role.id })}
-                  disabled={selectedUser.roles.includes(role.display_name)}
-                  className="w-full text-left px-3 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <p className="text-sm font-medium">{role.display_name}</p>
-                  {role.description && (
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">{role.description}</p>
-                  )}
-                </button>
-              ))}
+              {roles?.map((role) => {
+                const alreadyAssigned = selectedUser.roles.includes(role.display_name);
+                return (
+                  <button
+                    key={role.id}
+                    onClick={() => handleAssignRole(selectedUser.id, role.id)}
+                    disabled={alreadyAssigned}
+                    className="w-full text-left px-3 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{role.display_name}</p>
+                        {role.description && (
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">{role.description}</p>
+                        )}
+                      </div>
+                      {alreadyAssigned && (
+                        <span className="text-xs text-[hsl(var(--muted-foreground))]">Assigned</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
             <button
               onClick={() => setShowRoleModal(false)}
@@ -370,6 +428,7 @@ export function AdminUsersPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

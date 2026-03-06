@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -21,12 +22,14 @@ export function ChatTab({ caseId }: Props) {
     refetchIntervalInBackground: false,
   });
 
-  const sendMessage = useMutation({
+  const sendMessage = useToastMutation({
     mutationFn: (content: string) =>
       api.post(`/cases/${caseId}/timeline`, {
         entry_type: "comment",
         content,
       }),
+    loadingMessage: false,
+    successMessage: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["case-timeline", caseId] });
       setMessage("");

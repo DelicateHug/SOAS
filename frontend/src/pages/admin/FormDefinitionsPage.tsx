@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
+import { useBranchAwareList } from "@/hooks/useBranchAwareList";
+import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import { Plus, Trash2, Edit2, X, ToggleLeft, ToggleRight, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
 import type { FormDefinition, FormField, FormFieldType, PaginatedResponse } from "@/types/api";
@@ -34,27 +37,30 @@ export function FormDefinitionsPage() {
   const [formIsActive, setFormIsActive] = useState(true);
   const [formFields, setFormFields] = useState<FormField[]>([emptyField()]);
 
-  const { data: response, isLoading } = useQuery({
+  const { items: branchItems, pendingCreates, isLoading } = useBranchAwareList<FormDefinition, PaginatedResponse<FormDefinition>>({
+    entityType: "form_definition",
     queryKey: ["form-definitions"],
     queryFn: () => api.get<PaginatedResponse<FormDefinition>>("/form-definitions?per_page=100"),
+    getId: (d) => d.id,
+    getData: (r) => r.data,
   });
 
-  const definitions = response?.data ?? [];
-
-  const createDefn = useMutation({
+  const createDefn = useToastMutation({
     mutationFn: () =>
       api.post("/form-definitions", {
         name: formName,
         description: formDescription || null,
         fields: formFields.filter((f) => f.key && f.label),
       }),
+    loadingMessage: "Creating form definition...",
+    successMessage: "Form definition created.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["form-definitions"] });
       closeModal();
     },
   });
 
-  const updateDefn = useMutation({
+  const updateDefn = useToastMutation({
     mutationFn: () => {
       if (!editingDefn) return Promise.reject("No definition");
       return api.patch(`/form-definitions/${editingDefn.id}`, {
@@ -64,24 +70,28 @@ export function FormDefinitionsPage() {
         is_active: formIsActive,
       });
     },
+    loadingMessage: "Updating form definition...",
+    successMessage: "Form definition updated.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["form-definitions"] });
       closeModal();
     },
   });
 
-  const deleteDefn = useMutation({
+  const deleteDefn = useToastMutation({
     mutationFn: (id: string) => api.delete(`/form-definitions/${id}`),
+    loadingMessage: "Deleting form definition...",
+    successMessage: "Form definition deleted.",
+    errorMessage: (err) => (err as { detail?: string }).detail || "Cannot delete form definition with existing submissions.",
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["form-definitions"] }),
-    onError: (error: { detail?: string }) => {
-      alert(error.detail || "Cannot delete form definition with existing submissions.");
-    },
   });
 
-  const toggleActive = useMutation({
+  const toggleActive = useToastMutation({
     mutationFn: (d: FormDefinition) =>
       api.patch(`/form-definitions/${d.id}`, { is_active: !d.is_active }),
+    loadingMessage: false,
+    successMessage: "Form status updated.",
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["form-definitions"] }),
   });
@@ -154,7 +164,7 @@ export function FormDefinitionsPage() {
 
       {isLoading ? (
         <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
-      ) : definitions.length === 0 ? (
+      ) : branchItems.length === 0 && pendingCreates.length === 0 ? (
         <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
           <p>No form definitions yet.</p>
           <p className="text-sm mt-1">Create one to start collecting structured data in incidents.</p>
@@ -172,9 +182,28 @@ export function FormDefinitionsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--border))]">
-              {definitions.map((d) => (
-                <tr key={d.id} className="hover:bg-[hsl(var(--accent))]/50">
-                  <td className="px-4 py-2 font-medium">{d.name}</td>
+              {pendingCreates.map((cr) => (
+                <tr key={cr.id} className="bg-green-500/5">
+                  <td className="px-4 py-2 font-medium">
+                    <span className="flex items-center gap-1.5">
+                      {(cr as unknown as { snapshot?: { name?: string } }).snapshot?.name ?? cr.title}
+                      <PendingCreateBadge changeRequest={cr} />
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-[hsl(var(--muted-foreground))]">-</td>
+                  <td className="px-4 py-2 text-center">-</td>
+                  <td className="px-4 py-2 text-center">-</td>
+                  <td className="px-4 py-2 text-right text-xs text-[hsl(var(--muted-foreground))] italic">pending</td>
+                </tr>
+              ))}
+              {branchItems.map(({ item: d, branchStatus, changeRequest }) => (
+                <tr key={d.id} className={`hover:bg-[hsl(var(--accent))]/50 ${branchStatus === "pending_delete" ? "opacity-50 line-through" : ""}`}>
+                  <td className="px-4 py-2 font-medium">
+                    <span className="flex items-center gap-1.5">
+                      {d.name}
+                      <BranchStatusBadge branchStatus={branchStatus} changeRequest={changeRequest} />
+                    </span>
+                  </td>
                   <td className="px-4 py-2 text-[hsl(var(--muted-foreground))] max-w-[300px] truncate">
                     {d.description || "-"}
                   </td>

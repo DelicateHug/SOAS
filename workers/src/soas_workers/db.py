@@ -289,6 +289,17 @@ def get_user_secrets_for_user(user_id: str) -> dict[str, str]:
             return secrets
 
 
+def get_sensitive_user_secret_names(user_id: str) -> set[str]:
+    """Get names of user secrets marked as sensitive for a given user."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT name FROM user_secrets WHERE user_id = %s::uuid AND sensitive = true",
+                (user_id,),
+            )
+            return {row["name"] for row in cur.fetchall()}
+
+
 def get_shared_secrets_for_roles(role_ids: list[str]) -> dict[str, str]:
     """Get shared secrets accessible by the given roles.
 
@@ -326,6 +337,28 @@ def get_shared_secrets_for_roles(role_ids: list[str]) -> dict[str, str]:
                 except Exception:
                     pass
             return secrets
+
+
+def get_sensitive_shared_secret_names(role_ids: list[str]) -> set[str]:
+    """Get names of shared secrets marked as sensitive, accessible by the given roles."""
+    if not role_ids:
+        return set()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            placeholders = ",".join(["%s::uuid"] * len(role_ids))
+            cur.execute(
+                f"""
+                SELECT DISTINCT us.name
+                FROM user_secrets us
+                JOIN shared_secret_permissions ssp ON us.id = ssp.secret_id
+                WHERE ssp.role_id IN ({placeholders})
+                  AND ssp.can_read = true
+                  AND us.is_shared = true
+                  AND us.sensitive = true
+                """,
+                role_ids,
+            )
+            return {row["name"] for row in cur.fetchall()}
 
 
 def get_sensitive_incident_variable_names() -> set[str]:

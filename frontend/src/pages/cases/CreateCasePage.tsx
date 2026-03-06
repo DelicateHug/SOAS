@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { TagInput } from "@/components/ui/TagInput";
 
@@ -13,7 +13,7 @@ export function CreateCasePage() {
     tags: [] as string[],
   });
 
-  const create = useMutation({
+  const create = useToastMutation({
     mutationFn: () =>
       api.post<{ id: string }>("/cases", {
         title: form.title,
@@ -21,6 +21,8 @@ export function CreateCasePage() {
         priority: form.priority,
         tags: form.tags,
       }),
+    loadingMessage: "Creating case...",
+    successMessage: "Case created.",
     onSuccess: (data) => {
       navigate(`/cases/${data.id}`);
     },

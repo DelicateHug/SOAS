@@ -41,6 +41,7 @@ async def get_entity_version(
     entity_type: str,
     entity_id: UUID,
     tier: str | None = Query(None, pattern="^(user|dev|prod)$"),
+    entity_branch: str | None = Query(None, description="Entity branch name for 'user' tier lookup"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -53,8 +54,7 @@ async def get_entity_version(
 
     try:
         if tier:
-            username = current_user.username if tier == "user" else None
-            snapshot = svc.get_entity_at_tier(entity_type, eid, tier, username)
+            snapshot = svc.get_entity_at_tier(entity_type, eid, tier, entity_branch)
             return EntityVersionResponse(
                 entity_type=entity_type,
                 entity_id=eid,
@@ -62,9 +62,7 @@ async def get_entity_version(
                 snapshot=snapshot,
             )
         else:
-            snapshot, source_tier = svc.get_effective_entity(
-                current_user.username, entity_type, eid
-            )
+            snapshot, source_tier = svc.get_effective_entity(entity_type, eid, entity_branch)
             return EntityVersionResponse(
                 entity_type=entity_type,
                 entity_id=eid,
@@ -81,6 +79,7 @@ async def diff_entity_tiers(
     entity_id: UUID,
     from_tier: str = Query("user", pattern="^(user|dev|prod)$"),
     to_tier: str = Query("dev", pattern="^(user|dev|prod)$"),
+    entity_branch: str | None = Query(None, description="Entity branch name for 'user' tier lookup"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -90,10 +89,9 @@ async def diff_entity_tiers(
 
     svc = _get_service(db)
     eid = str(entity_id)
-    username = current_user.username
 
-    from_snapshot = svc.get_entity_at_tier(entity_type, eid, from_tier, username)
-    to_snapshot = svc.get_entity_at_tier(entity_type, eid, to_tier, username)
+    from_snapshot = svc.get_entity_at_tier(entity_type, eid, from_tier, entity_branch)
+    to_snapshot = svc.get_entity_at_tier(entity_type, eid, to_tier, entity_branch)
 
     return {
         "entity_type": entity_type,
@@ -119,7 +117,7 @@ async def push_to_dev(
     """Merge current user's branch into dev."""
     svc = _get_service(db)
     try:
-        result = svc.push_to_dev(current_user.username, force=body.force)
+        result = await svc.push_to_dev(body.branch, force=body.force)
         return PushToDevResult(
             status=result.status,
             conflicts=result.conflicts,
@@ -160,13 +158,14 @@ async def promote_to_prod(
 
 @router.post("/rebase-from-dev", response_model=PushToDevResult)
 async def rebase_from_dev(
+    body: PushToDevRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update current user's branch with latest dev changes."""
+    """Update an entity branch with the latest dev changes."""
     svc = _get_service(db)
     try:
-        result = svc.rebase_user_from_dev(current_user.username)
+        result = await svc.rebase_entity_from_dev(body.branch)
         return PushToDevResult(
             status=result.status,
             conflicts=result.conflicts,

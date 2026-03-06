@@ -284,6 +284,43 @@ def create_branch(
     logger.info("Created branch %s from %s", branch_name, from_branch)
 
 
+def delete_branch(local_path: str | Path, branch_name: str) -> None:
+    """Delete a local branch.  No-op if it doesn't exist."""
+    if not branch_exists(local_path, branch_name):
+        return
+    result = _run(["git", "branch", "-D", branch_name], cwd=local_path)
+    if result.returncode != 0:
+        logger.warning("Failed to delete branch %s: %s", branch_name, result.stderr)
+    else:
+        logger.info("Deleted local branch %s", branch_name)
+
+
+def delete_remote_branch(
+    local_path: str | Path,
+    branch_name: str,
+    auth_type: str = "token",
+    auth_token: str = "",
+    ssh_key_path: str = "",
+) -> None:
+    """Delete a branch from the remote.  No-op on failure."""
+    env = _auth_env(auth_type, auth_token, ssh_key_path)
+    if auth_type == "token" and auth_token:
+        remote_url = get_remote_url(local_path)
+        if remote_url and "oauth2:" not in remote_url:
+            effective_url = _inject_token_into_url(remote_url, auth_token)
+            _run(["git", "remote", "set-url", "origin", effective_url], cwd=local_path, env_extra=env)
+    result = _run(
+        ["git", "push", "origin", "--delete", branch_name],
+        cwd=local_path,
+        env_extra=env,
+        timeout=30,
+    )
+    if result.returncode == 0:
+        logger.info("Deleted remote branch %s", branch_name)
+    else:
+        logger.warning("Failed to delete remote branch %s: %s", branch_name, result.stderr)
+
+
 def list_branches(local_path: str | Path) -> list[str]:
     """Return all local branch names."""
     result = _run(
@@ -319,6 +356,8 @@ def add_worktree(
     wt = Path(worktree_path)
     if wt.exists() and (wt / ".git").exists():
         return  # worktree already set up
+    # Prune stale worktree entries (e.g. after container rebuild removes dirs)
+    _run(["git", "worktree", "prune"], cwd=repo_path)
     wt.parent.mkdir(parents=True, exist_ok=True)
     result = _run(
         ["git", "worktree", "add", str(wt), branch_name],

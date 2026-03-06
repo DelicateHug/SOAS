@@ -81,6 +81,7 @@ async def register(body: UserCreate, db: AsyncSession = Depends(get_db)):
             display_name=body.display_name,
             password=body.password,
         )
+        await db.refresh(user)
         # First user registered - trigger deferred seeding in the background
         asyncio.create_task(_run_deferred_seed())
 

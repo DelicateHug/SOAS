@@ -119,6 +119,7 @@ class IssueLinkTargetType(StrEnum):
     NORMALIZATION_RULE = "normalization_rule"
     CASE = "case"
     EXECUTION_LOG = "execution_log"
+    WIKI_PAGE = "wiki_page"
 
 
 class TransformType(StrEnum):

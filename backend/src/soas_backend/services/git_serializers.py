@@ -1015,6 +1015,82 @@ class IncidentVariableSerializer:
 # Registry
 # ---------------------------------------------------------------------------
 
+class UserRoleSerializer:
+    """Serializer for user_role change request snapshots.
+
+    Writes one file per *user* (``{username}.json``) to the ``users/``
+    directory.  The file contains a ``roles`` list so that all role
+    assignments for a user live in a single file.
+
+    Not used in full_sync (role assignments are managed via CRs only),
+    but used for per-entity branch commits.
+    """
+
+    directory = "users"
+
+    @staticmethod
+    def filename(snapshot: dict) -> str:
+        target = _safe_filename(snapshot.get("target_username", "unknown"))
+        return f"{target}.json"
+
+    @staticmethod
+    def serialize(snapshot: dict) -> dict:
+        return {
+            "user_id": snapshot.get("user_id"),
+            "role_id": snapshot.get("role_id"),
+            "role_name": snapshot.get("role_name"),
+            "role_display_name": snapshot.get("role_display_name"),
+            "target_username": snapshot.get("target_username"),
+        }
+
+    @staticmethod
+    def merge_into_file(existing: dict | None, snapshot: dict, action: str) -> dict:
+        """Merge a role action into an existing user roles file.
+
+        *existing* is the parsed JSON of the current file (or ``None``).
+        Returns the updated dict to be written back.
+        """
+        if existing is None:
+            existing = {
+                "user_id": snapshot.get("user_id"),
+                "target_username": snapshot.get("target_username"),
+                "roles": [],
+            }
+
+        roles: list[dict] = existing.get("roles", [])
+        role_id = snapshot.get("role_id")
+
+        if action == "delete":
+            roles = [r for r in roles if r.get("role_id") != role_id]
+        else:
+            # Upsert: replace if exists, append if new
+            found = False
+            for i, r in enumerate(roles):
+                if r.get("role_id") == role_id:
+                    roles[i] = {
+                        "role_id": role_id,
+                        "role_name": snapshot.get("role_name"),
+                        "role_display_name": snapshot.get("role_display_name"),
+                    }
+                    found = True
+                    break
+            if not found:
+                roles.append({
+                    "role_id": role_id,
+                    "role_name": snapshot.get("role_name"),
+                    "role_display_name": snapshot.get("role_display_name"),
+                })
+
+        # Sort by role_name for deterministic output (helps git diffs)
+        roles.sort(key=lambda r: r.get("role_name", ""))
+
+        existing["roles"] = roles
+        return existing
+
+    # No export_all / import_all — user_role is not part of full_sync.
+    # The entity is written via export_one() during CR draft creation.
+
+
 SERIALIZER_REGISTRY: dict[str, type] = {
     "automations": AutomationSerializer,
     "wiki": WikiSerializer,
@@ -1026,6 +1102,7 @@ SERIALIZER_REGISTRY: dict[str, type] = {
     "normalization": NormalizationSerializer,
     "webhook_sources": WebhookSourceSerializer,
     "incident_variables": IncidentVariableSerializer,
+    "users": UserRoleSerializer,
 }
 
 # Maps change_request entity_type names → serializer registry keys
@@ -1040,6 +1117,7 @@ ENTITY_TYPE_TO_SERIALIZER_KEY: dict[str, str] = {
     "webhook_source": "webhook_sources",
     "normalization": "normalization",
     "app_settings": "settings",
+    "user_role": "users",
 }
 
 
@@ -1067,7 +1145,13 @@ def _serializer_dir(entity_type: str) -> str:
     return key
 
 
-def export_one(entity_type: str, snapshot: dict, base_path: Path) -> Path:
+def export_one(
+    entity_type: str,
+    snapshot: dict,
+    base_path: Path,
+    *,
+    action: str = "create",
+) -> Path:
     """Write a single entity snapshot to a file on disk.
 
     Works for all JSON-based entity types and wiki (markdown).
@@ -1077,10 +1161,25 @@ def export_one(entity_type: str, snapshot: dict, base_path: Path) -> Path:
     out_dir = base_path / directory
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    filename = _snapshot_filename(entity_type, snapshot)
+    if entity_type == "user_role":
+        filename = UserRoleSerializer.filename(snapshot)
+    else:
+        filename = _snapshot_filename(entity_type, snapshot)
     fp = out_dir / filename
 
-    if entity_type == "wiki_page":
+    if entity_type == "user_role":
+        # Read-merge-write: read existing file (from dev base), merge the
+        # new role into it, then write back.  This avoids git conflicts
+        # when multiple role CRs for the same user merge sequentially.
+        existing = None
+        if fp.exists():
+            try:
+                existing = json.loads(fp.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                existing = None
+        merged = UserRoleSerializer.merge_into_file(existing, snapshot, action)
+        fp.write_text(json.dumps(merged, indent=2, default=str), encoding="utf-8")
+    elif entity_type == "wiki_page":
         # Write markdown with YAML frontmatter
         meta = {k: v for k, v in snapshot.items() if k != "content"}
         lines = ["---"]

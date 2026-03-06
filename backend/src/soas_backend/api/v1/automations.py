@@ -618,6 +618,7 @@ async def test_run(
             "timeout_seconds": automation.timeout_seconds or 300,
             "user_role_ids": user_role_ids,
             "api_token": credentials.credentials,
+            "triggering_user_id": str(current_user.id),
         },
     )
     execution.celery_task_id = task.id

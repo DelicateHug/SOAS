@@ -27,6 +27,7 @@ def test_run_graph(
     timeout_seconds: int = 300,
     user_role_ids: list[str] | None = None,
     api_token: str | None = None,
+    triggering_user_id: str | None = None,
 ):
     """Compile a VP2 graph on-the-fly and execute it in a sandboxed subprocess.
 
@@ -106,12 +107,12 @@ def test_run_graph(
     # 3. Prepend runtime bridge code (SOAS vars + incident vars)
     # ------------------------------------------------------------------
 
-    # 3a. SOAS application-level variables
+    # 3a. SOAS application-level variables + shared secrets
     # For test runs, load all SOAS vars (user is already authenticated).
     # Fall back to role-based if role_ids are provided and return results.
     try:
         from visualpython2.soas_vars.runtime_bridge import generate_soas_bridge_code
-        from soas_workers.db import get_all_soas_vars, get_soas_vars_for_roles, get_writable_soas_vars_for_roles
+        from soas_workers.db import get_all_soas_vars, get_soas_vars_for_roles, get_writable_soas_vars_for_roles, get_shared_secrets_for_roles, get_sensitive_shared_secret_names
 
         role_ids = user_role_ids or []
         soas_vars = get_soas_vars_for_roles(role_ids) if role_ids else {}
@@ -122,10 +123,40 @@ def test_run_graph(
         # For test runs, also allow writing all vars
         if not writable_vars:
             writable_vars = list(soas_vars.keys())
-        soas_bridge = generate_soas_bridge_code(soas_vars, writable_vars)
+        # Merge shared secrets into SOAS vars (accessible via get_soas_var)
+        sens_shared: set[str] = set()
+        if role_ids:
+            shared_secrets = get_shared_secrets_for_roles(role_ids)
+            if shared_secrets:
+                soas_vars.update(shared_secrets)
+                sens_shared = get_sensitive_shared_secret_names(role_ids)
+        soas_bridge = generate_soas_bridge_code(soas_vars, writable_vars, sensitive_names=sens_shared)
         compiled_code = soas_bridge + compiled_code
     except ImportError:
         pass  # SOAS vars bridge not available
+
+    # 3a-ii. User secrets (per-user encrypted secrets with per-user DEK)
+    try:
+        from visualpython2.user_secrets.runtime_bridge import generate_user_secrets_bridge_code
+        from soas_workers.db import get_user_secrets_for_user, get_sensitive_user_secret_names
+
+        if triggering_user_id:
+            user_secrets = get_user_secrets_for_user(triggering_user_id)
+            if user_secrets:
+                sens_user = get_sensitive_user_secret_names(triggering_user_id)
+                compiled_code = generate_user_secrets_bridge_code(user_secrets, sensitive_names=sens_user) + compiled_code
+    except ImportError:
+        pass
+
+    # Stub for get_user_secret when no bridge was generated
+    if "get_user_secret" not in compiled_code:
+        stub = (
+            "# --- User Secrets Stub ---\n"
+            "def get_user_secret(name, default=None):\n"
+            "    return default\n"
+            "# --- End User Secrets Stub ---\n\n"
+        )
+        compiled_code = stub + compiled_code
 
     # 3b. Resolve incident group for group bridge functions
     case_id = parameters.get("case_id")
@@ -149,6 +180,7 @@ def test_run_graph(
             bridge_code = generate_incident_bridge_code(
                 incident_id,
                 group_incident_ids=group_incident_ids,
+                sensitive_var_names=get_sensitive_incident_variable_names(),
             )
             compiled_code = bridge_code + "\n" + compiled_code
             has_incident_bridge = True
@@ -221,29 +253,6 @@ def test_run_graph(
         debug_file_path = tmp_path.replace(".py", "_debug.json")
         env["SOAS_DEBUG_FILE"] = debug_file_path
 
-        # Collect sensitive values for stdout/stderr scrubbing
-        _scrub_values: list[str] = []
-        if incident_id:
-            _sens_names = get_sensitive_incident_variable_names()
-            if _sens_names:
-                for _iid in (group_incident_ids or [incident_id]):
-                    for _name in _sens_names:
-                        _raw = r.hget(f"incident:{_iid}:data", _name)
-                        if _raw:
-                            try:
-                                _decoded = json.loads(_raw if isinstance(_raw, str) else _raw.decode())
-                                s = str(_decoded) if _decoded is not None else ""
-                                if len(s) >= 3:
-                                    _scrub_values.append(s)
-                            except Exception:
-                                pass
-        _scrub_values.sort(key=len, reverse=True)
-
-        def _scrub_line(line: str) -> str:
-            for v in _scrub_values:
-                line = line.replace(v, "***")
-            return line
-
         try:
             proc = subprocess.Popen(
                 [sys.executable, "-u", tmp_path],
@@ -260,7 +269,7 @@ def test_run_graph(
                 for line in iter(proc.stdout.readline, ""):
                     if not line:
                         break
-                    stripped = _scrub_line(line.rstrip("\n"))
+                    stripped = line.rstrip("\n")
                     stdout_lines.append(stripped)
                     r.publish(
                         pubsub_channel,
@@ -273,7 +282,7 @@ def test_run_graph(
                 for line in iter(proc.stderr.readline, ""):
                     if not line:
                         break
-                    stripped = _scrub_line(line.rstrip("\n"))
+                    stripped = line.rstrip("\n")
                     stderr_lines.append(stripped)
                     r.publish(
                         pubsub_channel,

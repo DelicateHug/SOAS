@@ -37,9 +37,11 @@ class ChangeRequestItem(BaseModel):
     title: str
     status: str
     diff_summary: dict | None
+    submit_comment: str | None = None
     review_comment: str | None
     git_branch: str | None = None
     git_sha: str | None = None
+    git_pr_url: str | None = None
     target_tier: str = "dev"
     created_by: UUID
     creator: UserBrief | None = None
@@ -77,6 +79,7 @@ class EntityVersionResponse(BaseModel):
 
 
 class PushToDevRequest(BaseModel):
+    branch: str  # entity branch to merge into dev, e.g. "user/admin/users/bob"
     force: bool = False
 
 

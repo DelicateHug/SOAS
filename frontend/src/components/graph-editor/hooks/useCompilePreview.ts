@@ -2,7 +2,7 @@
  * Hook for requesting a compile preview (generated Python code).
  */
 
-import { useMutation } from "@tanstack/react-query";
+import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { useGraphEditorStore } from "../stores/graphEditorStore";
 import { toBackendFormat } from "../utils/graphConversion";
@@ -30,7 +30,9 @@ export function useCompilePreview() {
     setNodeMap,
   } = useGraphEditorStore();
 
-  const mutation = useMutation({
+  const mutation = useToastMutation({
+    loadingMessage: false,
+    successMessage: false,
     mutationFn: async () => {
       setIsCompiling(true);
       const graphData = toVP2GraphData();
