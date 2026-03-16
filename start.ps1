@@ -472,6 +472,16 @@ if ($Dev) {
     $composeFiles += @("-f", "docker-compose.dev.yml")
     Write-Host "   Mode: DEVELOPMENT (hot reload enabled)" -ForegroundColor Yellow
     if ($isGitRepo) { Write-Host "   Branch: $currentBranch" -ForegroundColor Yellow }
+
+    # Find an available host port for the frontend (start at 5173, increment if busy)
+    $frontendPort = 5173
+    while ($frontendPort -lt 5183) {
+        $listener = Get-NetTCPConnection -LocalPort $frontendPort -ErrorAction SilentlyContinue
+        if (-not $listener) { break }
+        Write-Warn "Port $frontendPort is in use, trying $($frontendPort + 1)..."
+        $frontendPort++
+    }
+    $env:FRONTEND_PORT = $frontendPort
 } else {
     Write-Host "   Mode: PRODUCTION" -ForegroundColor Green
     if ($isGitRepo) { Write-Host "   Branch: $currentBranch" -ForegroundColor Green }
@@ -568,7 +578,7 @@ if ($CreateAdmin) {
 # -------------------------------------------------------------------
 # 7b. Print access info
 # -------------------------------------------------------------------
-$frontendPort = if ($Dev) { "5173" } else { "3000" }
+$frontendPort = if ($Dev) { if ($env:FRONTEND_PORT) { $env:FRONTEND_PORT } else { "5173" } } else { "3000" }
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan

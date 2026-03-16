@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi.security import HTTPAuthorizationCredentials
 
-from soas_backend.api.deps import get_current_user, require_permission, security
+from soas_backend.api.deps import get_current_user, get_user_teams, require_permission, security
 from soas_backend.database import get_db
 from soas_backend.models.user import User
 from soas_backend.models.automation import Automation
@@ -100,13 +100,18 @@ def _version_read(v) -> VersionRead:
 @router.get("", response_model=PaginatedResponse[AutomationListItem])
 async def list_automations(
     automation_status: str | None = Query(None, alias="status"),
+    team_id: UUID | None = None,
     page: int = Query(1, ge=1),
     per_page: int = Query(25, ge=1, le=100),
     _: dict = Depends(require_permission("automation", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     svc = AutomationService(db)
-    automations, total = await svc.list_automations(automation_status, page, per_page)
+    automations, total = await svc.list_automations(
+        automation_status, page, per_page,
+        user_teams=user_teams, team_id=team_id,
+    )
 
     return PaginatedResponse(
         data=[
@@ -121,6 +126,7 @@ async def list_automations(
                 parameters=a.parameters or [],
                 created_at=a.created_at,
                 updated_at=a.updated_at,
+                team_id=a.team_id,
             )
             for a in automations
         ],
@@ -149,6 +155,7 @@ async def create_automation(
         parameters=[p.model_dump() for p in body.parameters] if body.parameters else [],
         timeout_seconds=body.timeout_seconds,
         tags=body.tags,
+        team_id=body.team_id,
     )
     automation = await svc.get(automation.id)
     return AutomationRead(
@@ -164,6 +171,7 @@ async def create_automation(
         created_by=_user_brief(automation.creator),
         tags=automation.tags or [],
         documentation=automation.documentation,
+        team_id=automation.team_id,
         created_at=automation.created_at,
         updated_at=automation.updated_at,
     )
@@ -210,6 +218,7 @@ async def upload_vpy(
         timeout_seconds=automation.timeout_seconds,
         created_by=_user_brief(automation.creator),
         tags=automation.tags or [],
+        team_id=automation.team_id,
         created_at=automation.created_at,
         updated_at=automation.updated_at,
     )
@@ -235,6 +244,7 @@ async def list_addable_automations(
             created_by=_user_brief(a.creator),
             tags=a.tags or [],
             parameters=a.parameters or [],
+            team_id=a.team_id,
             created_at=a.created_at,
             updated_at=a.updated_at,
         )
@@ -256,12 +266,19 @@ async def get_dependency_graph(
 async def get_automation(
     automation_id: UUID,
     _: dict = Depends(require_permission("automation", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     svc = AutomationService(db)
     automation = await svc.get(automation_id)
     if not automation:
         raise HTTPException(status_code=404, detail="Automation not found")
+
+    # Team visibility check
+    if user_teams is not None and automation.team_id is not None:
+        team_ids = [t["id"] for t in user_teams]
+        if str(automation.team_id) not in team_ids:
+            raise HTTPException(status_code=404, detail="Automation not found")
 
     return AutomationRead(
         id=automation.id,
@@ -277,6 +294,7 @@ async def get_automation(
         created_by=_user_brief(automation.creator),
         tags=automation.tags or [],
         documentation=automation.documentation,
+        team_id=automation.team_id,
         created_at=automation.created_at,
         updated_at=automation.updated_at,
     )
@@ -319,6 +337,7 @@ async def update_automation(
         created_by=_user_brief(automation.creator),
         tags=automation.tags or [],
         documentation=automation.documentation,
+        team_id=automation.team_id,
         created_at=automation.created_at,
         updated_at=automation.updated_at,
     )
@@ -722,6 +741,7 @@ async def restore_automation_version(
         created_by=_user_brief(automation.creator),
         tags=automation.tags or [],
         documentation=automation.documentation,
+        team_id=automation.team_id,
         created_at=automation.created_at,
         updated_at=automation.updated_at,
     )

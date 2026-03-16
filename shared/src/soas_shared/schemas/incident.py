@@ -20,6 +20,7 @@ class IncidentCreate(BaseSchema):
     tags: list[str] = []
     metadata: dict[str, Any] = {}
     raw_event: dict[str, Any] | None = None
+    team_id: UUID | None = None
 
 
 class IncidentRead(BaseReadSchema):
@@ -40,6 +41,7 @@ class IncidentRead(BaseReadSchema):
     assignment_count: int = 0
     case_id: UUID | None = None
     group_ids: list[UUID] = []
+    team_id: UUID | None = None
 
 
 class IncidentUpdate(BaseSchema):
@@ -80,3 +82,4 @@ class IncidentListItem(BaseReadSchema):
     tags: list[str] = []
     assignment_count: int = 0
     group_ids: list[UUID] = []
+    team_id: UUID | None = None

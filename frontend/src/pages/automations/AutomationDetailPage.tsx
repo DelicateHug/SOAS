@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { formatDate, formatDuration } from "@/lib/utils";
 import { Play, Pencil, Network, Eye } from "lucide-react";
 import type { PaginatedResponse, ExecutionItem, AutomationDependencies } from "@/types/api";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 import { VersionManager } from "@/components/VersionManager";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { DocumentationViewer } from "@/components/DocumentationViewer";
@@ -87,7 +88,7 @@ export function AutomationDetailPage() {
     enabled: !!id,
   });
 
-  const { hasDraft, draft, isDevMode } = useBranchAwareDetail("automation", id);
+  const { hasDraft, draft } = useBranchAwareDetail("automation", id);
 
   const { data: executions } = useQuery({
     queryKey: ["automation-executions", id],
@@ -195,20 +196,24 @@ export function AutomationDetailPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            to={`/automations/${id}/editor`}
-            className="flex items-center gap-2 px-4 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] text-sm"
-          >
-            <Pencil className="w-4 h-4" /> Edit Graph
-          </Link>
-          {automation.status === "active" && (
-            <button
-              onClick={() => setShowExecuteModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          <ProductionGuard>
+            <Link
+              to={`/automations/${id}/editor`}
+              className="flex items-center gap-2 px-4 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] text-sm"
             >
-              <Play className="w-4 h-4" /> Execute
-            </button>
-          )}
+              <Pencil className="w-4 h-4" /> Edit Graph
+            </Link>
+          </ProductionGuard>
+          <ProductionGuard>
+            {automation.status === "active" && (
+              <button
+                onClick={() => setShowExecuteModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                <Play className="w-4 h-4" /> Execute
+              </button>
+            )}
+          </ProductionGuard>
         </div>
       </div>
 
@@ -357,17 +362,19 @@ export function AutomationDetailPage() {
                   <Eye className="w-3.5 h-3.5" />
                   View
                 </button>
-                <button
-                  onClick={() => setDocMode("edit")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border-l border-[hsl(var(--border))] transition-colors ${
-                    docMode === "edit"
-                      ? "bg-[hsl(var(--accent))] text-[hsl(var(--foreground))]"
-                      : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]/50"
-                  }`}
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  Edit
-                </button>
+                <ProductionGuard>
+                  <button
+                    onClick={() => setDocMode("edit")}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border-l border-[hsl(var(--border))] transition-colors ${
+                      docMode === "edit"
+                        ? "bg-[hsl(var(--accent))] text-[hsl(var(--foreground))]"
+                        : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]/50"
+                    }`}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Edit
+                  </button>
+                </ProductionGuard>
               </div>
             </div>
           </div>

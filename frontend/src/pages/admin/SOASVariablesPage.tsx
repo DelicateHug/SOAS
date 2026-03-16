@@ -5,6 +5,7 @@ import { useBranchAwareList } from "@/hooks/useBranchAwareList";
 import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import { Plus, Trash2, Edit2, Shield, Eye, EyeOff, X } from "lucide-react";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 
 interface SOASVariable {
   id: string;
@@ -149,15 +150,17 @@ export function SOASVariablesPage() {
             Application-level variables accessible by automations. Permission-restricted per role.
           </p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowCreateModal(true);
-          }}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Create Variable
-        </button>
+        <ProductionGuard>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowCreateModal(true);
+            }}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Create Variable
+          </button>
+        </ProductionGuard>
       </div>
 
       {isLoading ? (
@@ -229,33 +232,35 @@ export function SOASVariablesPage() {
                     {v.source === "shared_secret" ? (
                       <span className="text-xs text-[hsl(var(--muted-foreground))] italic">managed by owner</span>
                     ) : (
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => setPermVar(v)}
-                          className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
-                          title="Permissions"
-                        >
-                          <Shield className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openEdit(v)}
-                          className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
-                          title="Edit"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Delete variable "${v.name}"?`)) {
-                              deleteVar.mutate(v.id);
-                            }
-                          }}
-                          className="p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <ProductionGuard>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => setPermVar(v)}
+                            className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                            title="Permissions"
+                          >
+                            <Shield className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => openEdit(v)}
+                            className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Delete variable "${v.name}"?`)) {
+                                deleteVar.mutate(v.id);
+                              }
+                            }}
+                            className="p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </ProductionGuard>
                     )}
                   </td>
                 </tr>

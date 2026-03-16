@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from soas_backend.api.deps import get_current_user, require_permission
+from soas_backend.api.deps import get_current_user, get_user_teams, require_permission
 from soas_backend.database import get_db
 from soas_backend.models.user import User
 from soas_backend.services.case_service import CaseService
@@ -34,13 +34,18 @@ def _user_brief(user) -> UserBrief | None:
 async def list_cases(
     case_status: str | None = Query(None, alias="status"),
     priority: int | None = Query(None, ge=1, le=5),
+    team_id: UUID | None = None,
     page: int = Query(1, ge=1),
     per_page: int = Query(25, ge=1, le=100),
     _: dict = Depends(require_permission("case", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     svc = CaseService(db)
-    cases, total = await svc.list_cases(case_status, page, per_page, priority=priority)
+    cases, total = await svc.list_cases(
+        case_status, page, per_page, priority=priority,
+        user_teams=user_teams, team_id=team_id,
+    )
 
     return PaginatedResponse(
         data=[
@@ -53,6 +58,7 @@ async def list_cases(
                 created_by=_user_brief(c.creator),
                 tags=c.tags or [],
                 incident_count=len(c.case_incidents),
+                team_id=c.team_id,
                 created_at=c.created_at,
                 updated_at=c.updated_at,
             )
@@ -70,14 +76,19 @@ async def list_cases(
 @router.get("/grouped", response_model=PaginatedResponse[CaseGroupedItem])
 async def list_cases_grouped(
     case_status: str | None = Query(None, alias="status"),
+    team_id: UUID | None = None,
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=100),
     _: dict = Depends(require_permission("case", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     """Return groups (cases) with their nested incidents."""
     svc = CaseService(db)
-    cases, total = await svc.list_cases_with_incidents(case_status, page, per_page)
+    cases, total = await svc.list_cases_with_incidents(
+        case_status, page, per_page,
+        user_teams=user_teams, team_id=team_id,
+    )
 
     return PaginatedResponse(
         data=[
@@ -107,6 +118,7 @@ async def list_cases_grouped(
                     )
                     for ci in c.case_incidents
                 ],
+                team_id=c.team_id,
             )
             for c in cases
         ],
@@ -134,6 +146,7 @@ async def create_case(
         priority=body.priority,
         tags=body.tags,
         metadata=body.metadata,
+        team_id=body.team_id,
     )
     case = await svc.get(case.id)
     return CaseRead(
@@ -148,6 +161,7 @@ async def create_case(
         tags=case.tags or [],
         metadata=case.metadata_,
         incident_count=len(case.case_incidents),
+        team_id=case.team_id,
         created_at=case.created_at,
         updated_at=case.updated_at,
     )
@@ -157,12 +171,19 @@ async def create_case(
 async def get_case(
     case_id: UUID,
     _: dict = Depends(require_permission("case", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     svc = CaseService(db)
     case = await svc.get_with_incidents(case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
+
+    # Team visibility check
+    if user_teams is not None and case.team_id is not None:
+        team_ids = [t["id"] for t in user_teams]
+        if str(case.team_id) not in team_ids:
+            raise HTTPException(status_code=404, detail="Case not found")
 
     return CaseRead(
         id=case.id,
@@ -191,6 +212,7 @@ async def get_case(
             )
             for ci in case.case_incidents
         ],
+        team_id=case.team_id,
         created_at=case.created_at,
         updated_at=case.updated_at,
     )
@@ -257,6 +279,7 @@ async def update_case(
             )
             for ci in case.case_incidents
         ],
+        team_id=case.team_id,
         created_at=case.created_at,
         updated_at=case.updated_at,
     )

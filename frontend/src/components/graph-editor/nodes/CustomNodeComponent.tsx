@@ -16,7 +16,8 @@ function getPortColor(type: string): string {
 
 function CustomNodeComponentInner({ data, selected }: NodeProps) {
   const nodeData = data as unknown as CustomNodeData;
-  const { label, color, inputs, outputs } = nodeData;
+  const { label, color, inputs, outputs, properties } = nodeData;
+  const displayName = (typeof properties?.override_name === "string" && properties.override_name) || label;
 
   const maxPorts = Math.max(inputs.length, outputs.length);
 
@@ -34,7 +35,7 @@ function CustomNodeComponentInner({ data, selected }: NodeProps) {
         className="px-3 py-1.5 rounded-t-[7px] text-white text-xs font-semibold tracking-wide"
         style={{ backgroundColor: color }}
       >
-        {label}
+        {displayName}
       </div>
 
       {/* Port rows */}

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -29,6 +29,7 @@ class IncidentService:
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
         raw_event: dict[str, Any] | None = None,
+        team_id: UUID | None = None,
     ) -> Incident:
         incident = Incident(
             title=title,
@@ -41,6 +42,7 @@ class IncidentService:
             tags=tags or [],
             metadata_=metadata or {},
             raw_event=raw_event,
+            team_id=team_id,
         )
         self.db.add(incident)
         await self.db.flush()
@@ -77,6 +79,8 @@ class IncidentService:
         status: str | None = None,
         page: int = 1,
         per_page: int = 25,
+        user_teams: list[dict] | None = None,
+        team_id: UUID | None = None,
     ) -> tuple[list[Incident], int]:
         # Build filter conditions once, reuse for count and data queries
         conditions = []
@@ -84,6 +88,15 @@ class IncidentService:
             conditions.append(Incident.severity == severity)
         if status:
             conditions.append(Incident.status == status)
+
+        # Team scoping
+        if team_id:
+            conditions.append(Incident.team_id == team_id)
+        elif user_teams is not None:
+            team_ids = [UUID(t["id"]) for t in user_teams]
+            conditions.append(
+                or_(Incident.team_id.in_(team_ids), Incident.team_id.is_(None))
+            )
 
         count_query = select(func.count(Incident.id))
         for cond in conditions:

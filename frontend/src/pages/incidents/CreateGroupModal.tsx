@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToastMutation } from "@/hooks/useToastMutation";
+import { useDeploymentMode } from "@/hooks/useDeploymentMode";
 import { api } from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
+import { useTeamStore } from "@/stores/teamStore";
 import { X } from "lucide-react";
 
 interface CreateGroupModalProps {
@@ -9,12 +12,16 @@ interface CreateGroupModalProps {
 }
 
 export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
+  const { isProduction } = useDeploymentMode();
   const queryClient = useQueryClient();
+  const userTeams = useAuthStore((s) => s.user?.teams ?? []);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const [form, setForm] = useState({
     title: "",
     description: "",
     priority: 3,
     tags: "",
+    team_id: activeTeamId ?? "",
   });
 
   const create = useToastMutation({
@@ -26,6 +33,7 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
         tags: form.tags
           ? form.tags.split(",").map((t) => t.trim()).filter(Boolean)
           : [],
+        team_id: form.team_id || undefined,
       }),
     loadingMessage: "Creating group...",
     successMessage: "Group created.",
@@ -35,6 +43,19 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
       onClose();
     },
   });
+
+  if (isProduction) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-lg w-full max-w-md p-6 text-center">
+          <p className="text-[hsl(var(--muted-foreground))]">
+            Editing is disabled in production mode. Switch to dev mode to make changes.
+          </p>
+          <button onClick={onClose} className="mt-4 px-4 py-2 border border-[hsl(var(--border))] rounded-md text-sm">Close</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -91,6 +112,16 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
               <option value={4}>P4 - Low</option>
               <option value={5}>P5 - Minimal</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Team</label>
+            <div className="px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--muted))] text-sm text-[hsl(var(--muted-foreground))]">
+              {userTeams.find((t) => t.id === form.team_id)?.name || "No team selected"}
+            </div>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+              Uses the currently selected team.
+            </p>
           </div>
 
           <div>

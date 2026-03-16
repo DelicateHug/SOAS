@@ -563,6 +563,8 @@ class CodeGenerator:
             GetGroupIncidentCountNodeEmitter,
             GetSOASVarNodeEmitter,
             SetSOASVarNodeEmitter,
+            GetTeamVarNodeEmitter,
+            SetTeamVarNodeEmitter,
             GetUserSecretNodeEmitter,
         )
         from visualpython2.compiler.emitters.code import CodeNodeEmitter
@@ -624,6 +626,8 @@ class CodeGenerator:
             GetGroupIncidentCountNodeEmitter(),
             GetSOASVarNodeEmitter(),
             SetSOASVarNodeEmitter(),
+            GetTeamVarNodeEmitter(),
+            SetTeamVarNodeEmitter(),
             GetUserSecretNodeEmitter(),
             MergeNodeEmitter(),
             ThreadNodeEmitter(),
@@ -929,6 +933,26 @@ class CodeGenerator:
         context.add_blank_line()
         context.add_line("# Subgraph inputs from parent automation (via SOAS_PARAMS env var)")
         context.add_line("_subgraph_inputs = _json.loads(_os.environ.get('SOAS_PARAMS', '{}'))")
+        context.add_blank_line()
+
+        # Resume preamble: if SOAS_RESUME_SEGMENT is set, restore checkpoint state
+        context.add_line("# --- Checkpoint resume preamble ---")
+        context.add_line("_resume_segment = int(_os.environ.get('SOAS_RESUME_SEGMENT', '-1'))")
+        context.add_line("_restored_state = {}")
+        context.add_line("if _resume_segment >= 0:")
+        context.indentation.indent()
+        context.add_line("from soas_checkpoint import load_checkpoint")
+        context.add_line("_restored_state = load_checkpoint()")
+        context.add_line("# Restore all saved variables into local scope")
+        context.add_line("for _k, _v in _restored_state.items():")
+        context.indentation.indent()
+        context.add_line("if not _k.startswith('__'):")
+        context.indentation.indent()
+        context.add_line("globals()[_k] = _v")
+        context.indentation.dedent()
+        context.indentation.dedent()
+        context.indentation.dedent()
+        context.add_line("# --- End checkpoint resume preamble ---")
         context.add_blank_line()
 
         if self._debug_mode:

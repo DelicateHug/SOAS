@@ -92,15 +92,16 @@ export function useWikiCollaboration(
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reconnectDelay = useRef(1000);
   const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
+  const maxReconnectAttempts = 15;
   const deliberateClose = useRef(false);
+  const connectFnRef = useRef<(() => void) | null>(null);
 
   // Stable Y.js doc per page – recreated only when pageId actually changes
   // (NOT in effect cleanup, which would break React StrictMode double-mount).
   const ydocRef = useRef<Y.Doc | null>(null);
   const awarenessRef = useRef<awarenessProtocol.Awareness | null>(null);
   const providerRef = useRef<AwarenessProvider | null>(null);
-  const prevPageIdRef = useRef<string | undefined>();
+  const prevPageIdRef = useRef<string | undefined>(undefined);
   if (pageId !== prevPageIdRef.current) {
     if (ydocRef.current) ydocRef.current.destroy();
     ydocRef.current = new Y.Doc();
@@ -336,7 +337,7 @@ export function useWikiCollaboration(
         if (deliberateClose.current) return;
         if (reconnectAttempts.current >= maxReconnectAttempts) {
           console.warn(
-            `[WikiCollaboration] Gave up reconnecting after ${maxReconnectAttempts} attempts`
+            `[WikiCollaboration] Pausing reconnect after ${maxReconnectAttempts} attempts — will retry on tab focus`
           );
           return;
         }
@@ -352,12 +353,28 @@ export function useWikiCollaboration(
       };
     }
 
+    connectFnRef.current = connect;
     deliberateClose.current = false;
     reconnectAttempts.current = 0;
     connect();
 
+    // Re-establish connection when tab regains focus (handles backend restarts)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      if (deliberateClose.current) return;
+      const ws = wsRef.current;
+      if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+        reconnectAttempts.current = 0;
+        reconnectDelay.current = 1000;
+        connect();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       deliberateClose.current = true;
+      connectFnRef.current = null;
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = null;

@@ -6,11 +6,13 @@ services:
       - ./backend/alembic:/app/alembic
       - ./shared/src:/app/shared-src
       - ./VisualPython2/src:/opt/vp2
+      - ./wiki:/app/wiki:ro
       - automations:/app/automations
     command: sh -c "alembic upgrade head && uvicorn soas_backend.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src --reload-dir /app/shared-src"
     environment:
       DEBUG: "true"
       PYTHONPATH: "/app/shared-src:/app/src:/opt/vp2"
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:${FRONTEND_PORT:-5173}"]'
 
   worker:
     volumes:
@@ -30,7 +32,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:5173"
     environment:
       VITE_API_URL: "http://backend:8000"
     command: npm run dev -- --host 0.0.0.0 --port 5173

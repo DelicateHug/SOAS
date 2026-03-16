@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
@@ -44,6 +44,9 @@ const UserSecretsPage = lazy(() => import("@/pages/UserSecretsPage").then((m) =>
 const AdminUserSecretsPage = lazy(() => import("@/pages/admin/AdminUserSecretsPage").then((m) => ({ default: m.AdminUserSecretsPage })));
 const LocalChangesPage = lazy(() => import("@/pages/LocalChangesPage").then((m) => ({ default: m.LocalChangesPage })));
 const ReviewChangesPage = lazy(() => import("@/pages/admin/ReviewChangesPage").then((m) => ({ default: m.ReviewChangesPage })));
+const TeamsPage = lazy(() => import("@/pages/teams/TeamsPage").then((m) => ({ default: m.TeamsPage })));
+const TeamDetailPage = lazy(() => import("@/pages/teams/TeamDetailPage").then((m) => ({ default: m.TeamDetailPage })));
+const TeamVariablesPage = lazy(() => import("@/pages/teams/TeamVariablesPage").then((m) => ({ default: m.TeamVariablesPage })));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -59,6 +62,13 @@ function PageFallback() {
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
     </div>
   );
+}
+
+function WikiSlugRouter() {
+  const { "*": slugPath = "" } = useParams();
+  if (slugPath.endsWith("/edit")) return <WikiPageEditor />;
+  if (slugPath.endsWith("/history")) return <WikiVersionHistory />;
+  return <WikiPageView />;
 }
 
 export default function App() {
@@ -107,15 +117,18 @@ export default function App() {
           {/* Wiki */}
           <Route path="wiki" element={<WikiListPage />} />
           <Route path="wiki/new" element={<WikiPageEditor />} />
-          <Route path="wiki/:slug" element={<WikiPageView />} />
-          <Route path="wiki/:slug/edit" element={<WikiPageEditor />} />
-          <Route path="wiki/:slug/history" element={<WikiVersionHistory />} />
+          <Route path="wiki/*" element={<WikiSlugRouter />} />
 
           {/* Code Library */}
           <Route path="code-library" element={<CodeLibraryPage />} />
 
           {/* Jobs — redirect to executions page with jobs tab */}
           <Route path="jobs" element={<Navigate to="/executions?tab=jobs" replace />} />
+
+          {/* Teams */}
+          <Route path="teams" element={<TeamsPage />} />
+          <Route path="teams/:id" element={<TeamDetailPage />} />
+          <Route path="team-variables" element={<TeamVariablesPage />} />
 
           {/* My Secrets */}
           <Route path="my-secrets" element={<UserSecretsPage />} />

@@ -5,6 +5,7 @@ import { useBranchAwareList } from "@/hooks/useBranchAwareList";
 import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import { Plus, Trash2, Edit2, X, ToggleLeft, ToggleRight, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 import type { FormDefinition, FormField, FormFieldType, PaginatedResponse } from "@/types/api";
 
 const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
@@ -151,15 +152,17 @@ export function FormDefinitionsPage() {
             Create reusable form templates that can be filled out during incident response.
           </p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Create Form
-        </button>
+        <ProductionGuard>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Create Form
+          </button>
+        </ProductionGuard>
       </div>
 
       {isLoading ? (
@@ -213,38 +216,50 @@ export function FormDefinitionsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-2 text-center">
-                    <button
-                      onClick={() => toggleActive.mutate(d)}
-                      className="inline-flex items-center"
-                      title={d.is_active ? "Active" : "Inactive"}
+                    <ProductionGuard
+                      fallback={
+                        d.is_active ? (
+                          <ToggleRight className="w-5 h-5 text-green-500 inline" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))] inline" />
+                        )
+                      }
                     >
-                      {d.is_active ? (
-                        <ToggleRight className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <ToggleLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                      )}
-                    </button>
+                      <button
+                        onClick={() => toggleActive.mutate(d)}
+                        className="inline-flex items-center"
+                        title={d.is_active ? "Active" : "Inactive"}
+                      >
+                        {d.is_active ? (
+                          <ToggleRight className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                        )}
+                      </button>
+                    </ProductionGuard>
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => openEdit(d)}
-                        className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete form "${d.name}"?`))
-                            deleteDefn.mutate(d.id);
-                        }}
-                        className="p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <ProductionGuard>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => openEdit(d)}
+                          className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete form "${d.name}"?`))
+                              deleteDefn.mutate(d.id);
+                          }}
+                          className="p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </ProductionGuard>
                   </td>
                 </tr>
               ))}

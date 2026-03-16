@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
+import { useTeamStore } from "@/stores/teamStore";
 import { Loader2 } from "lucide-react";
 import type { PaginatedResponse, CaseItem } from "@/types/api";
 
@@ -30,10 +31,12 @@ export function AddToGroupPopover({
     return () => document.removeEventListener("mousedown", handler);
   }, [onClose]);
 
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const { data: groups, isLoading } = useQuery({
-    queryKey: ["cases"],
+    queryKey: ["cases", activeTeamId],
     queryFn: () =>
-      api.get<PaginatedResponse<CaseItem>>("/cases?per_page=100"),
+      api.get<PaginatedResponse<CaseItem>>(`/cases?per_page=100&team_id=${activeTeamId}`),
+    enabled: !!activeTeamId,
   });
 
   const link = useToastMutation({

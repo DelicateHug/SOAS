@@ -1,11 +1,26 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToastMutation } from "@/hooks/useToastMutation";
+import { useDeploymentMode } from "@/hooks/useDeploymentMode";
 import { api } from "@/lib/api";
+import { useTeamStore } from "@/stores/teamStore";
 import { Upload, ArrowLeft } from "lucide-react";
 
 export function UploadAutomationPage() {
+  const { isProduction } = useDeploymentMode();
+
+  if (isProduction) {
+    return (
+      <div className="max-w-2xl py-12 text-center">
+        <h1 className="text-2xl font-bold mb-4">Upload Automation</h1>
+        <p className="text-[hsl(var(--muted-foreground))]">
+          Editing is disabled in production mode. Switch to dev mode to make changes.
+        </p>
+      </div>
+    );
+  }
   const navigate = useNavigate();
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [timeoutSeconds, setTimeoutSeconds] = useState(300);
@@ -31,6 +46,7 @@ export function UploadAutomationPage() {
         graph_data: graphData,
         timeout_seconds: timeoutSeconds,
         status: "draft",
+        team_id: activeTeamId ?? undefined,
       });
     },
     loadingMessage: "Uploading automation...",

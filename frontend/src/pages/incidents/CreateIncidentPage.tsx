@@ -1,18 +1,36 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToastMutation } from "@/hooks/useToastMutation";
+import { useDeploymentMode } from "@/hooks/useDeploymentMode";
 import { api } from "@/lib/api";
 import { TagInput } from "@/components/ui/TagInput";
+import { useAuthStore } from "@/stores/authStore";
+import { useTeamStore } from "@/stores/teamStore";
 import type { IncidentSeverity } from "@/types/api";
 
 export function CreateIncidentPage() {
+  const { isProduction } = useDeploymentMode();
+
+  if (isProduction) {
+    return (
+      <div className="max-w-2xl py-12 text-center">
+        <h1 className="text-2xl font-bold mb-4">New Incident</h1>
+        <p className="text-[hsl(var(--muted-foreground))]">
+          Editing is disabled in production mode. Switch to dev mode to make changes.
+        </p>
+      </div>
+    );
+  }
   const navigate = useNavigate();
+  const userTeams = useAuthStore((s) => s.user?.teams ?? []);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const [form, setForm] = useState({
     title: "",
     summary: "",
     severity: "medium" as IncidentSeverity,
     source: "",
     tags: [] as string[],
+    team_id: activeTeamId ?? "",
   });
 
   const create = useToastMutation({
@@ -23,6 +41,7 @@ export function CreateIncidentPage() {
         severity: form.severity,
         source: form.source || undefined,
         tags: form.tags,
+        team_id: form.team_id || undefined,
       }),
     loadingMessage: "Creating incident...",
     successMessage: "Incident created.",
@@ -90,6 +109,16 @@ export function CreateIncidentPage() {
               placeholder="e.g., SIEM, Manual, EDR"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Team</label>
+          <div className="px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--muted))] text-sm text-[hsl(var(--muted-foreground))]">
+            {userTeams.find((t) => t.id === form.team_id)?.name || "No team selected"}
+          </div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+            Uses the currently selected team. Change teams via the sidebar selector.
+          </p>
         </div>
 
         <div>

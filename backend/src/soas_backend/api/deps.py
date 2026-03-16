@@ -1,6 +1,7 @@
 """FastAPI dependency injection - auth, RBAC, and shared resources."""
 
 from collections.abc import AsyncGenerator
+from typing import Any
 from uuid import UUID
 
 import redis.asyncio as aioredis
@@ -75,6 +76,28 @@ async def get_current_user(
         )
 
     return user
+
+
+async def get_user_teams(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> list[dict[str, Any]] | None:
+    """Extract team memberships from JWT.
+
+    Returns list of team dicts for normal users, or None for admins (meaning all teams).
+    """
+    token = credentials.credentials
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+
+    roles: list[str] = payload.get("roles", [])
+    if "admin" in roles:
+        return None  # Admin sees all teams
+
+    return payload.get("teams", [])
 
 
 def require_permission(resource: str, action: str):

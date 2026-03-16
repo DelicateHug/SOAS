@@ -160,7 +160,7 @@ async def execution_ws(websocket: WebSocket, execution_id: str):
     async def _relay_output():
         """Redis pubsub → WebSocket (output + input_request messages)."""
         nonlocal pubsub
-        deadline = asyncio.get_event_loop().time() + 600
+        deadline = asyncio.get_event_loop().time() + 3600  # 1 hour to accommodate input waits
 
         pubsub = r.pubsub()
         channel = f"execution:{execution_id}:output"
@@ -199,7 +199,12 @@ async def execution_ws(websocket: WebSocket, execution_id: str):
                     pass
 
     async def _relay_input():
-        """WebSocket → Redis list (input_response messages)."""
+        """WebSocket → Celery resume task (input_response messages).
+
+        When the user provides input, we inject the value into the
+        checkpoint state in Redis and dispatch a Celery task to resume
+        the automation from the next segment.
+        """
         while not done.is_set():
             try:
                 raw = await asyncio.wait_for(
@@ -218,13 +223,88 @@ async def execution_ws(websocket: WebSocket, execution_id: str):
                 continue
 
             if msg.get("type") == "input_response" and msg.get("request_id"):
-                response_key = f"execution:{execution_id}:input:{msg['request_id']}"
-                payload = json.dumps({
-                    "value": msg.get("value", ""),
-                    "cancelled": msg.get("cancelled", False),
-                })
-                await r.lpush(response_key, payload)
-                await r.expire(response_key, 300)
+                input_value = msg.get("value", "")
+                input_cancelled = msg.get("cancelled", False)
+
+                try:
+                    # Read checkpoint metadata to get segment_index
+                    meta_key = f"execution:{execution_id}:checkpoint_meta"
+                    meta_raw = await r.get(meta_key)
+                    if not meta_raw:
+                        logger.warning("No checkpoint meta for execution %s", execution_id)
+                        continue
+
+                    if isinstance(meta_raw, bytes):
+                        meta_raw = meta_raw.decode("utf-8")
+                    meta = json.loads(meta_raw)
+                    segment_index = meta.get("segment_index", 0)
+
+                    # Inject input value into the checkpoint state
+                    import pickle
+                    import hashlib
+                    import hmac as _hmac
+
+                    state_key = f"execution:{execution_id}:checkpoint_state"
+                    pickled = await r.get(state_key)
+                    if pickled:
+                        hmac_key = execution_id.encode()
+                        state = pickle.loads(pickled)
+                        state["__input_value__"] = input_value
+                        state["__input_cancelled__"] = input_cancelled
+                        new_pickled = pickle.dumps(state, protocol=pickle.HIGHEST_PROTOCOL)
+                        new_sig = _hmac.new(hmac_key, new_pickled, hashlib.sha256).hexdigest()
+                        meta["signature"] = new_sig
+                        await r.set(state_key, new_pickled, ex=3600)
+                        await r.set(meta_key, json.dumps(meta), ex=3600)
+
+                    # Clean up pending input key
+                    pending_key = f"execution:{execution_id}:pending_input"
+                    await r.delete(pending_key)
+                    await r.srem("executions:pending_input", execution_id)
+
+                    # Read resume context and dispatch Celery task
+                    ctx_key = f"execution:{execution_id}:resume_context"
+                    ctx_raw = await r.get(ctx_key)
+                    if ctx_raw:
+                        if isinstance(ctx_raw, bytes):
+                            ctx_raw = ctx_raw.decode("utf-8")
+                        ctx = json.loads(ctx_raw)
+
+                        from soas_backend.celery_proxy import get_celery
+                        celery_app = get_celery()
+
+                        if "graph_json" in ctx:
+                            # Test run — re-dispatch test_run_graph
+                            celery_app.send_task(
+                                "soas.test_run_graph",
+                                kwargs={
+                                    "execution_id": execution_id,
+                                    "automation_id": ctx["automation_id"],
+                                    "graph_json": ctx["graph_json"],
+                                    "parameters": ctx["parameters"],
+                                    "incident_id": ctx.get("incident_id"),
+                                    "timeout_seconds": ctx.get("timeout_seconds", 300),
+                                    "user_role_ids": ctx.get("user_role_ids"),
+                                    "api_token": ctx.get("api_token"),
+                                    "triggering_user_id": ctx.get("triggering_user_id"),
+                                    "resume_segment": segment_index,
+                                },
+                            )
+                        else:
+                            # Production run — re-dispatch run_automation
+                            celery_app.send_task(
+                                "soas.run_automation",
+                                kwargs={
+                                    "execution_id": execution_id,
+                                    "automation_id": ctx["automation_id"],
+                                    "parameters": ctx["parameters"],
+                                    "user_role_ids": ctx.get("user_role_ids"),
+                                    "api_token": ctx.get("api_token"),
+                                    "resume_segment": segment_index,
+                                },
+                            )
+                except Exception:
+                    logger.exception("Failed to dispatch resume for execution %s", execution_id)
 
     try:
         from soas_backend.api.deps import get_redis_pool

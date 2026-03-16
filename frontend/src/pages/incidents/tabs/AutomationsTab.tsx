@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
+import { useTeamStore } from "@/stores/teamStore";
 import { formatDate, formatDuration } from "@/lib/utils";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import type {
@@ -52,10 +53,12 @@ export function AutomationsTab({ incidentId }: Props) {
   });
   const pendingInputIds = new Set(pendingInputData?.execution_ids || []);
 
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const { data: automations } = useQuery({
-    queryKey: ["automations-active"],
+    queryKey: ["automations-active", activeTeamId],
     queryFn: () =>
-      api.get<PaginatedResponse<AutomationItem>>("/automations?status=active&per_page=100"),
+      api.get<PaginatedResponse<AutomationItem>>(`/automations?status=active&per_page=100&team_id=${activeTeamId}`),
+    enabled: !!activeTeamId,
   });
 
   const runAutomation = useToastMutation({

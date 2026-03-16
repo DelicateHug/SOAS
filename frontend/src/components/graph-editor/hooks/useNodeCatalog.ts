@@ -80,6 +80,7 @@ function mapProperty(prop: BackendPropertyDef): NodePropertyDef {
     soas_variable_select: "soas_variable_select",
     incident_variable_select: "incident_variable_select",
     user_secret_select: "user_secret_select",
+    team_variable_select: "team_variable_select",
     select: "select",
   };
 

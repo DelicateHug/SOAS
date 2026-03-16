@@ -6,6 +6,7 @@ import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchSta
 import { api } from "@/lib/api";
 import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import type { Role, Permission } from "@/types/api";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 
 export function AdminRolesPage() {
   const queryClient = useQueryClient();
@@ -55,7 +56,7 @@ export function AdminRolesPage() {
   });
 
   const togglePermission = (role: Role, permission: Permission) => {
-    const current = role.permissions.map((p) => p.id);
+    const current = (role.permissions ?? []).map((p) => p.id);
     const updated = current.includes(permission.id)
       ? current.filter((id) => id !== permission.id)
       : [...current, permission.id];
@@ -75,12 +76,14 @@ export function AdminRolesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Role Management</h1>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90"
-        >
-          <Plus className="w-4 h-4" /> Create Role
-        </button>
+        <ProductionGuard>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90"
+          >
+            <Plus className="w-4 h-4" /> Create Role
+          </button>
+        </ProductionGuard>
       </div>
 
       {isLoading ? (
@@ -131,7 +134,7 @@ export function AdminRolesPage() {
                     </span>
                   )}
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {role.permissions.length} permissions
+                    {(role.permissions ?? []).length} permissions
                   </span>
                 </div>
               </button>
@@ -145,19 +148,33 @@ export function AdminRolesPage() {
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {permissions.map((perm) => {
-                          const hasPermission = role.permissions.some((rp) => rp.id === perm.id);
+                          const hasPermission = (role.permissions ?? []).some((rp) => rp.id === perm.id);
                           return (
-                            <button
+                            <ProductionGuard
                               key={perm.id}
-                              onClick={() => togglePermission(role, perm)}
-                              className={`px-2 py-1 rounded text-xs border transition-colors ${
-                                hasPermission
-                                  ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent"
-                                  : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--primary))]"
-                              }`}
+                              fallback={
+                                <span
+                                  className={`px-2 py-1 rounded text-xs border ${
+                                    hasPermission
+                                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent"
+                                      : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
+                                  }`}
+                                >
+                                  {perm.action}
+                                </span>
+                              }
                             >
-                              {perm.action}
-                            </button>
+                              <button
+                                onClick={() => togglePermission(role, perm)}
+                                className={`px-2 py-1 rounded text-xs border transition-colors ${
+                                  hasPermission
+                                    ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent"
+                                    : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--primary))]"
+                                }`}
+                              >
+                                {perm.action}
+                              </button>
+                            </ProductionGuard>
                           );
                         })}
                       </div>

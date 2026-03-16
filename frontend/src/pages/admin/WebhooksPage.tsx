@@ -19,6 +19,7 @@ import {
   X,
   AlertTriangle,
 } from "lucide-react";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 import type {
   Webhook,
   WebhookListItem,
@@ -207,15 +208,17 @@ export function WebhooksPage() {
             Manage ingest webhooks for receiving alerts from external sources.
           </p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowCreateModal(true);
-          }}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Create Webhook
-        </button>
+        <ProductionGuard>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowCreateModal(true);
+            }}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Create Webhook
+          </button>
+        </ProductionGuard>
       </div>
 
       {isLoading ? (
@@ -266,27 +269,40 @@ export function WebhooksPage() {
                     {wh.source_type}
                   </td>
                   <td className="px-4 py-2 text-center">
-                    <button
-                      onClick={() =>
-                        toggleWebhook.mutate({
-                          id: wh.id,
-                          is_enabled: wh.is_enabled,
-                        })
+                    <ProductionGuard
+                      fallback={
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          wh.is_enabled
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-[hsl(var(--muted))]/50 text-[hsl(var(--muted-foreground))]"
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${wh.is_enabled ? "bg-green-400" : "bg-[hsl(var(--muted-foreground))]"}`} />
+                          {wh.is_enabled ? "Enabled" : "Disabled"}
+                        </span>
                       }
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                        wh.is_enabled
-                          ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
-                          : "bg-[hsl(var(--muted))]/50 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/70"
-                      }`}
-                      title={wh.is_enabled ? "Click to disable" : "Click to enable"}
                     >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          wh.is_enabled ? "bg-green-400" : "bg-[hsl(var(--muted-foreground))]"
+                      <button
+                        onClick={() =>
+                          toggleWebhook.mutate({
+                            id: wh.id,
+                            is_enabled: wh.is_enabled,
+                          })
+                        }
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                          wh.is_enabled
+                            ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                            : "bg-[hsl(var(--muted))]/50 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/70"
                         }`}
-                      />
-                      {wh.is_enabled ? "Enabled" : "Disabled"}
-                    </button>
+                        title={wh.is_enabled ? "Click to disable" : "Click to enable"}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            wh.is_enabled ? "bg-green-400" : "bg-[hsl(var(--muted-foreground))]"
+                          }`}
+                        />
+                        {wh.is_enabled ? "Enabled" : "Disabled"}
+                      </button>
+                    </ProductionGuard>
                   </td>
                   <td className="px-4 py-2 text-[hsl(var(--muted-foreground))]">
                     {wh.last_received_at ? formatDate(wh.last_received_at) : "Never"}
@@ -295,6 +311,7 @@ export function WebhooksPage() {
                     {wh.total_received.toLocaleString()}
                   </td>
                   <td className="px-4 py-2 text-right">
+                    <ProductionGuard>
                     <div className="inline-block">
                       <button
                         onClick={(e) => {
@@ -368,6 +385,7 @@ export function WebhooksPage() {
                         </>
                       )}
                     </div>
+                    </ProductionGuard>
                   </td>
                 </tr>
               ))}

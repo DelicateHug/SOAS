@@ -48,7 +48,13 @@ class Automation(Base):
         DateTime(timezone=True), nullable=True, default=None
     )
 
+    # Team scoping
+    team_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
+    )
+
     creator = relationship("User", foreign_keys=[created_by])
+    team = relationship("Team", foreign_keys=[team_id])
     permissions: Mapped[list["AutomationPermission"]] = relationship(
         back_populates="automation", cascade="all, delete-orphan"
     )
@@ -57,6 +63,10 @@ class Automation(Base):
     )
     versions: Mapped[list["AutomationVersion"]] = relationship(
         back_populates="automation", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        Index("idx_automations_team_id", "team_id"),
     )
 
 

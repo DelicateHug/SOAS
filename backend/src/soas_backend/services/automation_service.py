@@ -4,7 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from soas_backend.celery_proxy import get_celery
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -29,6 +29,7 @@ class AutomationService:
         parameters: list[dict[str, Any]] | None = None,
         timeout_seconds: int = 300,
         tags: list[str] | None = None,
+        team_id: UUID | None = None,
     ) -> Automation:
         automation = Automation(
             name=name,
@@ -40,6 +41,7 @@ class AutomationService:
             created_by=created_by,
             tags=tags or [],
             status="draft",
+            team_id=team_id,
         )
         self.db.add(automation)
         await self.db.flush()
@@ -91,11 +93,22 @@ class AutomationService:
         status: str | None = None,
         page: int = 1,
         per_page: int = 25,
+        user_teams: list[dict] | None = None,
+        team_id: UUID | None = None,
     ) -> tuple[list[Automation], int]:
         # Build filter conditions once, reuse for count and data queries
         conditions = []
         if status:
             conditions.append(Automation.status == status)
+
+        # Team scoping
+        if team_id:
+            conditions.append(Automation.team_id == team_id)
+        elif user_teams is not None:
+            team_ids = [UUID(t["id"]) for t in user_teams]
+            conditions.append(
+                or_(Automation.team_id.in_(team_ids), Automation.team_id.is_(None))
+            )
 
         count_query = select(func.count(Automation.id))
         for cond in conditions:

@@ -18,6 +18,7 @@ class CaseCreate(BaseSchema):
     priority: int = Field(default=3, ge=1, le=5)
     tags: list[str] = []
     metadata: dict[str, Any] = {}
+    team_id: UUID | None = None
 
 
 class CaseRead(BaseReadSchema):
@@ -32,6 +33,7 @@ class CaseRead(BaseReadSchema):
     metadata: dict[str, Any] = {}
     incident_count: int = 0
     incidents: list[IncidentListItem] = []
+    team_id: UUID | None = None
 
 
 class CaseUpdate(BaseSchema):
@@ -57,6 +59,7 @@ class CaseListItem(BaseReadSchema):
     created_by: UserBrief
     tags: list[str] = []
     incident_count: int = 0
+    team_id: UUID | None = None
 
 
 class CaseGroupedItem(BaseReadSchema):
@@ -70,3 +73,4 @@ class CaseGroupedItem(BaseReadSchema):
     created_by: UserBrief
     tags: list[str] = []
     incidents: list[IncidentListItem] = []
+    team_id: UUID | None = None

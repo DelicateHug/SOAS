@@ -1,0 +1,112 @@
+/**
+ * Webview styles.
+ * Imports Tailwind CSS (same as frontend), sets dark-mode CSS vars
+ * to match VSCode's dark theme, and applies webview-specific overrides.
+ */
+
+@import "tailwindcss";
+@source "../../../../frontend/src";
+@source "../panels";
+@source "../lib";
+
+/* ── Dark-mode CSS custom properties (same as frontend/src/index.css) ── */
+:root {
+  /* VSCode is almost always dark, so use the dark palette directly */
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
+  --radius: 0.5rem;
+
+  --severity-critical: 0 84% 60%;
+  --severity-high: 25 95% 53%;
+  --severity-medium: 45 93% 47%;
+  --severity-low: 217 91% 60%;
+  --severity-info: 220 9% 46%;
+}
+
+/* ── Webview overrides ── */
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--vscode-font-family, system-ui, -apple-system, sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+}
+
+/* Scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground));
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder, hsl(var(--ring)));
+  outline-offset: -1px;
+}
+
+/* Link styles */
+a {
+  color: var(--vscode-textLink-foreground, hsl(var(--primary)));
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+select,
+option {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* ── React Flow webview fix ──
+   Force the React Flow container and all its internal wrappers to fill
+   their parents. The .react-flow element needs a parent with concrete
+   dimensions (not just flex-1). */
+.react-flow {
+  width: 100% !important;
+  height: 100% !important;
+}

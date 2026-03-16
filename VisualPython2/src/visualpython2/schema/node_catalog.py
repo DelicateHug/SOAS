@@ -132,6 +132,13 @@ _PROPERTY_METADATA: Dict[Tuple[str, str], Dict[str, Any]] = {
     ("set_soas_var", "variable_name"): {
         "description": "Select the SOAS application variable to write",
     },
+    # Team Variables
+    ("get_team_var", "variable_name"): {
+        "description": "Select the team variable to read",
+    },
+    ("set_team_var", "variable_name"): {
+        "description": "Select the team variable to write",
+    },
     # User Secrets
     ("get_user_secret", "secret_name"): {
         "description": "Select the user secret to read",
@@ -210,6 +217,8 @@ def _get_property_defs(node_instance) -> List[Dict[str, Any]]:
             prop_def["ui_type"] = "soas_variable_select"
         if key == "variable_name" and node_type in ("get_incident_var", "set_incident_var"):
             prop_def["ui_type"] = "incident_variable_select"
+        if key == "variable_name" and node_type in ("get_team_var", "set_team_var"):
+            prop_def["ui_type"] = "team_variable_select"
         if key == "secret_name" and node_type == "get_user_secret":
             prop_def["ui_type"] = "user_secret_select"
         # Apply property metadata (description, placeholder, ui_type, options, visible_when)

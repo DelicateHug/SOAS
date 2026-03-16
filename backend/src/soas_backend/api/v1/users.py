@@ -15,7 +15,7 @@ from soas_backend.database import get_db
 from soas_backend.models.role import UserRole
 from soas_backend.models.user import User
 from soas_shared.schemas.common import PaginatedResponse, PaginationMeta
-from soas_shared.schemas.user import AdminUserCreate, AdminUserCreateResponse, UserRead, UserUpdate
+from soas_shared.schemas.user import AdminPasswordResetResponse, AdminUserCreate, AdminUserCreateResponse, UserRead, UserUpdate
 
 
 def _generate_secure_password(length: int = 20) -> str:
@@ -191,6 +191,30 @@ async def update_user(
         updated_at=user.updated_at,
         roles=[ur.role.display_name for ur in user.user_roles],
     )
+
+
+@router.post("/{user_id}/reset-password", response_model=AdminPasswordResetResponse)
+async def reset_user_password(
+    user_id: UUID,
+    current_user: User = Depends(get_current_user),
+    _: dict = Depends(require_permission("user", "update")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Admin resets a user's password, generating a new temporary one."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Use change-password to reset your own password")
+
+    temporary_password = _generate_secure_password()
+    user.password_hash = hash_password(temporary_password)
+    user.must_reset_password = True
+    await db.flush()
+
+    return AdminPasswordResetResponse(temporary_password=temporary_password)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

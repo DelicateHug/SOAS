@@ -39,6 +39,7 @@ class AutomationCreate(BaseSchema):
     tags: list[str] = []
     trigger_tags: list[str] = []
     is_trigger_enabled: bool = False
+    team_id: UUID | None = None
 
 
 class AutomationRead(BaseReadSchema):
@@ -56,6 +57,7 @@ class AutomationRead(BaseReadSchema):
     trigger_tags: list[str] = []
     is_trigger_enabled: bool = False
     documentation: str | None = None
+    team_id: UUID | None = None
 
 
 class AutomationUpdate(BaseSchema):
@@ -102,3 +104,4 @@ class AutomationListItem(BaseReadSchema):
     created_by: UserBrief
     tags: list[str] = []
     parameters: list[AutomationInputDef] = []
+    team_id: UUID | None = None

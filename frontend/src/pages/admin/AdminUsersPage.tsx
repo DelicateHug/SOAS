@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDeploymentMode } from "@/hooks/useDeploymentMode";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
-import { UserCheck, UserX, Shield, UserPlus, Copy, Check } from "lucide-react";
+import { UserCheck, UserX, Shield, UserPlus, Copy, Check, KeyRound } from "lucide-react";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 import type { PaginatedResponse, Role, ChangeRequestDetail } from "@/types/api";
 import { useToast } from "@/stores/toastStore";
 import { useToastMutation } from "@/hooks/useToastMutation";
@@ -35,6 +36,9 @@ export function AdminUsersPage() {
   const [createError, setCreateError] = useState("");
   const [createdUser, setCreatedUser] = useState<AdminUserCreateResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState<UserRead | null>(null);
+  const [resetPasswordResult, setResetPasswordResult] = useState<string | null>(null);
+  const [resetCopied, setResetCopied] = useState(false);
   const { toast } = useToast();
 
   const { data: users, isLoading } = useQuery({
@@ -111,6 +115,42 @@ export function AdminUsersPage() {
     },
   });
 
+  const resetPassword = useToastMutation({
+    mutationFn: (userId: string) =>
+      api.post<{ temporary_password: string }>(`/admin/users/${userId}/reset-password`),
+    successMessage: false,
+    errorMessage: (err: { detail?: string }) => err.detail || "Failed to reset password",
+    onSuccess: (data) => {
+      setResetPasswordResult(data.temporary_password);
+    },
+  });
+
+  const handleResetPassword = (user: UserRead) => {
+    setResetPasswordUser(user);
+    setResetPasswordResult(null);
+    setResetCopied(false);
+  };
+
+  const confirmResetPassword = () => {
+    if (resetPasswordUser) {
+      resetPassword.mutate(resetPasswordUser.id);
+    }
+  };
+
+  const handleCloseResetModal = () => {
+    setResetPasswordUser(null);
+    setResetPasswordResult(null);
+    setResetCopied(false);
+  };
+
+  const handleCopyResetPassword = async () => {
+    if (resetPasswordResult) {
+      await navigator.clipboard.writeText(resetPasswordResult);
+      setResetCopied(true);
+      setTimeout(() => setResetCopied(false), 2000);
+    }
+  };
+
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError("");
@@ -137,13 +177,15 @@ export function AdminUsersPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">User Management</h1>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
-        >
-          <UserPlus className="w-4 h-4" />
-          Add User
-        </button>
+        <ProductionGuard>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add User
+          </button>
+        </ProductionGuard>
       </div>
 
       {isLoading ? (
@@ -177,14 +219,22 @@ export function AdminUsersPage() {
                       {user.roles.map((roleName) => {
                         const roleObj = roles?.find((r) => r.display_name === roleName);
                         return (
-                          <span
+                          <ProductionGuard
                             key={roleName}
-                            className="px-1.5 py-0.5 bg-[hsl(var(--accent))] rounded text-xs cursor-pointer hover:bg-red-100 group"
-                            onClick={() => roleObj && removeRole.mutate({ userId: user.id, roleId: roleObj.id })}
-                            title="Click to remove"
+                            fallback={
+                              <span className="px-1.5 py-0.5 bg-[hsl(var(--accent))] rounded text-xs">
+                                {roleName}
+                              </span>
+                            }
                           >
-                            {roleName}
-                          </span>
+                            <span
+                              className="px-1.5 py-0.5 bg-[hsl(var(--accent))] rounded text-xs cursor-pointer hover:bg-red-100 group"
+                              onClick={() => roleObj && removeRole.mutate({ userId: user.id, roleId: roleObj.id })}
+                              title="Click to remove"
+                            >
+                              {roleName}
+                            </span>
+                          </ProductionGuard>
                         );
                       })}
                       {(pendingRolesByUser.get(user.id) ?? []).map((cr) => {
@@ -204,12 +254,14 @@ export function AdminUsersPage() {
                           </span>
                         );
                       })}
-                      <button
-                        onClick={() => { setSelectedUser(user); setShowRoleModal(true); }}
-                        className="px-1.5 py-0.5 border border-dashed border-[hsl(var(--border))] rounded text-xs text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--primary))]"
-                      >
-                        +
-                      </button>
+                      <ProductionGuard>
+                        <button
+                          onClick={() => { setSelectedUser(user); setShowRoleModal(true); }}
+                          className="px-1.5 py-0.5 border border-dashed border-[hsl(var(--border))] rounded text-xs text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--primary))]"
+                        >
+                          +
+                        </button>
+                      </ProductionGuard>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -232,17 +284,28 @@ export function AdminUsersPage() {
                     {user.last_login_at ? formatDate(user.last_login_at) : "Never"}
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => toggleActive.mutate(user)}
-                      className={`p-1 rounded ${
-                        user.is_active
-                          ? "text-red-500 hover:bg-red-50"
-                          : "text-green-500 hover:bg-green-50"
-                      }`}
-                      title={user.is_active ? "Deactivate" : "Activate"}
-                    >
-                      {user.is_active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                    </button>
+                    <ProductionGuard>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleResetPassword(user)}
+                          className="p-1 rounded text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))]"
+                          title="Reset password"
+                        >
+                          <KeyRound className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => toggleActive.mutate(user)}
+                          className={`p-1 rounded ${
+                            user.is_active
+                              ? "text-red-500 hover:bg-red-50"
+                              : "text-green-500 hover:bg-green-50"
+                          }`}
+                          title={user.is_active ? "Deactivate" : "Activate"}
+                        >
+                          {user.is_active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </ProductionGuard>
                   </td>
                 </tr>
               ))}
@@ -381,6 +444,77 @@ export function AdminUsersPage() {
                     </button>
                   </div>
                 </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {resetPasswordUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[hsl(var(--background))] rounded-lg p-6 w-full max-w-md border border-[hsl(var(--border))]">
+            {resetPasswordResult ? (
+              <>
+                <h2 className="text-lg font-semibold mb-4">Password Reset</h2>
+                <div className="space-y-3">
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    New temporary password for <span className="font-medium text-[hsl(var(--foreground))]">{resetPasswordUser.display_name}</span>:
+                  </p>
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-sm font-mono bg-[hsl(var(--accent))] px-2 py-1 rounded break-all">
+                        {resetPasswordResult}
+                      </code>
+                      <button
+                        onClick={handleCopyResetPassword}
+                        className="p-1.5 rounded hover:bg-[hsl(var(--accent))]"
+                        title="Copy password"
+                      >
+                        {resetCopied ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-2">
+                      The user will be required to change this password on next login. Copy it now — it cannot be retrieved later.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCloseResetModal}
+                  className="mt-4 w-full px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90"
+                >
+                  Done
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-semibold mb-4">Reset Password</h2>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                  Are you sure you want to reset the password for <span className="font-medium text-[hsl(var(--foreground))]">{resetPasswordUser.display_name}</span> (@{resetPasswordUser.username})?
+                </p>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                  A new temporary password will be generated. The user will be required to change it on next login.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCloseResetModal}
+                    className="flex-1 px-4 py-2 border border-[hsl(var(--border))] rounded-md text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmResetPassword}
+                    disabled={resetPassword.isPending}
+                    className="flex-1 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90 disabled:opacity-50"
+                  >
+                    {resetPassword.isPending ? "Resetting..." : "Reset Password"}
+                  </button>
+                </div>
               </>
             )}
           </div>

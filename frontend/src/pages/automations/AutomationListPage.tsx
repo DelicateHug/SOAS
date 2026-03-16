@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToastMutation } from "@/hooks/useToastMutation";
 import { useBranchAwareList } from "@/hooks/useBranchAwareList";
 import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
@@ -23,7 +23,9 @@ import {
   Loader2,
 } from "lucide-react";
 import { PermissionsPanel } from "@/components/graph-editor/PermissionsPanel";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 import type { PaginatedResponse, AutomationItem, AutomationStatus } from "@/types/api";
+import { useTeamStore } from "@/stores/teamStore";
 
 const statusColors: Record<string, string> = {
   draft: "bg-yellow-100 text-yellow-800",
@@ -41,6 +43,7 @@ const allStatuses: AutomationStatus[] = ["draft", "active", "disabled", "archive
 export function AutomationListPage() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({ status: "", page: 1 });
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const [editingAutomation, setEditingAutomation] = useState<AutomationItem | null>(null);
   const [permissionsAutomationId, setPermissionsAutomationId] = useState<string | null>(null);
   const [deletingAutomationId, setDeletingAutomationId] = useState<string | null>(null);
@@ -57,10 +60,11 @@ export function AutomationListPage() {
 
   const { items: branchItems, pendingCreates, raw: data, isLoading } = useBranchAwareList<AutomationItem, PaginatedResponse<AutomationItem>>({
     entityType: "automation",
-    queryKey: ["automations", filters],
+    queryKey: ["automations", filters, activeTeamId],
     queryFn: () => {
       const params = new URLSearchParams();
       if (filters.status) params.set("status", filters.status);
+      params.set("team_id", activeTeamId!);
       params.set("page", String(filters.page));
       params.set("per_page", "25");
       return api.get<PaginatedResponse<AutomationItem>>(`/automations?${params}`);
@@ -74,22 +78,24 @@ export function AutomationListPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Automations</h1>
-        <div className="flex items-center gap-2">
-          <Link
-            to="/automations/new"
-            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Create New
-          </Link>
-          <Link
-            to="/automations/upload"
-            className="flex items-center gap-2 px-4 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] text-sm"
-          >
-            <Upload className="w-4 h-4" />
-            Upload .vpy
-          </Link>
-        </div>
+        <ProductionGuard>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/automations/new"
+              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Create New
+            </Link>
+            <Link
+              to="/automations/upload"
+              className="flex items-center gap-2 px-4 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] text-sm"
+            >
+              <Upload className="w-4 h-4" />
+              Upload .vpy
+            </Link>
+          </div>
+        </ProductionGuard>
       </div>
 
       {/* Filters */}
@@ -215,12 +221,14 @@ export function AutomationListPage() {
                       {formatDate(automation.updated_at)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <ActionMenu
-                        automation={automation}
-                        onEditConfig={setEditingAutomation}
-                        onPermissions={setPermissionsAutomationId}
-                        onDelete={setDeletingAutomationId}
-                      />
+                      <ProductionGuard>
+                        <ActionMenu
+                          automation={automation}
+                          onEditConfig={setEditingAutomation}
+                          onPermissions={setPermissionsAutomationId}
+                          onDelete={setDeletingAutomationId}
+                        />
+                      </ProductionGuard>
                     </td>
                   </tr>
                 ))}

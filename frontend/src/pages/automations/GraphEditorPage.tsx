@@ -17,6 +17,7 @@ import { useGraphEditorStore } from "@/components/graph-editor/stores/graphEdito
 import { useNodeCatalog } from "@/components/graph-editor/hooks/useNodeCatalog";
 import type { VP2GraphData } from "@/components/graph-editor/types/graph";
 import type { AutomationItem } from "@/types/api";
+import { useTeamStore } from "@/stores/teamStore";
 
 interface AutomationDetail extends AutomationItem {
   graph_file?: string;
@@ -61,16 +62,21 @@ export function GraphEditorPage() {
     enabled: !!id,
   });
 
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+
   // Called by GraphEditor on first save when no automation exists yet
   const handleCreateAutomation = useCallback(async (): Promise<string> => {
     const name = useGraphEditorStore.getState().name || "Untitled Automation";
-    const result = await api.post<{ id: string }>("/automations", { name });
+    const result = await api.post<{ id: string }>("/automations", {
+      name,
+      team_id: activeTeamId ?? undefined,
+    });
     const newId = result.id;
     setAutomationId(newId);
     setGraphId(newId);
     window.history.replaceState(null, "", `/automations/${newId}/editor`);
     return newId;
-  }, [setGraphId]);
+  }, [setGraphId, activeTeamId]);
 
   // Initialize the graph editor once catalog and (optionally) automation data are loaded
   useEffect(() => {

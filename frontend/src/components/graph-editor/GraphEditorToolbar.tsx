@@ -50,6 +50,8 @@ interface GraphEditorToolbarProps {
   lockHolderName?: string;
   onLockToggle: () => void;
   isReadOnly: boolean;
+  /** True when in production mode — hides all write actions entirely */
+  isProduction: boolean;
   // Issues overlay props
   showIssues: boolean;
   onToggleIssues: () => void;
@@ -79,6 +81,7 @@ export function GraphEditorToolbar({
   lockHolderName,
   onLockToggle,
   isReadOnly,
+  isProduction,
   showIssues,
   onToggleIssues,
   issueCount,
@@ -130,19 +133,21 @@ export function GraphEditorToolbar({
         placeholder="Description..."
       />
 
-      {/* Save status */}
-      <div className="flex items-center gap-1 text-[11px] text-[hsl(var(--muted-foreground))] ml-1">
-        {isSaving ? (
-          <>
-            <Loader2 className="w-3 h-3 animate-spin" />
-            <span>Saving...</span>
-          </>
-        ) : isDirty ? (
-          <span className="text-yellow-600">Unsaved</span>
-        ) : (
-          <span className="text-green-600">Saved</span>
-        )}
-      </div>
+      {/* Save status (hidden in production) */}
+      {!isProduction && (
+        <div className="flex items-center gap-1 text-[11px] text-[hsl(var(--muted-foreground))] ml-1">
+          {isSaving ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : isDirty ? (
+            <span className="text-yellow-600">Unsaved</span>
+          ) : (
+            <span className="text-green-600">Saved</span>
+          )}
+        </div>
+      )}
 
       {/* Validation errors indicator */}
       {validationErrors.length > 0 && (
@@ -171,8 +176,8 @@ export function GraphEditorToolbar({
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Lock toggle */}
-      {isCollabConnected && (
+      {/* Lock toggle (hidden in production) */}
+      {!isProduction && isCollabConnected && (
         <button
           onClick={onLockToggle}
           disabled={isLockedByOther}
@@ -202,46 +207,50 @@ export function GraphEditorToolbar({
         </button>
       )}
 
-      {/* Undo/Redo */}
-      <button
-        onClick={undo}
-        disabled={undoStack.length === 0 || isReadOnly}
-        className="p-1.5 rounded hover:bg-[hsl(var(--accent))] disabled:opacity-30 disabled:cursor-not-allowed"
-        title="Undo (Ctrl+Z)"
-      >
-        <Undo2 className="w-3.5 h-3.5" />
-      </button>
-      <button
-        onClick={redo}
-        disabled={redoStack.length === 0 || isReadOnly}
-        className="p-1.5 rounded hover:bg-[hsl(var(--accent))] disabled:opacity-30 disabled:cursor-not-allowed"
-        title="Redo (Ctrl+Y)"
-      >
-        <Redo2 className="w-3.5 h-3.5" />
-      </button>
+      {!isProduction && (
+        <>
+          {/* Undo/Redo */}
+          <button
+            onClick={undo}
+            disabled={undoStack.length === 0 || isReadOnly}
+            className="p-1.5 rounded hover:bg-[hsl(var(--accent))] disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={redo}
+            disabled={redoStack.length === 0 || isReadOnly}
+            className="p-1.5 rounded hover:bg-[hsl(var(--accent))] disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Redo (Ctrl+Y)"
+          >
+            <Redo2 className="w-3.5 h-3.5" />
+          </button>
 
-      {/* Divider */}
-      <div className="w-px h-5 bg-[hsl(var(--border))] mx-0.5" />
+          {/* Divider */}
+          <div className="w-px h-5 bg-[hsl(var(--border))] mx-0.5" />
 
-      {/* Permissions */}
-      <button
-        onClick={onPermissions}
-        className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] transition-colors"
-        title="Manage execution permissions"
-      >
-        <Shield className="w-3.5 h-3.5" />
-        Permissions
-      </button>
+          {/* Permissions */}
+          <button
+            onClick={onPermissions}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] transition-colors"
+            title="Manage execution permissions"
+          >
+            <Shield className="w-3.5 h-3.5" />
+            Permissions
+          </button>
 
-      {/* Inputs */}
-      <button
-        onClick={onInputs}
-        className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] transition-colors"
-        title="Define automation inputs"
-      >
-        <ListPlus className="w-3.5 h-3.5" />
-        Inputs
-      </button>
+          {/* Inputs */}
+          <button
+            onClick={onInputs}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] transition-colors"
+            title="Define automation inputs"
+          >
+            <ListPlus className="w-3.5 h-3.5" />
+            Inputs
+          </button>
+        </>
+      )}
 
       {/* Issues toggle */}
       <button
@@ -264,77 +273,81 @@ export function GraphEditorToolbar({
         )}
       </button>
 
-      {/* Validate */}
-      <button
-        onClick={onValidate}
-        className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] transition-colors"
-        title="Validate graph"
-      >
-        <CheckCircle2 className="w-3.5 h-3.5" />
-        Validate
-      </button>
+      {!isProduction && (
+        <>
+          {/* Validate */}
+          <button
+            onClick={onValidate}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] transition-colors"
+            title="Validate graph"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Validate
+          </button>
 
-      {/* Compile Preview */}
-      <button
-        onClick={onCompile}
-        disabled={isCompiling}
-        className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] disabled:opacity-50 transition-colors"
-        title="Preview generated code"
-      >
-        {isCompiling ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <Code2 className="w-3.5 h-3.5" />
-        )}
-        Compile
-      </button>
+          {/* Compile Preview */}
+          <button
+            onClick={onCompile}
+            disabled={isCompiling}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] disabled:opacity-50 transition-colors"
+            title="Preview generated code"
+          >
+            {isCompiling ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Code2 className="w-3.5 h-3.5" />
+            )}
+            Compile
+          </button>
 
-      {/* Test Run */}
-      <button
-        onClick={onTestRun}
-        disabled={isTestRunning || isTestRunStarting || isReadOnly}
-        className="flex items-center gap-1 px-2 py-1.5 text-xs rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
-        title="Test run this graph"
-      >
-        {isTestRunning || isTestRunStarting ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <Play className="w-3.5 h-3.5" />
-        )}
-        Test Run
-      </button>
+          {/* Test Run */}
+          <button
+            onClick={onTestRun}
+            disabled={isTestRunning || isTestRunStarting || isReadOnly}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+            title="Test run this graph"
+          >
+            {isTestRunning || isTestRunStarting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
+            Test Run
+          </button>
 
-      {/* Test Again - reuses previous test context */}
-      {hasLastTestContext && (
-        <button
-          onClick={onTestRunAgain}
-          disabled={isTestRunning || isTestRunStarting || isReadOnly}
-          className="flex items-center gap-1 px-2 py-1.5 text-xs rounded bg-green-600/70 text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
-          title="Re-run test with previous context"
-        >
-          {isTestRunning || isTestRunStarting ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <RotateCw className="w-3.5 h-3.5" />
+          {/* Test Again - reuses previous test context */}
+          {hasLastTestContext && (
+            <button
+              onClick={onTestRunAgain}
+              disabled={isTestRunning || isTestRunStarting || isReadOnly}
+              className="flex items-center gap-1 px-2 py-1.5 text-xs rounded bg-green-600/70 text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+              title="Re-run test with previous context"
+            >
+              {isTestRunning || isTestRunStarting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RotateCw className="w-3.5 h-3.5" />
+              )}
+              Test Again
+            </button>
           )}
-          Test Again
-        </button>
-      )}
 
-      {/* Save */}
-      <button
-        onClick={onSave}
-        disabled={!isDirty || isSaving || isReadOnly}
-        className="flex items-center gap-1 px-2 py-1.5 text-xs rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50 transition-colors"
-        title="Save graph (Ctrl+S)"
-      >
-        {isSaving ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <Save className="w-3.5 h-3.5" />
-        )}
-        Save
-      </button>
+          {/* Save */}
+          <button
+            onClick={onSave}
+            disabled={!isDirty || isSaving || isReadOnly}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50 transition-colors"
+            title="Save graph (Ctrl+S)"
+          >
+            {isSaving ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Save className="w-3.5 h-3.5" />
+            )}
+            Save
+          </button>
+        </>
+      )}
 
       {/* Right panel toggle */}
       <button

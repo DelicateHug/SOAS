@@ -18,6 +18,7 @@ import type { AutomationInputDef } from "./AutomationSelectField";
 import { IncidentVariableSelectField } from "./IncidentVariableSelectField";
 import { SOASVariableSelectField } from "./SOASVariableSelectField";
 import { UserSecretSelectField } from "./UserSecretSelectField";
+import { TeamVariableSelectField } from "./TeamVariableSelectField";
 import { api } from "@/lib/api";
 
 interface PropertyPanelProps {
@@ -79,7 +80,9 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
       {/* Header */}
       <div className="p-2 border-b border-[hsl(var(--border))] flex items-center justify-between gap-1">
         <div className="min-w-0 flex-1">
-          <h2 className="text-xs font-semibold truncate">{data.label}</h2>
+          <h2 className="text-xs font-semibold truncate">
+            {(typeof data.properties.override_name === "string" && data.properties.override_name) || data.label}
+          </h2>
           <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">
             {data.type}
           </p>
@@ -108,6 +111,22 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
 
       {/* Scrollable content */}
       <div className={`flex-1 overflow-y-auto ${isReadOnly ? "opacity-60 pointer-events-none" : ""}`}>
+        {/* Override name */}
+        <div className="p-3 border-b border-[hsl(var(--border))]">
+          <label className="block text-[10px] font-medium text-[hsl(var(--muted-foreground))] mb-1">
+            Display Name
+          </label>
+          <input
+            type="text"
+            value={String(data.properties.override_name || "")}
+            onChange={(e) =>
+              updateNodeProperty(selectedNodeId, "override_name", e.target.value)
+            }
+            placeholder={data.label}
+            className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-transparent placeholder:text-[hsl(var(--muted-foreground))]/50"
+          />
+        </div>
+
         {/* Node properties */}
         {properties.length > 0 && (
           <div className="p-3 border-b border-[hsl(var(--border))]">
@@ -386,6 +405,11 @@ function PropertyField({
         />
       ) : prop.type === "user_secret_select" ? (
         <UserSecretSelectField
+          value={String(value || "")}
+          onChange={(name) => onChange(name)}
+        />
+      ) : prop.type === "team_variable_select" ? (
+        <TeamVariableSelectField
           value={String(value || "")}
           onChange={(name) => onChange(name)}
         />

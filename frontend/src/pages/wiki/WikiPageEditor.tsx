@@ -6,6 +6,7 @@ import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { CollaborativeMarkdownEditor } from "@/components/wiki/CollaborativeMarkdownEditor";
 import { useWikiCollaboration } from "@/components/wiki/useWikiCollaboration";
 import { useAuthStore } from "@/stores/authStore";
+import { useTeamStore } from "@/stores/teamStore";
 import { useEntityDraft } from "@/hooks/useEntityDraft";
 import { useDraftSave } from "@/hooks/useDraftSave";
 import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
@@ -13,6 +14,7 @@ import { TagInput } from "@/components/ui/TagInput";
 import { TierSelector } from "@/components/ui/TierSelector";
 import { useEntityVersion } from "@/hooks/useEntityVersion";
 import { Save, ArrowLeft, Send, GitBranch, GitMerge, Trash2 } from "lucide-react";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 import type { WikiPage, WikiTreeNode, PushToDevResult, ChangeRequestDetail } from "@/types/api";
 
 interface NodeCatalogEntry {
@@ -36,12 +38,14 @@ function getUserColor(userId: string): string {
 }
 
 export function WikiPageEditor() {
-  const { slug } = useParams<{ slug?: string }>();
+  const params = useParams();
+  const slug = params["*"]?.replace(/\/edit$/, "") || undefined;
   const [searchParams] = useSearchParams();
   const draftCrId = searchParams.get("draft");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const isEdit = !!slug;
 
   const [title, setTitle] = useState("");
@@ -272,6 +276,7 @@ export function WikiPageEditor() {
       icon: icon.trim() || null,
       linked_node_type: linkedNodeType || null,
       ...(isEdit ? { change_summary: changeSummary.trim() || null } : {}),
+      ...(!isEdit ? { team_id: activeTeamId } : {}),
     };
 
     try {
@@ -324,44 +329,46 @@ export function WikiPageEditor() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          {hasDraft && activeDraft && (activeDraft.status === "draft" || activeDraft.status === "submitted") && (
-            <>
-              <button
-                onClick={handleDiscardDraft}
-                disabled={isDiscarding}
-                className="flex items-center gap-2 px-4 py-2 border border-red-500/30 text-red-400 rounded-md hover:bg-red-500/10 text-sm disabled:opacity-50"
-              >
-                <Trash2 className="w-4 h-4" />
-                {isDiscarding ? "Discarding..." : "Discard Draft"}
-              </button>
-              <button
-                onClick={handlePushToDev}
-                disabled={isPushingToDev}
-                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 text-sm disabled:opacity-50"
-              >
-                <GitMerge className="w-4 h-4" />
-                {isPushingToDev ? "Pushing..." : "Push to Dev"}
-              </button>
-              <button
-                onClick={() => draftSave.submitForReview(activeDraft.id)}
-                disabled={draftSave.isSubmitting}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-                {draftSave.isSubmitting ? "Submitting..." : "Submit for Review"}
-              </button>
-            </>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={isSaving || !title.trim()}
-            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {isSaving ? "Saving..." : "Save as Draft"}
-          </button>
-        </div>
+        <ProductionGuard>
+          <div className="flex items-center gap-2">
+            {hasDraft && activeDraft && (activeDraft.status === "draft" || activeDraft.status === "submitted") && (
+              <>
+                <button
+                  onClick={handleDiscardDraft}
+                  disabled={isDiscarding}
+                  className="flex items-center gap-2 px-4 py-2 border border-red-500/30 text-red-400 rounded-md hover:bg-red-500/10 text-sm disabled:opacity-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {isDiscarding ? "Discarding..." : "Discard Draft"}
+                </button>
+                <button
+                  onClick={handlePushToDev}
+                  disabled={isPushingToDev}
+                  className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 text-sm disabled:opacity-50"
+                >
+                  <GitMerge className="w-4 h-4" />
+                  {isPushingToDev ? "Pushing..." : "Push to Dev"}
+                </button>
+                <button
+                  onClick={() => draftSave.submitForReview(activeDraft.id)}
+                  disabled={draftSave.isSubmitting}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                  {draftSave.isSubmitting ? "Submitting..." : "Submit for Review"}
+                </button>
+              </>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={isSaving || !title.trim()}
+              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              {isSaving ? "Saving..." : "Save as Draft"}
+            </button>
+          </div>
+        </ProductionGuard>
       </div>
 
       {/* Tier selector */}
@@ -519,7 +526,7 @@ export function WikiPageEditor() {
             onChange={setContent}
             initialContent={
               (activeDraft?.snapshot?.content as string | undefined) ??
-              (isEdit ? page?.content : undefined)
+              (isEdit ? (page?.content ?? undefined) : undefined)
             }
             wikiPageId={isEdit ? page?.id : undefined}
             wikiPageTitle={title}

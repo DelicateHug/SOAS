@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
+import { useTeamStore } from "@/stores/teamStore";
 import { DocumentationViewer } from "@/components/DocumentationViewer";
 import { Edit, Clock, Tag, ChevronRight, BookOpen, Trash2, Users } from "lucide-react";
 import { DynamicIcon } from "@/components/ui/DynamicIcon";
@@ -11,7 +12,8 @@ import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
 import type { WikiPage, WikiBreadcrumb, WikiPageListItem, PaginatedResponse } from "@/types/api";
 
 export function WikiPageView() {
-  const { slug } = useParams<{ slug: string }>();
+  const params = useParams();
+  const slug = params["*"]?.replace(/\/(edit|history)$/, "");
   const navigate = useNavigate();
   const { hasPermission } = useAuthStore();
 
@@ -27,10 +29,11 @@ export function WikiPageView() {
     enabled: !!page?.id,
   });
 
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const { data: childPagesData } = useQuery({
-    queryKey: ["wiki-children", page?.id],
-    queryFn: () => api.get<PaginatedResponse<WikiPageListItem>>(`/wiki?parent_id=${page!.id}&per_page=50`),
-    enabled: !!page?.id && (page?.child_count ?? 0) > 0,
+    queryKey: ["wiki-children", page?.id, activeTeamId],
+    queryFn: () => api.get<PaginatedResponse<WikiPageListItem>>(`/wiki?parent_id=${page!.id}&per_page=50&team_id=${activeTeamId}`),
+    enabled: !!page?.id && (page?.child_count ?? 0) > 0 && !!activeTeamId,
   });
 
   const childPages = childPagesData?.data.map((c) => ({

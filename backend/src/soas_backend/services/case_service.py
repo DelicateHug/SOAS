@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -26,6 +26,7 @@ class CaseService:
         priority: int = 3,
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
+        team_id: UUID | None = None,
     ) -> Case:
         case = Case(
             title=title,
@@ -34,6 +35,7 @@ class CaseService:
             created_by=created_by,
             tags=tags or [],
             metadata_=metadata or {},
+            team_id=team_id,
         )
         self.db.add(case)
         await self.db.flush()
@@ -206,17 +208,29 @@ class CaseService:
         page: int = 1,
         per_page: int = 25,
         priority: int | None = None,
+        user_teams: list[dict] | None = None,
+        team_id: UUID | None = None,
     ) -> tuple[list[Case], int]:
+        conditions = []
+        if status:
+            conditions.append(Case.status == status)
+        if priority is not None:
+            conditions.append(Case.priority == priority)
+
+        # Team scoping
+        if team_id:
+            conditions.append(Case.team_id == team_id)
+        elif user_teams is not None:
+            team_ids = [UUID(t["id"]) for t in user_teams]
+            conditions.append(
+                or_(Case.team_id.in_(team_ids), Case.team_id.is_(None))
+            )
+
         query = select(Case).options(
             selectinload(Case.lead),
             selectinload(Case.creator),
             selectinload(Case.case_incidents),
-        )
-
-        if status:
-            query = query.where(Case.status == status)
-        if priority is not None:
-            query = query.where(Case.priority == priority)
+        ).where(*conditions)
 
         count_query = select(func.count()).select_from(query.subquery())
         total = (await self.db.execute(count_query)).scalar() or 0
@@ -249,17 +263,29 @@ class CaseService:
         status: str | None = None,
         page: int = 1,
         per_page: int = 50,
+        user_teams: list[dict] | None = None,
+        team_id: UUID | None = None,
     ) -> tuple[list[Case], int]:
         """Return cases with their linked incidents eager-loaded."""
+        conditions = []
+        if status:
+            conditions.append(Case.status == status)
+
+        # Team scoping
+        if team_id:
+            conditions.append(Case.team_id == team_id)
+        elif user_teams is not None:
+            team_ids = [UUID(t["id"]) for t in user_teams]
+            conditions.append(
+                or_(Case.team_id.in_(team_ids), Case.team_id.is_(None))
+            )
+
         query = select(Case).options(
             selectinload(Case.lead),
             selectinload(Case.creator),
             selectinload(Case.case_incidents).selectinload(CaseIncident.incident).selectinload(Incident.lead),
             selectinload(Case.case_incidents).selectinload(CaseIncident.incident).selectinload(Incident.creator),
-        )
-
-        if status:
-            query = query.where(Case.status == status)
+        ).where(*conditions)
 
         count_query = select(func.count()).select_from(query.subquery())
         total = (await self.db.execute(count_query)).scalar() or 0

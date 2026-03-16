@@ -40,7 +40,13 @@ class Incident(Base):
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
     raw_event: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
+    # Team scoping
+    team_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
+    )
+
     lead = relationship("User", foreign_keys=[lead_id])
+    team = relationship("Team", foreign_keys=[team_id])
     creator = relationship("User", foreign_keys=[created_by])
     assignments: Mapped[list["IncidentAssignment"]] = relationship(
         back_populates="incident", cascade="all, delete-orphan"
@@ -65,6 +71,7 @@ class Incident(Base):
         Index("idx_incidents_severity", "severity"),
         Index("idx_incidents_status", "status"),
         Index("idx_incidents_created", created_at.desc()),
+        Index("idx_incidents_team_id", "team_id"),
     )
 
 

@@ -32,6 +32,7 @@ import { CollaboratorCursors } from "./CollaboratorCursors";
 import { IssueAnnotations } from "./IssueAnnotations";
 import { CreateGraphIssueDialog } from "./CreateGraphIssueDialog";
 import { useAuthStore } from "@/stores/authStore";
+import { useDeploymentMode } from "@/hooks/useDeploymentMode";
 import { CustomNodeComponent } from "./nodes/CustomNodeComponent";
 import { FlowEdge } from "./edges/FlowEdge";
 import { DataEdge } from "./edges/DataEdge";
@@ -161,6 +162,9 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
   } = useTestRun(automationId);
   const compileMutation = useCompilePreview();
 
+  // Deployment mode
+  const { isProduction } = useDeploymentMode();
+
   // Collaboration
   const currentUser = useAuthStore((s) => s.user);
   const {
@@ -169,12 +173,15 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
     isConnected: isCollabConnected,
     isLockedByMe,
     isLockedByOther,
-    isReadOnly,
+    isReadOnly: isCollabReadOnly,
     requestLock,
     releaseLock,
     broadcastCursor,
     broadcastIssuesChanged,
   } = useCollaboration(automationId);
+
+  // Read-only if production mode OR collaboration lock
+  const isReadOnly = isProduction || isCollabReadOnly;
 
   // Graph issues
   const { issues: graphIssues, showIssues, setShowIssues, saveAnnotation } = useGraphIssues(automationId, broadcastIssuesChanged);
@@ -401,7 +408,7 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
     saveMutation.mutate(undefined, {
       onSuccess: () => {
         if (errors.length === 0) {
-          setNotification({ type: "success", message: "Graph saved successfully" });
+          setNotification({ type: "success", message: "Graph saved to local changes" });
         }
       },
       onError: (error) => {
@@ -529,6 +536,7 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
         lockHolderName={lockHolderName}
         onLockToggle={isLockedByMe ? releaseLock : requestLock}
         isReadOnly={isReadOnly}
+        isProduction={isProduction}
         showIssues={showIssues}
         onToggleIssues={() => setShowIssues((v) => !v)}
         issueCount={graphIssues.length}
@@ -565,17 +573,19 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
 
       {/* Main area: palette + canvas + properties */}
       <div className="flex flex-1 min-h-0">
-        {/* Left: Node Palette */}
-        {isLeftPanelOpen ? (
-          <NodePalette onCollapse={() => setIsLeftPanelOpen(false)} />
-        ) : (
-          <button
-            onClick={() => setIsLeftPanelOpen(true)}
-            className="w-8 border-r border-[hsl(var(--border))] bg-[hsl(var(--background))] flex items-center justify-center hover:bg-[hsl(var(--accent))] transition-colors"
-            title="Show node palette"
-          >
-            <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-          </button>
+        {/* Left: Node Palette (hidden in production mode) */}
+        {!isProduction && (
+          isLeftPanelOpen ? (
+            <NodePalette onCollapse={() => setIsLeftPanelOpen(false)} />
+          ) : (
+            <button
+              onClick={() => setIsLeftPanelOpen(true)}
+              className="w-8 border-r border-[hsl(var(--border))] bg-[hsl(var(--background))] flex items-center justify-center hover:bg-[hsl(var(--accent))] transition-colors"
+              title="Show node palette"
+            >
+              <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+            </button>
+          )
         )}
 
         {/* Center: Canvas + Bottom panel */}

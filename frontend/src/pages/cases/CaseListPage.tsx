@@ -4,8 +4,10 @@ import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { caseStatusColors, priorityColors, priorityLabels, formatDate } from "@/lib/utils";
 import { FolderPlus } from "lucide-react";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 import { CreateGroupModal } from "@/pages/incidents/CreateGroupModal";
 import type { PaginatedResponse, CaseItem, CaseStatus } from "@/types/api";
+import { useTeamStore } from "@/stores/teamStore";
 
 const caseStatuses: CaseStatus[] = ["open", "investigating", "pending", "closed", "archived"];
 const priorities = [1, 2, 3, 4, 5];
@@ -13,13 +15,15 @@ const priorities = [1, 2, 3, 4, 5];
 export function CaseListPage() {
   const [filters, setFilters] = useState({ status: "", priority: "", page: 1 });
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["cases", filters],
+    queryKey: ["cases", filters, activeTeamId],
     queryFn: () => {
       const params = new URLSearchParams();
       if (filters.status) params.set("status", filters.status);
       if (filters.priority) params.set("priority", filters.priority);
+      params.set("team_id", activeTeamId!);
       params.set("page", String(filters.page));
       params.set("per_page", "25");
       return api.get<PaginatedResponse<CaseItem>>(`/cases?${params}`);
@@ -30,12 +34,14 @@ export function CaseListPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Incident Groups</h1>
-        <button
-          onClick={() => setShowCreateGroup(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90"
-        >
-          <FolderPlus className="w-4 h-4" /> New Group
-        </button>
+        <ProductionGuard>
+          <button
+            onClick={() => setShowCreateGroup(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90"
+          >
+            <FolderPlus className="w-4 h-4" /> New Group
+          </button>
+        </ProductionGuard>
       </div>
 
       {/* Filters */}

@@ -171,6 +171,7 @@ class NodeRegistry:
             GetIncidentVarNode, SetIncidentVarNode, GetIncidentDataNode,
             GetGroupIncidentsNode, GetGroupIncidentByIndexNode, GetGroupIncidentCountNode,
             GetSOASVarNode, SetSOASVarNode,
+            GetTeamVarNode, SetTeamVarNode,
             GetUserSecretNode,
         )
 
@@ -229,5 +230,8 @@ class NodeRegistry:
         # SOAS application-level variable nodes
         self.register(GetSOASVarNode, "Get a SOAS application variable (permission-restricted).", "variable")
         self.register(SetSOASVarNode, "Set a SOAS application variable (permission-restricted).", "variable")
+        # Team variable nodes
+        self.register(GetTeamVarNode, "Get a team-scoped variable (permission-restricted).", "variable")
+        self.register(SetTeamVarNode, "Set a team-scoped variable (permission-restricted).", "variable")
         # User secret nodes
         self.register(GetUserSecretNode, "Get a per-user secret (read-only, resolved at runtime).", "key")

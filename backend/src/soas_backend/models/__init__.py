@@ -35,6 +35,8 @@ from soas_backend.models.wiki import WikiPage, WikiPagePermission, WikiPageVersi
 from soas_backend.models.git_sync_log import GitSyncLog
 from soas_backend.models.user_secret import SharedSecretPermission, UserSecret
 from soas_backend.models.change_request import ChangeRequest
+from soas_backend.models.team import Team, TeamMembership, TeamMembershipRole
+from soas_backend.models.team_variable import TeamVariable, TeamVariablePermission
 
 __all__ = [
     "AppSetting",
@@ -91,4 +93,9 @@ __all__ = [
     "UserSecret",
     "SharedSecretPermission",
     "ChangeRequest",
+    "Team",
+    "TeamMembership",
+    "TeamMembershipRole",
+    "TeamVariable",
+    "TeamVariablePermission",
 ]

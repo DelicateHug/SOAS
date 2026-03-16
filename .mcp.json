@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "soas": {
+      "command": "node",
+      "args": ["vscode-extension/mcp-server/index.mjs"],
+      "env": {
+        "SOAS_BRIDGE_URL": "http://127.0.0.1:19542"
+      }
+    }
+  }
+}

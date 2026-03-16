@@ -6,6 +6,13 @@ import { create } from "zustand";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
+interface TeamClaim {
+  id: string;
+  name: string;
+  roles: string[];
+  team_role: string;
+}
+
 interface User {
   id: string;
   username: string;
@@ -13,6 +20,7 @@ interface User {
   email: string;
   roles: string[];
   permissions: string[];
+  teams: TeamClaim[];
 }
 
 interface AuthState {
@@ -64,6 +72,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         email: "",
         roles: (payload.roles as string[]) || [],
         permissions: (payload.permissions as string[]) || [],
+        teams: (payload.teams as TeamClaim[]) || [],
       };
       initialMustReset = localStorage.getItem("must_reset_password") === "true";
       initialTokenExpiresAt = getTokenExpiration(storedToken);
@@ -125,6 +134,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             email: "",
             roles: (payload.roles as string[]) || [],
             permissions: (payload.permissions as string[]) || [],
+            teams: (payload.teams as TeamClaim[]) || [],
           },
           isAuthenticated: true,
           mustResetPassword: mustReset,
@@ -162,6 +172,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             email: "",
             roles: (payload.roles as string[]) || [],
             permissions: (payload.permissions as string[]) || [],
+            teams: (payload.teams as TeamClaim[]) || [],
           },
           isAuthenticated: true,
           mustResetPassword: mustReset,
@@ -234,6 +245,21 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
         const data = await res.json();
         api.setTokens(data.access_token, data.refresh_token);
+
+        // Re-parse user from the new JWT so teams/permissions stay fresh
+        const payload = parseJwt(data.access_token);
+        set({
+          user: {
+            id: payload.sub as string,
+            username: payload.username as string,
+            display_name: (payload.display_name as string) || (payload.username as string),
+            email: "",
+            roles: (payload.roles as string[]) || [],
+            permissions: (payload.permissions as string[]) || [],
+            teams: (payload.teams as TeamClaim[]) || [],
+          },
+          tokenExpiresAt: typeof payload.exp === "number" ? payload.exp : null,
+        });
       } catch {
         get().logout();
       } finally {

@@ -47,7 +47,7 @@ def _stream_pipe(pipe, stream_name: str, r, channel: str):
 
 
 @app.task(name="soas.run_automation", bind=True, max_retries=0)
-def run_automation(self, execution_id: str, automation_id: str, parameters: dict, user_role_ids: list[str] | None = None, api_token: str | None = None):
+def run_automation(self, execution_id: str, automation_id: str, parameters: dict, user_role_ids: list[str] | None = None, api_token: str | None = None, resume_segment: int | None = None):
     """Execute a compiled automation script in a sandboxed subprocess."""
     # Update status to running
     update_execution_status(
@@ -150,6 +150,32 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
     except ImportError:
         pass
 
+    # Team variables — resolved from the automation's team
+    team_id = None
+    try:
+        from visualpython2.team_vars.runtime_bridge import generate_team_vars_bridge_code
+        from soas_workers.db import get_automation_team_id, get_team_vars_for_roles, get_writable_team_vars_for_roles, get_sensitive_team_variable_names
+
+        team_id = get_automation_team_id(automation_id)
+        if team_id and role_ids:
+            team_vars = get_team_vars_for_roles(team_id, role_ids)
+            writable_team_vars = get_writable_team_vars_for_roles(team_id, role_ids)
+            sens_team = get_sensitive_team_variable_names(team_id)
+            bridge_prefix += generate_team_vars_bridge_code(team_vars, writable_team_vars, sensitive_names=sens_team)
+    except ImportError:
+        pass
+
+    # Stub for get_team_var when no bridge was generated
+    if "get_team_var" not in bridge_prefix:
+        bridge_prefix += (
+            "# --- Team Variable Stubs ---\n"
+            "def get_team_var(name, default=None):\n"
+            "    return default\n"
+            "def set_team_var(name, value):\n"
+            "    raise PermissionError(f'No team context for variable: {name}')\n"
+            "# --- End Team Variable Stubs ---\n\n"
+        )
+
     # Stub for get_user_secret when no bridge was generated
     if "get_user_secret" not in bridge_prefix:
         bridge_prefix += (
@@ -220,6 +246,10 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
         env["SOAS_INCIDENT_ID"] = incident_id
     if case_id:
         env["SOAS_CASE_ID"] = case_id
+    if team_id:
+        env["SOAS_TEAM_ID"] = team_id
+    if resume_segment is not None:
+        env["SOAS_RESUME_SEGMENT"] = str(resume_segment)
     # Sub-automation support: inject API credentials and runtime module path
     env["SOAS_API_URL"] = config.SOAS_API_URL
     env["SOAS_API_TOKEN"] = api_token or config.SOAS_API_TOKEN
@@ -293,31 +323,21 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
         t_out.start()
         t_err.start()
 
-        # Wait for process with input-aware timeout: time spent waiting
-        # for user input (pending_input Redis key exists) does not count.
-        deadline = time.monotonic() + timeout
+        # Wait for process with timeout
         timed_out = False
-        pending_key = f"execution:{execution_id}:pending_input"
-
-        while True:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                timed_out = True
-                break
-            try:
-                proc.wait(timeout=min(remaining, 2))
-                break  # Process completed
-            except subprocess.TimeoutExpired:
-                # If waiting for user input, pause the timeout countdown
-                if r.exists(pending_key):
-                    deadline += 2  # Add back the 2s we just waited
-
-        if timed_out:
+        try:
+            proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            timed_out = True
             proc.kill()
             proc.wait()
-            t_out.join(timeout=2)
-            t_err.join(timeout=2)
-            duration_ms = int((time.monotonic() - start_time) * 1000)
+
+        t_out.join(timeout=5)
+        t_err.join(timeout=5)
+
+        duration_ms = int((time.monotonic() - start_time) * 1000)
+
+        if timed_out:
             r.publish(
                 pubsub_channel,
                 json.dumps({"type": "complete", "status": "timed_out"}),
@@ -332,10 +352,41 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
             )
             return {"success": False, "error": "timeout"}
 
-        t_out.join(timeout=5)
-        t_err.join(timeout=5)
+        # Exit code 42 = checkpoint: subprocess saved state and is waiting
+        # for user input.  Update status and return — the worker is now free.
+        # The WebSocket handler will dispatch a resume task when input arrives.
+        if proc.returncode == 42:
+            # Store accumulated stdout/stderr for the next segment to append to
+            accumulated = json.dumps({
+                "stdout": "\n".join(stdout_lines),
+                "stderr": "\n".join(stderr_lines),
+            })
+            r.set(
+                f"execution:{execution_id}:accumulated_output",
+                accumulated,
+                ex=3600,
+            )
+            # Store the task parameters so the resume can re-dispatch
+            resume_ctx = json.dumps({
+                "automation_id": automation_id,
+                "parameters": parameters,
+                "user_role_ids": user_role_ids,
+                "api_token": api_token,
+            })
+            r.set(
+                f"execution:{execution_id}:resume_context",
+                resume_ctx,
+                ex=3600,
+            )
+            update_execution_status(execution_id, "waiting_for_input")
+            return {
+                "success": True,
+                "waiting_for_input": True,
+                "exit_code": 42,
+                "duration_ms": duration_ms,
+            }
 
-        duration_ms = int((time.monotonic() - start_time) * 1000)
+        # Normal completion or failure
         final_status = "completed" if proc.returncode == 0 else "failed"
 
         # Read debug trace file for per-node I/O data
@@ -357,17 +408,37 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
         except Exception:
             pass
 
+        # Merge accumulated output from previous segments
+        prev_stdout = ""
+        prev_stderr = ""
+        try:
+            acc_key = f"execution:{execution_id}:accumulated_output"
+            acc_raw = r.get(acc_key)
+            if acc_raw:
+                acc = json.loads(acc_raw if isinstance(acc_raw, str) else acc_raw.decode())
+                prev_stdout = acc.get("stdout", "")
+                prev_stderr = acc.get("stderr", "")
+                r.delete(acc_key)
+        except Exception:
+            pass
+
+        full_stdout = (prev_stdout + "\n" + "\n".join(stdout_lines)).strip()
+        full_stderr = (prev_stderr + "\n" + "\n".join(stderr_lines)).strip()
+
         # Publish completion
         r.publish(
             pubsub_channel,
             json.dumps({"type": "complete", "status": final_status, "exit_code": proc.returncode}),
         )
 
+        # Clean up resume context
+        r.delete(f"execution:{execution_id}:resume_context")
+
         update_execution_complete(
             execution_id,
             status=final_status,
-            stdout="\n".join(stdout_lines)[:50000] or None,
-            stderr="\n".join(stderr_lines)[:50000] or None,
+            stdout=full_stdout[:50000] or None,
+            stderr=full_stderr[:50000] or None,
             exit_code=proc.returncode,
             duration_ms=duration_ms,
             result_data=result_data,

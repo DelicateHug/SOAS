@@ -74,7 +74,7 @@ export interface NodeCatalogEntry {
 export interface NodePropertyDef {
   name: string;
   label: string;
-  type: "string" | "number" | "boolean" | "code" | "select" | "json" | "automation_select" | "automation_input_select" | "soas_variable_select" | "incident_variable_select" | "user_secret_select";
+  type: "string" | "number" | "boolean" | "code" | "select" | "json" | "automation_select" | "automation_input_select" | "soas_variable_select" | "incident_variable_select" | "user_secret_select" | "team_variable_select";
   default?: unknown;
   options?: Array<string | { value: string; label: string }>;
   description?: string;

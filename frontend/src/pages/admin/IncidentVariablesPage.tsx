@@ -5,6 +5,7 @@ import { useBranchAwareList } from "@/hooks/useBranchAwareList";
 import { BranchStatusBadge, PendingCreateBadge } from "@/components/ui/BranchStatusBadge";
 import { api } from "@/lib/api";
 import { Plus, Trash2, Edit2, X, ToggleLeft, ToggleRight } from "lucide-react";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 
 interface IncidentVariable {
   id: string;
@@ -121,15 +122,17 @@ export function IncidentVariablesPage() {
             keys.
           </p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowCreateModal(true);
-          }}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Create Variable
-        </button>
+        <ProductionGuard>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowCreateModal(true);
+            }}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Create Variable
+          </button>
+        </ProductionGuard>
       </div>
 
       {isLoading ? (
@@ -186,21 +189,31 @@ export function IncidentVariablesPage() {
                     {v.description || "-"}
                   </td>
                   <td className="px-4 py-2 text-center">
-                    <button
-                      onClick={() => toggleDefault.mutate(v)}
-                      className="inline-flex items-center"
-                      title={
-                        v.default_enabled
-                          ? "Auto-added to incidents"
-                          : "Not auto-added"
+                    <ProductionGuard
+                      fallback={
+                        v.default_enabled ? (
+                          <ToggleRight className="w-5 h-5 text-green-500 inline" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))] inline" />
+                        )
                       }
                     >
-                      {v.default_enabled ? (
-                        <ToggleRight className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <ToggleLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                      )}
-                    </button>
+                      <button
+                        onClick={() => toggleDefault.mutate(v)}
+                        className="inline-flex items-center"
+                        title={
+                          v.default_enabled
+                            ? "Auto-added to incidents"
+                            : "Not auto-added"
+                        }
+                      >
+                        {v.default_enabled ? (
+                          <ToggleRight className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                        )}
+                      </button>
+                    </ProductionGuard>
                   </td>
                   <td className="px-4 py-2 text-center">
                     {v.sensitive ? (
@@ -212,26 +225,28 @@ export function IncidentVariablesPage() {
                     )}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => openEdit(v)}
-                        className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete variable "${v.name}"?`)) {
-                            deleteVar.mutate(v.id);
-                          }
-                        }}
-                        className="p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <ProductionGuard>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => openEdit(v)}
+                          className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete variable "${v.name}"?`)) {
+                              deleteVar.mutate(v.id);
+                            }
+                          }}
+                          className="p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </ProductionGuard>
                   </td>
                 </tr>
               ))}

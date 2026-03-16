@@ -21,6 +21,7 @@ class WikiPageCreate(BaseSchema):
     status: str = "published"
     icon: str | None = None
     linked_node_type: str | None = None
+    team_id: UUID | None = None
 
 
 class WikiPageUpdate(BaseSchema):
@@ -54,6 +55,7 @@ class WikiPageRead(BaseReadSchema):
     updated_by: UserBrief | None = None
     child_count: int = 0
     active_editors: int = 0
+    team_id: UUID | None = None
 
 
 class WikiPageListItem(BaseReadSchema):
@@ -70,6 +72,7 @@ class WikiPageListItem(BaseReadSchema):
     updated_by: UserBrief | None = None
     child_count: int = 0
     active_editors: int = 0
+    team_id: UUID | None = None
 
 
 # --- Tree ---

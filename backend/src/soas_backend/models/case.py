@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -33,7 +33,13 @@ class Case(Base):
     tags: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
 
+    # Team scoping
+    team_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
+    )
+
     lead = relationship("User", foreign_keys=[lead_id])
+    team = relationship("Team", foreign_keys=[team_id])
     creator = relationship("User", foreign_keys=[created_by])
     case_incidents: Mapped[list["CaseIncident"]] = relationship(
         back_populates="case", cascade="all, delete-orphan"
@@ -49,6 +55,10 @@ class Case(Base):
     )
     form_submissions: Mapped[list["CaseFormSubmission"]] = relationship(
         back_populates="case", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        Index("idx_cases_team_id", "team_id"),
     )
 
 

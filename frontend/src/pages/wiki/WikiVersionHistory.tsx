@@ -9,7 +9,8 @@ import { ArrowLeft, RotateCcw, Eye, X } from "lucide-react";
 import type { WikiPage, WikiPageVersion } from "@/types/api";
 
 export function WikiVersionHistory() {
-  const { slug } = useParams<{ slug: string }>();
+  const params = useParams();
+  const slug = params["*"]?.replace(/\/history$/, "");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { hasPermission } = useAuthStore();

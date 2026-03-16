@@ -5,8 +5,10 @@ import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { BookOpen, Plus, Search, ChevronRight, ChevronDown, Tag, GitBranch, Trash2 } from "lucide-react";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 import { DynamicIcon } from "@/components/ui/DynamicIcon";
 import type { PaginatedResponse, WikiPageListItem, WikiTreeNode, WikiSearchResult, ChangeRequestDetail } from "@/types/api";
+import { useTeamStore } from "@/stores/teamStore";
 
 // ─── Tree sidebar ───
 
@@ -60,11 +62,13 @@ export function WikiListPage() {
   const [search, setSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
 
   // Fetch tree for sidebar
   const { data: tree } = useQuery({
-    queryKey: ["wiki-tree"],
-    queryFn: () => api.get<WikiTreeNode[]>("/wiki/tree"),
+    queryKey: ["wiki-tree", activeTeamId],
+    queryFn: () => api.get<WikiTreeNode[]>(`/wiki/tree?team_id=${activeTeamId}`),
+    enabled: !!activeTeamId,
   });
 
   // Fetch pending wiki page creates (CRs with action=create, entity_id=null)
@@ -79,12 +83,13 @@ export function WikiListPage() {
 
   // Fetch page list
   const { data, isLoading } = useQuery({
-    queryKey: ["wiki-pages", statusFilter, tagFilter, search, page],
+    queryKey: ["wiki-pages", statusFilter, tagFilter, search, page, activeTeamId],
     queryFn: () => {
       const params = new URLSearchParams();
       if (statusFilter) params.set("status", statusFilter);
       if (tagFilter) params.set("tag", tagFilter);
       if (search) params.set("search", search);
+      params.set("team_id", activeTeamId!);
       params.set("page", String(page));
       params.set("per_page", "25");
       return api.get<PaginatedResponse<WikiPageListItem>>(`/wiki?${params}`);
@@ -94,8 +99,8 @@ export function WikiListPage() {
   // Full-text search results
   const { data: searchResults, isLoading: isSearching } = useQuery({
     queryKey: ["wiki-search", searchQuery],
-    queryFn: () => api.get<PaginatedResponse<WikiSearchResult>>(`/wiki/search?q=${encodeURIComponent(searchQuery)}`),
-    enabled: searchQuery.length > 0,
+    queryFn: () => api.get<PaginatedResponse<WikiSearchResult>>(`/wiki/search?q=${encodeURIComponent(searchQuery)}&team_id=${activeTeamId}`),
+    enabled: searchQuery.length > 0 && !!activeTeamId,
   });
 
   // Collect all unique tags from the page list for filter dropdown
@@ -114,15 +119,17 @@ export function WikiListPage() {
       <aside className="w-56 shrink-0 border-r border-[hsl(var(--border))] pr-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Pages</p>
-          {hasPermission("wiki:create") && (
-            <Link
-              to="/wiki/new"
-              className="text-[hsl(var(--primary))] hover:opacity-80"
-              title="New page"
-            >
-              <Plus className="w-4 h-4" />
-            </Link>
-          )}
+          <ProductionGuard>
+            {hasPermission("wiki:create") && (
+              <Link
+                to="/wiki/new"
+                className="text-[hsl(var(--primary))] hover:opacity-80"
+                title="New page"
+              >
+                <Plus className="w-4 h-4" />
+              </Link>
+            )}
+          </ProductionGuard>
         </div>
         {/* Pending creates in sidebar */}
         {pendingCreates.map((cr) => {
@@ -143,20 +150,22 @@ export function WikiListPage() {
               <span className="text-[10px] px-1 py-0.5 rounded bg-green-500/20 text-green-400 font-medium shrink-0">
                 {cr.status === "draft" ? "Draft" : cr.status}
               </span>
-              <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (!window.confirm("Delete this draft? This cannot be undone.")) return;
-                  try {
-                    await api.delete(`/change-requests/${cr.id}`);
-                    queryClient.invalidateQueries({ queryKey: ["change-requests"] });
-                  } catch { /* ignore */ }
-                }}
-                className="hidden group-hover:flex w-4 h-4 items-center justify-center shrink-0 text-red-400 hover:text-red-300"
-                title="Delete draft"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
+              <ProductionGuard>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!window.confirm("Delete this draft? This cannot be undone.")) return;
+                    try {
+                      await api.delete(`/change-requests/${cr.id}`);
+                      queryClient.invalidateQueries({ queryKey: ["change-requests"] });
+                    } catch { /* ignore */ }
+                  }}
+                  className="hidden group-hover:flex w-4 h-4 items-center justify-center shrink-0 text-red-400 hover:text-red-300"
+                  title="Delete draft"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </ProductionGuard>
             </div>
           );
         })}
@@ -171,15 +180,17 @@ export function WikiListPage() {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Wiki</h1>
-          {hasPermission("wiki:create") && (
-            <Link
-              to="/wiki/new"
-              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              New Page
-            </Link>
-          )}
+          <ProductionGuard>
+            {hasPermission("wiki:create") && (
+              <Link
+                to="/wiki/new"
+                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                New Page
+              </Link>
+            )}
+          </ProductionGuard>
         </div>
 
         {/* Search + filters */}
@@ -268,14 +279,16 @@ export function WikiListPage() {
           <div className="flex flex-col items-center py-12 text-[hsl(var(--muted-foreground))]">
             <BookOpen className="w-12 h-12 mb-3" />
             <p>No wiki pages yet</p>
-            {hasPermission("wiki:create") && (
-              <button
-                onClick={() => navigate("/wiki/new")}
-                className="mt-3 text-sm text-[hsl(var(--primary))] hover:underline"
-              >
-                Create the first page
-              </button>
-            )}
+            <ProductionGuard>
+              {hasPermission("wiki:create") && (
+                <button
+                  onClick={() => navigate("/wiki/new")}
+                  className="mt-3 text-sm text-[hsl(var(--primary))] hover:underline"
+                >
+                  Create the first page
+                </button>
+              )}
+            </ProductionGuard>
           </div>
         ) : (
           <>
@@ -315,19 +328,21 @@ export function WikiListPage() {
                         </div>
                       )}
                     </Link>
-                    <button
-                      onClick={async () => {
-                        if (!window.confirm("Delete this draft? This cannot be undone.")) return;
-                        try {
-                          await api.delete(`/change-requests/${cr.id}`);
-                          queryClient.invalidateQueries({ queryKey: ["change-requests"] });
-                        } catch { /* ignore */ }
-                      }}
-                      className="absolute top-3 right-3 p-1.5 rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
-                      title="Delete draft"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <ProductionGuard>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm("Delete this draft? This cannot be undone.")) return;
+                          try {
+                            await api.delete(`/change-requests/${cr.id}`);
+                            queryClient.invalidateQueries({ queryKey: ["change-requests"] });
+                          } catch { /* ignore */ }
+                        }}
+                        className="absolute top-3 right-3 p-1.5 rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                        title="Delete draft"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </ProductionGuard>
                   </div>
                 );
               })}

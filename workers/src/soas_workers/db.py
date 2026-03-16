@@ -361,6 +361,93 @@ def get_sensitive_shared_secret_names(role_ids: list[str]) -> set[str]:
             return {row["name"] for row in cur.fetchall()}
 
 
+def get_automation_team_id(automation_id: str) -> str | None:
+    """Get the team_id for an automation, or None if globally scoped."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT team_id FROM automations WHERE id = %s::uuid",
+                (automation_id,),
+            )
+            row = cur.fetchone()
+            return str(row["team_id"]) if row and row["team_id"] else None
+
+
+def get_team_vars_for_roles(team_id: str, role_ids: list[str]) -> dict:
+    """Get all team variables readable by the given role IDs for a specific team.
+
+    Returns {name: value} dict.
+    """
+    if not role_ids or not team_id:
+        return {}
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            placeholders = ",".join(["%s::uuid"] * len(role_ids))
+            cur.execute(
+                f"""
+                SELECT DISTINCT v.name, v.value
+                FROM team_variables v
+                JOIN team_variable_permissions p ON v.id = p.variable_id
+                WHERE v.team_id = %s::uuid
+                  AND p.role_id IN ({placeholders})
+                  AND p.can_read = true
+                """,
+                [team_id] + role_ids,
+            )
+            return {row["name"]: row["value"] for row in cur.fetchall()}
+
+
+def get_writable_team_vars_for_roles(team_id: str, role_ids: list[str]) -> list[str]:
+    """Get names of team variables writable by the given role IDs for a specific team."""
+    if not role_ids or not team_id:
+        return []
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            placeholders = ",".join(["%s::uuid"] * len(role_ids))
+            cur.execute(
+                f"""
+                SELECT DISTINCT v.name
+                FROM team_variables v
+                JOIN team_variable_permissions p ON v.id = p.variable_id
+                WHERE v.team_id = %s::uuid
+                  AND p.role_id IN ({placeholders})
+                  AND p.can_write = true
+                """,
+                [team_id] + role_ids,
+            )
+            return [row["name"] for row in cur.fetchall()]
+
+
+def get_all_team_vars(team_id: str) -> dict:
+    """Get all team variables for a team (no permission filtering).
+
+    Used for test runs where the user is already authenticated.
+    Returns {name: value} dict.
+    """
+    if not team_id:
+        return {}
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT name, value FROM team_variables WHERE team_id = %s::uuid",
+                (team_id,),
+            )
+            return {row["name"]: row["value"] for row in cur.fetchall()}
+
+
+def get_sensitive_team_variable_names(team_id: str) -> set[str]:
+    """Get names of team variables marked as secret for a specific team."""
+    if not team_id:
+        return set()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT name FROM team_variables WHERE team_id = %s::uuid AND is_secret = true",
+                (team_id,),
+            )
+            return {row["name"] for row in cur.fetchall()}
+
+
 def get_sensitive_incident_variable_names() -> set[str]:
     """Get names of incident variables marked as sensitive.
 

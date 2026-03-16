@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from soas_backend.api.deps import get_current_user, require_permission
+from soas_backend.api.deps import get_current_user, get_user_teams, require_permission
 from soas_backend.auth.jwt import decode_access_token
 from soas_backend.database import get_db
 from soas_backend.models.user import User
@@ -64,6 +64,7 @@ async def _page_to_read(page, svc: WikiService) -> WikiPageRead:
         created_by=_user_brief(page.creator),
         updated_by=_user_brief(page.updater),
         child_count=child_count,
+        team_id=page.team_id,
         created_at=page.created_at,
         updated_at=page.updated_at,
     )
@@ -85,6 +86,7 @@ async def _page_to_list_item(page, svc: WikiService) -> WikiPageListItem:
         created_by=_user_brief(page.creator),
         updated_by=_user_brief(page.updater),
         child_count=child_count,
+        team_id=page.team_id,
         created_at=page.created_at,
         updated_at=page.updated_at,
     )
@@ -125,9 +127,11 @@ async def list_wiki_pages(
     wiki_status: str | None = Query(None, alias="status"),
     tag: str | None = Query(None),
     search: str | None = Query(None),
+    team_id: UUID | None = Query(None),
     page: int = Query(1, ge=1),
     per_page: int = Query(25, ge=1, le=100),
     _: dict = Depends(require_permission("wiki", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     svc = WikiService(db)
@@ -139,6 +143,8 @@ async def list_wiki_pages(
         search=search,
         page=page,
         per_page=per_page,
+        user_teams=user_teams,
+        team_id=team_id,
     )
 
     items = [await _page_to_list_item(p, svc) for p in pages]
@@ -155,24 +161,31 @@ async def list_wiki_pages(
 
 @router.get("/tree", response_model=list[WikiPageTreeNode])
 async def get_wiki_tree(
+    team_id: UUID | None = Query(None),
     _: dict = Depends(require_permission("wiki", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     svc = WikiService(db)
-    pages = await svc.get_tree()
+    pages = await svc.get_tree(user_teams=user_teams, team_id=team_id)
     return _build_tree(pages)
 
 
 @router.get("/search", response_model=PaginatedResponse[WikiSearchResult])
 async def search_wiki(
     q: str = Query(min_length=1),
+    team_id: UUID | None = Query(None),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     _: dict = Depends(require_permission("wiki", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     svc = WikiService(db)
-    results, total = await svc.search_fulltext(q, page=page, per_page=per_page)
+    results, total = await svc.search_fulltext(
+        q, page=page, per_page=per_page,
+        user_teams=user_teams, team_id=team_id,
+    )
     return PaginatedResponse(
         data=[WikiSearchResult(**r) for r in results],
         meta=PaginationMeta(
@@ -202,20 +215,29 @@ async def create_wiki_page(
         icon=body.icon,
         slug=body.slug,
         linked_node_type=body.linked_node_type,
+        team_id=body.team_id,
     )
     return await _page_to_read(page, svc)
 
 
-@router.get("/by-slug/{slug}", response_model=WikiPageRead)
+@router.get("/by-slug/{slug:path}", response_model=WikiPageRead)
 async def get_wiki_page_by_slug(
     slug: str,
     _: dict = Depends(require_permission("wiki", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     svc = WikiService(db)
     page = await svc.get_by_slug(slug)
     if not page:
         raise HTTPException(status_code=404, detail="Wiki page not found")
+
+    # Team visibility check
+    if user_teams is not None and page.team_id is not None:
+        team_ids = [t["id"] for t in user_teams]
+        if str(page.team_id) not in team_ids:
+            raise HTTPException(status_code=404, detail="Wiki page not found")
+
     return await _page_to_read(page, svc)
 
 
@@ -223,12 +245,20 @@ async def get_wiki_page_by_slug(
 async def get_wiki_page(
     page_id: UUID,
     _: dict = Depends(require_permission("wiki", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     svc = WikiService(db)
     page = await svc.get(page_id)
     if not page:
         raise HTTPException(status_code=404, detail="Wiki page not found")
+
+    # Team visibility check
+    if user_teams is not None and page.team_id is not None:
+        team_ids = [t["id"] for t in user_teams]
+        if str(page.team_id) not in team_ids:
+            raise HTTPException(status_code=404, detail="Wiki page not found")
+
     return await _page_to_read(page, svc)
 
 

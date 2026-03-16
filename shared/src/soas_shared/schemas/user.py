@@ -65,6 +65,11 @@ class AdminUserCreateResponse(BaseReadSchema):
     roles: list[str] = []
 
 
+class AdminPasswordResetResponse(BaseSchema):
+    """Response for admin password reset."""
+    temporary_password: str
+
+
 class UserUpdate(BaseSchema):
     display_name: str | None = None
     email: EmailStr | None = None

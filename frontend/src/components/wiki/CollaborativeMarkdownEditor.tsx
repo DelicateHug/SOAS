@@ -225,7 +225,6 @@ export function CollaborativeMarkdownEditor({
   wikiPageId,
   wikiPageTitle,
 }: CollaborativeMarkdownEditorProps) {
-  const navigate = useNavigate();
   const { ydoc, provider, collaborators, isConnected, sessionReady, broadcastUpdate, saveHtml } = collaboration;
 
   // Debounce ref for saveHtml (backend persistence)

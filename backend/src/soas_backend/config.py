@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     jwt_public_key_path: str = "secrets/jwt_public.pem"
     jwt_algorithm: str = "RS256"
     jwt_access_token_expire_minutes: int = 60
-    jwt_refresh_token_expire_days: int = 30
+    jwt_refresh_token_expire_hours: int = 2
 
     # WebAuthn
     webauthn_rp_id: str = "localhost"

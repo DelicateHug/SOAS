@@ -4,10 +4,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "@/lib/api";
 import { severityColors, statusColors, formatDate } from "@/lib/utils";
 import { Plus, List, Layers, FolderPlus } from "lucide-react";
+import { ProductionGuard } from "@/components/ui/ProductionGuard";
 import { IncidentGroupedView } from "./IncidentGroupedView";
 import { CreateGroupModal } from "./CreateGroupModal";
 import { AddToGroupPopover } from "./AddToGroupPopover";
 import type { PaginatedResponse, IncidentListItem, IncidentSeverity, IncidentStatus } from "@/types/api";
+import { useTeamStore } from "@/stores/teamStore";
 
 const severities: IncidentSeverity[] = ["critical", "high", "medium", "low", "informational"];
 const statuses: IncidentStatus[] = [
@@ -21,6 +23,7 @@ export function IncidentListPage() {
   const [filters, setFilters] = useState({ severity: "", status: "", page: 1 });
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupPopoverIncident, setGroupPopoverIncident] = useState<string | null>(null);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
 
   const setView = (view: "flat" | "grouped") => {
     const params = new URLSearchParams(searchParams);
@@ -33,11 +36,12 @@ export function IncidentListPage() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ["incidents", filters],
+    queryKey: ["incidents", filters, activeTeamId],
     queryFn: () => {
       const params = new URLSearchParams();
       if (filters.severity) params.set("severity", filters.severity);
       if (filters.status) params.set("status", filters.status);
+      params.set("team_id", activeTeamId!);
       params.set("page", String(filters.page));
       params.set("per_page", "25");
       return api.get<PaginatedResponse<IncidentListItem>>(`/incidents?${params}`);
@@ -74,20 +78,24 @@ export function IncidentListPage() {
           </div>
 
           {viewMode === "grouped" && (
-            <button
-              onClick={() => setShowCreateGroup(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-[hsl(var(--border))] rounded-md text-sm hover:bg-[hsl(var(--accent))]"
-            >
-              <FolderPlus className="w-4 h-4" /> New Group
-            </button>
+            <ProductionGuard>
+              <button
+                onClick={() => setShowCreateGroup(true)}
+                className="flex items-center gap-2 px-4 py-2 border border-[hsl(var(--border))] rounded-md text-sm hover:bg-[hsl(var(--accent))]"
+              >
+                <FolderPlus className="w-4 h-4" /> New Group
+              </button>
+            </ProductionGuard>
           )}
 
-          <Link
-            to="/incidents/new"
-            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90"
-          >
-            <Plus className="w-4 h-4" /> New Incident
-          </Link>
+          <ProductionGuard>
+            <Link
+              to="/incidents/new"
+              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90"
+            >
+              <Plus className="w-4 h-4" /> New Incident
+            </Link>
+          </ProductionGuard>
         </div>
       </div>
 

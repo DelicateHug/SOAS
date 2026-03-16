@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
+import { useTeamStore } from "@/stores/teamStore";
 import { X, Loader2 } from "lucide-react";
 import type {
   PaginatedResponse,
@@ -70,10 +71,12 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
   const queryClient = useQueryClient();
   const isEdit = !!job;
 
-  // Fetch active automations for the dropdown
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+  // Fetch active automations for the dropdown (scoped to current team)
   const { data: automationsData } = useQuery({
-    queryKey: ["automations", { status: "active" }],
-    queryFn: () => api.get<PaginatedResponse<AutomationItem>>("/automations?status=active&per_page=100"),
+    queryKey: ["automations", { status: "active" }, activeTeamId],
+    queryFn: () => api.get<PaginatedResponse<AutomationItem>>(`/automations?status=active&per_page=100&team_id=${activeTeamId}`),
+    enabled: !!activeTeamId,
   });
 
   const initialInterval = job?.interval_seconds ? secondsToInterval(job.interval_seconds) : { value: 5, unit: "minutes" as const };

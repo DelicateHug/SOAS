@@ -7,7 +7,7 @@ import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from soas_backend.api.deps import get_current_user, get_redis, require_permission
+from soas_backend.api.deps import get_current_user, get_redis, get_user_teams, require_permission
 from soas_backend.database import get_db
 from soas_backend.models.user import User
 from soas_backend.services.incident_cache import IncidentCacheService
@@ -63,6 +63,7 @@ def _incident_read(incident) -> IncidentRead:
         assignment_count=len(incident.assignments),
         case_id=case_id,
         group_ids=group_ids,
+        team_id=incident.team_id,
     )
 
 
@@ -93,14 +94,19 @@ def _incident_to_cache_dict(incident) -> dict:
 async def list_incidents(
     severity: str | None = None,
     incident_status: str | None = Query(None, alias="status"),
+    team_id: UUID | None = None,
     page: int = Query(1, ge=1),
     per_page: int = Query(25, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     _: dict = Depends(require_permission("incident", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
     svc = IncidentService(db)
-    incidents, total = await svc.list_incidents(severity, incident_status, page, per_page)
+    incidents, total = await svc.list_incidents(
+        severity, incident_status, page, per_page,
+        user_teams=user_teams, team_id=team_id,
+    )
 
     return PaginatedResponse(
         data=[
@@ -118,6 +124,7 @@ async def list_incidents(
                 group_ids=[ci.case_id for ci in i.case_incidents]
                 if hasattr(i, "case_incidents") and i.case_incidents
                 else [],
+                team_id=i.team_id,
             )
             for i in incidents
         ],
@@ -169,6 +176,7 @@ async def create_incident(
         tags=effective_tags,
         metadata=body.metadata,
         raw_event=body.raw_event,
+        team_id=body.team_id,
     )
     # Re-fetch with relationships
     incident = await svc.get(incident.id)
@@ -199,6 +207,7 @@ async def create_incident(
 async def get_incident(
     incident_id: UUID,
     _: dict = Depends(require_permission("incident", "read")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
     redis: aioredis.Redis = Depends(get_redis),
 ):
@@ -210,6 +219,12 @@ async def get_incident(
     incident = await svc.get(incident_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
+
+    # Team visibility check
+    if user_teams is not None and incident.team_id is not None:
+        team_ids = [t["id"] for t in user_teams]
+        if str(incident.team_id) not in team_ids:
+            raise HTTPException(status_code=404, detail="Incident not found")
 
     return _incident_read(incident)
 

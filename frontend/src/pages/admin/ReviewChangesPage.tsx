@@ -324,7 +324,7 @@ export function ReviewChangesPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["change-request", "pending"],
     queryFn: () =>
-      api.get<ChangeRequestListResponse>("/change-requests/pending?per_page=200"),
+      api.get<ChangeRequestListResponse>("/change-requests/pending?per_page=100"),
     refetchInterval: 10000,
   });
 

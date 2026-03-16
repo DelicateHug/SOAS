@@ -4,6 +4,7 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { useAuthStore } from "@/stores/authStore";
 import { useTokenExpiration, type UrgencyLevel } from "@/hooks/useTokenExpiration";
 import { useDeploymentMode } from "@/hooks/useDeploymentMode";
+import { TeamSelector } from "@/components/ui/TeamSelector";
 import {
   LayoutDashboard,
   AlertTriangle,
@@ -34,6 +35,7 @@ import {
   ToggleRight,
   GitBranch,
   GitPullRequest,
+  UsersRound,
 } from "lucide-react";
 
 const urgencyColors: Record<UrgencyLevel, string> = {
@@ -59,6 +61,8 @@ const navItems = [
   { to: "/wiki", label: "Wiki", icon: BookOpen },
   { to: "/code-library", label: "Code Library", icon: Code },
   { to: "/executions", label: "Executions", icon: Terminal },
+  { to: "/teams", label: "Teams", icon: UsersRound },
+  { to: "/team-variables", label: "Team Variables", icon: Variable },
   { to: "/my-secrets", label: "My Secrets", icon: KeyRound },
   { to: "/local-changes", label: "Local Changes", icon: GitBranch },
 ];
@@ -152,6 +156,9 @@ export function DashboardLayout() {
             </div>
           )}
         </div>
+
+        {/* Team selector */}
+        <TeamSelector collapsed={collapsed} />
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {collapsed && (

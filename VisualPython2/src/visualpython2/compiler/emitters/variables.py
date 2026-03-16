@@ -429,6 +429,94 @@ class SetSOASVarNodeEmitter(NodeEmitter):
         context.mark_node_processed(node.id)
 
 
+class GetTeamVarNodeEmitter(NodeEmitter):
+    """Emitter for GetTeamVar nodes - retrieve team-scoped variables."""
+
+    @property
+    def node_type(self) -> str:
+        return "get_team_var"
+
+    def emit(
+        self,
+        node: object,
+        context: GenerationContext,
+        generator: CodeGenerator,
+    ) -> None:
+        """Generate code to retrieve a team variable."""
+        from visualpython2.nodes.definitions import GetTeamVarNode
+
+        if not isinstance(node, GetTeamVarNode):
+            context.errors.append(f"Expected GetTeamVarNode but got {type(node).__name__}")
+            return
+
+        team_var_name = node.variable_name
+        dynamic_name = self.get_input_value(node, "variable_name", context, generator.graph)
+
+        default_value = self.get_input_value(node, "default", context, generator.graph)
+        if default_value is None:
+            default_repr = repr(node.default_value) if hasattr(node, "default_value") and node.default_value is not None else "None"
+        else:
+            default_repr = default_value
+
+        value_var = context.generate_variable_name("team_var")
+        exists_var = context.generate_variable_name("team_var_exists")
+        context.set_output_variable(node.id, "value", value_var)
+        context.set_output_variable(node.id, "exists", exists_var)
+
+        context.add_line(f"# Get team variable: {node.name}")
+
+        if dynamic_name:
+            name_expr = dynamic_name
+        else:
+            name_expr = repr(team_var_name)
+
+        context.add_line(f"{exists_var} = {name_expr} in _team_vars")
+        context.add_line(f"{value_var} = get_team_var({name_expr}, {default_repr})")
+        context.add_blank_line()
+
+        context.mark_node_processed(node.id)
+
+
+class SetTeamVarNodeEmitter(NodeEmitter):
+    """Emitter for SetTeamVar nodes - store team-scoped variables."""
+
+    @property
+    def node_type(self) -> str:
+        return "set_team_var"
+
+    def emit(
+        self,
+        node: object,
+        context: GenerationContext,
+        generator: CodeGenerator,
+    ) -> None:
+        """Generate code to set a team variable."""
+        from visualpython2.nodes.definitions import SetTeamVarNode
+
+        if not isinstance(node, SetTeamVarNode):
+            context.errors.append(f"Expected SetTeamVarNode but got {type(node).__name__}")
+            return
+
+        team_var_name = node.variable_name
+        dynamic_name = self.get_input_value(node, "variable_name", context, generator.graph)
+        value = self.get_input_value(node, "value", context, generator.graph, default="None")
+
+        success_var = context.generate_variable_name("team_set_success")
+        context.set_output_variable(node.id, "success", success_var)
+
+        context.add_line(f"# Set team variable: {node.name}")
+
+        if dynamic_name:
+            name_expr = dynamic_name
+        else:
+            name_expr = repr(team_var_name)
+
+        context.add_line(f"{success_var} = set_team_var({name_expr}, {value})")
+        context.add_blank_line()
+
+        context.mark_node_processed(node.id)
+
+
 class GetUserSecretNodeEmitter(NodeEmitter):
     """Emitter for GetUserSecret nodes - retrieve per-user secrets."""
 

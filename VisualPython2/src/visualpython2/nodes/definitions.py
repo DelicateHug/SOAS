@@ -4289,7 +4289,7 @@ class GetIncidentVarNode(BaseNode):
     """Get an incident variable from the runtime context."""
     node_type: str = "get_incident_var"
     display_name: str = "Get Incident Var"
-    node_category: str = "Incident"
+    node_category: str = "Variables"
     node_color: str = "#E91E63"
 
     def __init__(self, node_id: Optional[str] = None, name: Optional[str] = None,
@@ -4339,7 +4339,7 @@ class SetIncidentVarNode(BaseNode):
     """Set an incident variable in the runtime context."""
     node_type: str = "set_incident_var"
     display_name: str = "Set Incident Var"
-    node_category: str = "Incident"
+    node_category: str = "Variables"
     node_color: str = "#E91E63"
 
     def __init__(self, node_id: Optional[str] = None, name: Optional[str] = None,
@@ -4528,7 +4528,7 @@ class GetSOASVarNode(BaseNode):
     """Get an application-level SOAS variable (permission-restricted)."""
     node_type: str = "get_soas_var"
     display_name: str = "Get SOAS Var"
-    node_category: str = "SOAS"
+    node_category: str = "Variables"
     node_color: str = "#9C27B0"
 
     def __init__(self, node_id: Optional[str] = None, name: Optional[str] = None,
@@ -4578,7 +4578,7 @@ class SetSOASVarNode(BaseNode):
     """Set an application-level SOAS variable (permission-restricted)."""
     node_type: str = "set_soas_var"
     display_name: str = "Set SOAS Var"
-    node_category: str = "SOAS"
+    node_category: str = "Variables"
     node_color: str = "#9C27B0"
 
     def __init__(self, node_id: Optional[str] = None, name: Optional[str] = None,
@@ -4608,6 +4608,104 @@ class SetSOASVarNode(BaseNode):
     def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         vn = inputs.get("variable_name", self._variable_name)
         if not vn: raise ValueError("No SOAS variable name specified")
+        return {"success": True}
+
+    def _get_serializable_properties(self) -> Dict[str, Any]:
+        return {"variable_name": self._variable_name}
+
+    def _load_serializable_properties(self, properties: Dict[str, Any]) -> None:
+        self._variable_name = properties.get("variable_name", "")
+
+
+# ===========================================================================
+# TEAM VARIABLE NODES
+# ===========================================================================
+
+
+class GetTeamVarNode(BaseNode):
+    """Get a team-scoped variable (permission-restricted)."""
+    node_type: str = "get_team_var"
+    display_name: str = "Get Team Var"
+    node_category: str = "Variables"
+    node_color: str = "#00BCD4"
+
+    def __init__(self, node_id: Optional[str] = None, name: Optional[str] = None,
+                 position: Optional[Position] = None, variable_name: str = "",
+                 default_value: Any = None) -> None:
+        self._variable_name: str = variable_name
+        self._default_value: Any = default_value
+        super().__init__(node_id, name, position)
+
+    def _setup_ports(self) -> None:
+        self.add_input_port(InputPort(name="exec_in", port_type=PortType.FLOW, description="Execution flow input", required=False))
+        self.add_input_port(InputPort(name="variable_name", port_type=PortType.STRING, description="Team variable name", required=False))
+        self.add_output_port(OutputPort(name="exec_out", port_type=PortType.FLOW, description="Execution flow output"))
+        self.add_output_port(OutputPort(name="value", port_type=PortType.ANY, description="The variable value"))
+        self.add_output_port(OutputPort(name="exists", port_type=PortType.BOOLEAN, description="Whether the variable exists"))
+
+    @property
+    def variable_name(self) -> str: return self._variable_name
+    @variable_name.setter
+    def variable_name(self, value: str) -> None: self._variable_name = value
+    @property
+    def default_value(self) -> Any: return self._default_value
+    @default_value.setter
+    def default_value(self, value: Any) -> None: self._default_value = value
+
+    def validate(self) -> List[str]:
+        errors: List[str] = []
+        if not self._variable_name:
+            p = self.get_input_port("variable_name")
+            if p and not p.is_connected(): errors.append("Team variable name must be configured or provided via input")
+        return errors
+
+    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        vn = inputs.get("variable_name", self._variable_name)
+        if not vn: raise ValueError("No team variable name specified")
+        return {"value": self._default_value, "exists": False}
+
+    def _get_serializable_properties(self) -> Dict[str, Any]:
+        return {"variable_name": self._variable_name, "default_value": self._default_value}
+
+    def _load_serializable_properties(self, properties: Dict[str, Any]) -> None:
+        self._variable_name = properties.get("variable_name", "")
+        self._default_value = properties.get("default_value", None)
+
+
+class SetTeamVarNode(BaseNode):
+    """Set a team-scoped variable (permission-restricted)."""
+    node_type: str = "set_team_var"
+    display_name: str = "Set Team Var"
+    node_category: str = "Variables"
+    node_color: str = "#00BCD4"
+
+    def __init__(self, node_id: Optional[str] = None, name: Optional[str] = None,
+                 position: Optional[Position] = None, variable_name: str = "") -> None:
+        self._variable_name: str = variable_name
+        super().__init__(node_id, name, position)
+
+    def _setup_ports(self) -> None:
+        self.add_input_port(InputPort(name="exec_in", port_type=PortType.FLOW, description="Execution flow input", required=False))
+        self.add_input_port(InputPort(name="variable_name", port_type=PortType.STRING, description="Team variable name", required=False))
+        self.add_input_port(InputPort(name="value", port_type=PortType.ANY, description="Value to store", required=True))
+        self.add_output_port(OutputPort(name="exec_out", port_type=PortType.FLOW, description="Execution flow output"))
+        self.add_output_port(OutputPort(name="success", port_type=PortType.BOOLEAN, description="Whether set succeeded"))
+
+    @property
+    def variable_name(self) -> str: return self._variable_name
+    @variable_name.setter
+    def variable_name(self, value: str) -> None: self._variable_name = value
+
+    def validate(self) -> List[str]:
+        errors: List[str] = []
+        if not self._variable_name:
+            p = self.get_input_port("variable_name")
+            if p and not p.is_connected(): errors.append("Team variable name must be configured or provided via input")
+        return errors
+
+    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        vn = inputs.get("variable_name", self._variable_name)
+        if not vn: raise ValueError("No team variable name specified")
         return {"success": True}
 
     def _get_serializable_properties(self) -> Dict[str, Any]:

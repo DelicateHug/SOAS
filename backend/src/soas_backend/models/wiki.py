@@ -40,7 +40,13 @@ class WikiPage(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
+    # Team scoping (null = global page, visible to all)
+    team_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
+    )
+
     creator = relationship("User", foreign_keys=[created_by])
+    team = relationship("Team", foreign_keys=[team_id])
     updater = relationship("User", foreign_keys=[updated_by])
     parent = relationship("WikiPage", remote_side=[id], back_populates="children")
     children: Mapped[list["WikiPage"]] = relationship(back_populates="parent")
@@ -54,6 +60,7 @@ class WikiPage(Base):
     __table_args__ = (
         Index("idx_wiki_pages_slug", "slug", unique=True),
         Index("idx_wiki_pages_parent", "parent_id"),
+        Index("idx_wiki_pages_team_id", "team_id"),
     )
 
 

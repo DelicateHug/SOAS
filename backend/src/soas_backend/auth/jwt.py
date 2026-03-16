@@ -16,6 +16,7 @@ def create_access_token(
     username: str,
     roles: list[str],
     permissions: list[str],
+    teams: list[dict] | None = None,
 ) -> str:
     now = datetime.now(timezone.utc)
     payload = {
@@ -23,6 +24,7 @@ def create_access_token(
         "username": username,
         "roles": roles,
         "permissions": permissions,
+        "teams": teams or [],
         "iat": now,
         "exp": now + timedelta(minutes=settings.jwt_access_token_expire_minutes),
         "jti": str(uuid.uuid4()),

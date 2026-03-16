@@ -16,6 +16,7 @@ from soas_backend.auth.password import hash_password, verify_password
 from soas_backend.config import settings
 from soas_backend.crypto import setup_user_dek
 from soas_backend.models.role import Permission, Role, RolePermission, UserRole
+from soas_backend.models.team import Team, TeamMembership, TeamMembershipRole
 from soas_backend.models.user import RefreshToken, User
 
 
@@ -99,8 +100,8 @@ class AuthService:
         user.last_login_at = now
         return user
 
-    async def get_user_permissions(self, user_id: UUID) -> tuple[list[str], list[str]]:
-        """Get the user's role names and flattened permissions list."""
+    async def get_user_permissions(self, user_id: UUID) -> tuple[list[str], list[str], list[dict]]:
+        """Get the user's role names, flattened permissions list, and team memberships."""
         result = await self.db.execute(
             select(UserRole)
             .options(
@@ -119,17 +120,38 @@ class AuthService:
             for rp in ur.role.role_permissions:
                 permissions.add(f"{rp.permission.resource}:{rp.permission.action}")
 
-        return role_names, sorted(permissions)
+        # Get team memberships
+        tm_result = await self.db.execute(
+            select(TeamMembership)
+            .options(
+                selectinload(TeamMembership.team),
+                selectinload(TeamMembership.roles).selectinload(TeamMembershipRole.role),
+            )
+            .where(TeamMembership.user_id == user_id)
+        )
+        memberships = tm_result.scalars().all()
+        teams = [
+            {
+                "id": str(m.team.id),
+                "name": m.team.name,
+                "roles": [r.role.name for r in m.roles],
+                "team_role": m.team_role,
+            }
+            for m in memberships
+        ]
+
+        return role_names, sorted(permissions), teams
 
     async def create_tokens(self, user: User) -> tuple[str, str]:
         """Create access + refresh token pair for a user."""
-        role_names, permissions = await self.get_user_permissions(user.id)
+        role_names, permissions, teams = await self.get_user_permissions(user.id)
 
         access_token = create_access_token(
             user_id=user.id,
             username=user.username,
             roles=role_names,
             permissions=permissions,
+            teams=teams,
         )
 
         raw_refresh, refresh_hash = create_refresh_token()
@@ -137,7 +159,7 @@ class AuthService:
             user_id=user.id,
             token_hash=refresh_hash,
             expires_at=datetime.now(timezone.utc)
-            + timedelta(days=settings.jwt_refresh_token_expire_days),
+            + timedelta(hours=settings.jwt_refresh_token_expire_hours),
         )
         self.db.add(refresh_record)
         await self.db.flush()

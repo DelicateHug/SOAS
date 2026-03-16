@@ -4,7 +4,7 @@ import re
 import unicodedata
 from uuid import UUID
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -66,6 +66,7 @@ class WikiService:
         icon: str | None = None,
         slug: str | None = None,
         linked_node_type: str | None = None,
+        team_id: UUID | None = None,
     ) -> WikiPage:
         if slug:
             # Verify uniqueness of provided slug
@@ -87,6 +88,7 @@ class WikiService:
             icon=icon,
             linked_node_type=linked_node_type,
             created_by=created_by,
+            team_id=team_id,
         )
         self.db.add(page)
         await self.db.flush()
@@ -117,6 +119,8 @@ class WikiService:
         search: str | None = None,
         page: int = 1,
         per_page: int = 25,
+        user_teams: list[dict] | None = None,
+        team_id: UUID | None = None,
     ) -> tuple[list[WikiPage], int]:
         query = self._base_query()
 
@@ -131,6 +135,17 @@ class WikiService:
             query = query.where(WikiPage.tags.any(tag))
         if search:
             query = query.where(WikiPage.title.ilike(f"%{search}%"))
+
+        # Team scoping — always include unscoped (NULL team_id) pages
+        if team_id:
+            query = query.where(
+                or_(WikiPage.team_id == team_id, WikiPage.team_id.is_(None))
+            )
+        elif user_teams is not None:
+            team_ids = [UUID(t["id"]) for t in user_teams]
+            query = query.where(
+                or_(WikiPage.team_id.in_(team_ids), WikiPage.team_id.is_(None))
+            )
 
         count_query = select(func.count()).select_from(query.subquery())
         total = (await self.db.execute(count_query)).scalar() or 0
@@ -207,12 +222,27 @@ class WikiService:
 
     # ─── Tree ───
 
-    async def get_tree(self) -> list[WikiPage]:
+    async def get_tree(
+        self,
+        user_teams: list[dict] | None = None,
+        team_id: UUID | None = None,
+    ) -> list[WikiPage]:
         """Get all pages with minimal fields for building the sidebar tree."""
-        result = await self.db.execute(
-            select(WikiPage)
-            .order_by(WikiPage.sort_order, WikiPage.title)
-        )
+        query = select(WikiPage)
+
+        # Team scoping — always include unscoped (NULL team_id) pages
+        if team_id:
+            query = query.where(
+                or_(WikiPage.team_id == team_id, WikiPage.team_id.is_(None))
+            )
+        elif user_teams is not None:
+            team_ids = [UUID(t["id"]) for t in user_teams]
+            query = query.where(
+                or_(WikiPage.team_id.in_(team_ids), WikiPage.team_id.is_(None))
+            )
+
+        query = query.order_by(WikiPage.sort_order, WikiPage.title)
+        result = await self.db.execute(query)
         return list(result.scalars().unique().all())
 
     # ─── Breadcrumbs ───
@@ -239,22 +269,42 @@ class WikiService:
     # ─── Full-text search ───
 
     async def search_fulltext(
-        self, query: str, page: int = 1, per_page: int = 20
+        self,
+        query: str,
+        page: int = 1,
+        per_page: int = 20,
+        user_teams: list[dict] | None = None,
+        team_id: UUID | None = None,
     ) -> tuple[list[dict], int]:
         """Full-text search using PostgreSQL tsvector/tsquery."""
+        # Build team scoping clause
+        team_clause = ""
+        team_params: dict = {}
+        if team_id:
+            team_clause = " AND team_id = :team_id"
+            team_params["team_id"] = str(team_id)
+        elif user_teams is not None:
+            t_ids = [t["id"] for t in user_teams]
+            if t_ids:
+                team_clause = " AND (team_id = ANY(:team_ids) OR team_id IS NULL)"
+                team_params["team_ids"] = t_ids
+            else:
+                team_clause = " AND team_id IS NULL"
+
         sql_count = text(
-            """
+            f"""
             SELECT count(*)
             FROM wiki_pages
             WHERE to_tsvector('english', title || ' ' || coalesce(content, ''))
                   @@ plainto_tsquery('english', :query)
               AND status != 'archived'
+              {team_clause}
             """
         )
-        total = (await self.db.execute(sql_count, {"query": query})).scalar() or 0
+        total = (await self.db.execute(sql_count, {"query": query, **team_params})).scalar() or 0
 
         sql = text(
-            """
+            f"""
             SELECT id, title, slug, tags, updated_at,
                    ts_headline('english', coalesce(content, ''),
                                plainto_tsquery('english', :query),
@@ -265,6 +315,7 @@ class WikiService:
             WHERE to_tsvector('english', title || ' ' || coalesce(content, ''))
                   @@ plainto_tsquery('english', :query)
               AND status != 'archived'
+              {team_clause}
             ORDER BY rank DESC
             OFFSET :offset LIMIT :limit
             """
@@ -275,6 +326,7 @@ class WikiService:
                 "query": query,
                 "offset": (page - 1) * per_page,
                 "limit": per_page,
+                **team_params,
             },
         )
         rows = [

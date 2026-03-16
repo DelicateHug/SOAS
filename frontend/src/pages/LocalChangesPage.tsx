@@ -306,7 +306,7 @@ export function LocalChangesPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["change-request", "mine"],
     queryFn: () =>
-      api.get<ChangeRequestListResponse>("/change-requests/mine?per_page=200"),
+      api.get<ChangeRequestListResponse>("/change-requests/mine?per_page=100"),
     staleTime: 0,
     refetchInterval: 10000,
   });

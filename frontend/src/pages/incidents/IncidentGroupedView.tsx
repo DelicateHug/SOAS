@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { severityColors, statusColors, formatDate } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Layers } from "lucide-react";
 import { AddToGroupPopover } from "./AddToGroupPopover";
+import { useTeamStore } from "@/stores/teamStore";
 import type { PaginatedResponse, IncidentGroupWithIncidents, IncidentListItem } from "@/types/api";
 
 const priorityLabels: Record<number, string> = {
@@ -26,18 +27,21 @@ const statusBadgeColors: Record<string, string> = {
 export function IncidentGroupedView() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [groupPopoverIncident, setGroupPopoverIncident] = useState<string | null>(null);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
 
   const { data: groupsData, isLoading: groupsLoading } = useQuery({
-    queryKey: ["incident-groups"],
+    queryKey: ["incident-groups", activeTeamId],
     queryFn: () =>
-      api.get<PaginatedResponse<IncidentGroupWithIncidents>>("/cases/grouped?per_page=50"),
+      api.get<PaginatedResponse<IncidentGroupWithIncidents>>(`/cases/grouped?per_page=50&team_id=${activeTeamId}`),
+    enabled: !!activeTeamId,
   });
 
   // Also fetch all incidents to find ungrouped ones
   const { data: allIncidents } = useQuery({
-    queryKey: ["incidents", { severity: "", status: "", page: 1 }],
+    queryKey: ["incidents", { severity: "", status: "", page: 1 }, activeTeamId],
     queryFn: () =>
-      api.get<PaginatedResponse<IncidentListItem>>("/incidents?per_page=100"),
+      api.get<PaginatedResponse<IncidentListItem>>(`/incidents?per_page=100&team_id=${activeTeamId}`),
+    enabled: !!activeTeamId,
   });
 
   const groups = groupsData?.data ?? [];
