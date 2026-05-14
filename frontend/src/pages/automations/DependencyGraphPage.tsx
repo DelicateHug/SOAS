@@ -158,8 +158,8 @@ function buildFlowElements(
           ? "2px solid var(--color-primary)"
           : "1px solid var(--color-border)",
         boxShadow: isFocused
-          ? "0 0 0 3px hsla(var(--primary) / 0.25)"
-          : "0 1px 3px hsla(0 0% 0% / 0.15)",
+          ? "0 0 0 3px rgba(11, 99, 206, 0.25)"
+          : "0 1px 3px rgba(0, 0, 0, 0.15)",
         background: "var(--color-surface)",
         color: "var(--color-text)",
         fontSize: "12px",
