@@ -33,6 +33,7 @@ app.conf.update(
         "soas.reindex_wiki_page": {"queue": "celery"},
         "soas.reindex_wiki_all": {"queue": "celery"},
         "soas.delete_wiki_embeddings": {"queue": "celery"},
+        "soas.compute_sla_snapshots": {"queue": "celery"},
     },
     beat_schedule={
         "worker-heartbeat": {
@@ -67,6 +68,10 @@ app.conf.update(
             "task": "soas.monitoring_cleanup_snapshots",
             "schedule": crontab(hour=3, minute=0),  # daily at 3 AM UTC
         },
+        "compute-sla-snapshots": {
+            "task": "soas.compute_sla_snapshots",
+            "schedule": crontab(hour=2, minute=15),  # daily at 02:15 UTC
+        },
     },
 )
 
@@ -83,4 +88,5 @@ app.conf.include = [
     "soas_workers.tasks.git_sync",
     "soas_workers.tasks.monitoring_cleanup",
     "soas_workers.tasks.wiki_rag",
+    "soas_workers.tasks.compute_sla_snapshots",
 ]

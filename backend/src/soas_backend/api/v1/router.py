@@ -46,6 +46,7 @@ from soas_backend.api.v1.dashboards import router as dashboards_router
 from soas_backend.api.v1.alert_categories import router as alert_categories_router
 from soas_backend.api.v1.incident_templates import router as incident_templates_router
 from soas_backend.api.v1.saved_queries import router as saved_queries_router
+from soas_backend.api.v1.slas import router as slas_router
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth_router)
@@ -92,3 +93,4 @@ v1_router.include_router(dashboards_router)
 v1_router.include_router(alert_categories_router)
 v1_router.include_router(incident_templates_router)
 v1_router.include_router(saved_queries_router)
+v1_router.include_router(slas_router)

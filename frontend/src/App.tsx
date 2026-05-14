@@ -15,6 +15,7 @@ const DashboardDetailPage = lazy(() => import("@/pages/dashboards/DashboardDetai
 const DashboardEditPage = lazy(() => import("@/pages/dashboards/DashboardEditPage").then((m) => ({ default: m.DashboardEditPage })));
 const AdminAlertCategoriesPage = lazy(() => import("@/pages/admin/AdminAlertCategoriesPage").then((m) => ({ default: m.AdminAlertCategoriesPage })));
 const SavedQueriesPage = lazy(() => import("@/pages/saved-queries/SavedQueriesPage").then((m) => ({ default: m.SavedQueriesPage })));
+const AdminSLAPage = lazy(() => import("@/pages/admin/AdminSLAPage").then((m) => ({ default: m.AdminSLAPage })));
 const IncidentListPage = lazy(() => import("@/pages/incidents/IncidentListPage").then((m) => ({ default: m.IncidentListPage })));
 const IncidentDetailPage = lazy(() => import("@/pages/incidents/IncidentDetailPage").then((m) => ({ default: m.IncidentDetailPage })));
 const CreateIncidentPage = lazy(() => import("@/pages/incidents/CreateIncidentPage").then((m) => ({ default: m.CreateIncidentPage })));
@@ -160,6 +161,7 @@ export default function App() {
           <Route path="admin/users" element={<AdminUsersPage />} />
           <Route path="admin/roles" element={<AdminRolesPage />} />
           <Route path="admin/alert-categories" element={<AdminAlertCategoriesPage />} />
+          <Route path="admin/slas" element={<AdminSLAPage />} />
           <Route path="admin/soas-variables" element={<SOASVariablesPage />} />
           <Route path="admin/incident-variables" element={<IncidentVariablesPage />} />
           <Route path="admin/form-definitions" element={<FormDefinitionsPage />} />

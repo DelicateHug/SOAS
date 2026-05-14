@@ -39,6 +39,7 @@ import {
   UsersRound,
   Tag,
   Search,
+  Activity,
 } from "lucide-react";
 
 import "./sidebar.css";
@@ -95,6 +96,7 @@ const adminItems: NavItem[] = [
   { to: "/admin/webhook-sources", label: "Webhook Sources", icon: Unplug },
   { to: "/admin/normalization", label: "Normalization", icon: SlidersHorizontal },
   { to: "/admin/alert-categories", label: "Alert Categories", icon: Tag },
+  { to: "/admin/slas", label: "SLAs", icon: Activity },
   { to: "/admin/user-secrets", label: "User Secrets", icon: KeyRound },
   { to: "/admin/review-changes", label: "Review Changes", icon: GitPullRequest },
   { to: "/monitoring", label: "Monitoring", icon: Heart },
