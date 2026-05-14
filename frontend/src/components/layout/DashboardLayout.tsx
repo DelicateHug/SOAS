@@ -38,6 +38,7 @@ import {
   GitPullRequest,
   UsersRound,
   Tag,
+  Search,
 } from "lucide-react";
 
 import "./sidebar.css";
@@ -73,6 +74,7 @@ const mainItems: NavItem[] = [
   { to: "/automations", label: "Automations", icon: Zap },
   { to: "/wiki", label: "Wiki", icon: BookOpen },
   { to: "/code-library", label: "Code Library", icon: Code },
+  { to: "/saved-queries", label: "Saved Queries", icon: Search },
   { to: "/executions", label: "Executions", icon: Terminal },
 ];
 

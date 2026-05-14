@@ -14,6 +14,7 @@ const DashboardListPage = lazy(() => import("@/pages/dashboards/DashboardListPag
 const DashboardDetailPage = lazy(() => import("@/pages/dashboards/DashboardDetailPage").then((m) => ({ default: m.DashboardDetailPage })));
 const DashboardEditPage = lazy(() => import("@/pages/dashboards/DashboardEditPage").then((m) => ({ default: m.DashboardEditPage })));
 const AdminAlertCategoriesPage = lazy(() => import("@/pages/admin/AdminAlertCategoriesPage").then((m) => ({ default: m.AdminAlertCategoriesPage })));
+const SavedQueriesPage = lazy(() => import("@/pages/saved-queries/SavedQueriesPage").then((m) => ({ default: m.SavedQueriesPage })));
 const IncidentListPage = lazy(() => import("@/pages/incidents/IncidentListPage").then((m) => ({ default: m.IncidentListPage })));
 const IncidentDetailPage = lazy(() => import("@/pages/incidents/IncidentDetailPage").then((m) => ({ default: m.IncidentDetailPage })));
 const CreateIncidentPage = lazy(() => import("@/pages/incidents/CreateIncidentPage").then((m) => ({ default: m.CreateIncidentPage })));
@@ -100,6 +101,9 @@ export default function App() {
           <Route path="dashboards" element={<DashboardListPage />} />
           <Route path="dashboards/:id" element={<DashboardDetailPage />} />
           <Route path="dashboards/:id/edit" element={<DashboardEditPage />} />
+
+          {/* Saved queries (Phase 4) */}
+          <Route path="saved-queries" element={<SavedQueriesPage />} />
 
           {/* Incidents */}
           <Route path="incidents" element={<IncidentListPage />} />
