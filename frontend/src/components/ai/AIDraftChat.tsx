@@ -16,7 +16,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { marked } from "marked";
 import {
   Send, Loader2, Sparkles, Copy, Check, ArrowDownToLine,
-  AlertCircle, Trash2, X as XIcon,
+  AlertCircle, Trash2, X as XIcon, Maximize2,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -106,6 +106,7 @@ export function AIDraftChat({ kind, initialTarget, onApply, onApplyPatch, getCon
   // hidden until the next assistant turn produces a newer one.
   const [dismissedPatchTs, setDismissedPatchTs] = useState(0);
   const [dismissedSuggestedTs, setDismissedSuggestedTs] = useState(0);
+  const [diffModalOpen, setDiffModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: status } = useQuery({
@@ -311,6 +312,14 @@ export function AIDraftChat({ kind, initialTarget, onApply, onApplyPatch, getCon
             </div>
             <div className="flex items-center gap-1">
               <button
+                onClick={() => setDiffModalOpen(true)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
+                title="View full diff"
+              >
+                <Maximize2 size={11} />
+                View diff
+              </button>
+              <button
                 onClick={() => {
                   const { next, failed } = applyPatch(latestPatch);
                   if (failed.length > 0 && failed.length === latestPatch.length) {
@@ -322,8 +331,8 @@ export function AIDraftChat({ kind, initialTarget, onApply, onApplyPatch, getCon
                   }
                   if (onApplyPatch) onApplyPatch(next);
                   else onApply(next);
-                  // Auto-dismiss so a successfully-applied patch doesn't linger.
                   if (latestPatchTurn) setDismissedPatchTs(latestPatchTurn.ts);
+                  setDiffModalOpen(false);
                   if (failed.length > 0) {
                     window.alert(
                       `${failed.length} of ${latestPatch.length} ops didn't match and were skipped.`
@@ -477,6 +486,100 @@ export function AIDraftChat({ kind, initialTarget, onApply, onApplyPatch, getCon
           Send
         </button>
       </div>
+
+      {diffModalOpen && latestPatch && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setDiffModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-4xl max-h-[85vh] flex flex-col rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+              <div className="text-sm font-semibold text-[var(--color-text)]">
+                Targeted edit — {latestPatch.length} {latestPatch.length === 1 ? "operation" : "operations"}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const { next, failed } = applyPatch(latestPatch);
+                    if (failed.length > 0 && failed.length === latestPatch.length) {
+                      window.alert(
+                        "Couldn't apply the patch — none of the find strings matched the current draft."
+                      );
+                      return;
+                    }
+                    if (onApplyPatch) onApplyPatch(next);
+                    else onApply(next);
+                    if (latestPatchTurn) setDismissedPatchTs(latestPatchTurn.ts);
+                    setDiffModalOpen(false);
+                    if (failed.length > 0) {
+                      window.alert(
+                        `${failed.length} of ${latestPatch.length} ops didn't match and were skipped.`
+                      );
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1 text-xs rounded bg-[var(--color-primary)] text-white hover:opacity-90"
+                >
+                  <ArrowDownToLine size={12} />
+                  Apply edit
+                </button>
+                <button
+                  onClick={() => setDiffModalOpen(false)}
+                  className="p-1 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
+                  aria-label="Close"
+                >
+                  <XIcon size={14} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto px-4 py-3 space-y-4">
+              {latestPatch.map((op, i) => (
+                <div key={i} className="border border-[var(--color-border)] rounded-md overflow-hidden">
+                  <div className="px-3 py-1.5 bg-[var(--color-surface-2)] text-[11px] uppercase tracking-wide font-semibold">
+                    <span className="text-[var(--color-primary)]">{op.op}</span>
+                    <span className="ml-2 text-[var(--color-text-muted)] normal-case font-normal">
+                      op {i + 1} of {latestPatch.length}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[var(--color-border)]">
+                    <div className="p-2">
+                      <div className="text-[10px] uppercase tracking-wide text-[var(--color-text-muted)] mb-1 font-semibold">
+                        {op.op === "delete" ? "Remove" : "Find"}
+                      </div>
+                      <pre className="font-mono text-[11px] whitespace-pre-wrap text-[var(--color-text)] bg-[var(--color-surface)] border border-[var(--color-danger)]/30 rounded p-2 max-h-64 overflow-auto">
+                        {op.find}
+                      </pre>
+                    </div>
+                    <div className="p-2">
+                      <div className="text-[10px] uppercase tracking-wide text-[var(--color-text-muted)] mb-1 font-semibold">
+                        {op.op === "delete"
+                          ? "(deleted)"
+                          : op.op === "replace"
+                            ? "Replace with"
+                            : op.op === "insert_after"
+                              ? "Insert after"
+                              : "Insert before"}
+                      </div>
+                      {op.op === "delete" ? (
+                        <div className="text-[11px] italic text-[var(--color-text-muted)] p-2">
+                          The matched text will be removed.
+                        </div>
+                      ) : (
+                        <pre className="font-mono text-[11px] whitespace-pre-wrap text-[var(--color-text)] bg-[var(--color-surface)] border border-emerald-500/30 rounded p-2 max-h-64 overflow-auto">
+                          {op.with || ""}
+                        </pre>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
