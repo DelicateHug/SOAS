@@ -205,6 +205,7 @@ class ActionRead(BaseModel):
 
 class ActionExecute(BaseModel):
     context: dict[str, Any] = Field(default_factory=dict)
+    user_prompt: str | None = Field(default=None, max_length=8000)
 
 
 @router.get("/actions", response_model=list[ActionRead])
@@ -235,16 +236,29 @@ async def execute_action(
     if not action.is_enabled:
         raise HTTPException(status_code=400, detail="Action is disabled")
 
-    # Interpolate {field} placeholders from body.context
-    prompt = action.system_prompt
+    # Interpolate {field} placeholders from body.context into the system prompt.
+    system = action.system_prompt
     for field in (action.context_fields or []):
         if field in body.context:
-            prompt = prompt.replace("{" + field + "}", str(body.context[field]))
+            system = system.replace("{" + field + "}", str(body.context[field]))
+
+    # The user-typed prompt is what gets sent as the chat message. When the page didn't
+    # give the analyst an input (or they left it blank), fall back to a serialized dump
+    # of the page context so the model has something to work with.
+    user_prompt = (body.user_prompt or "").strip()
+    if not user_prompt:
+        if body.context:
+            user_prompt = "Context:\n" + "\n".join(
+                f"- {k}: {v}" for k, v in body.context.items()
+            )
+        else:
+            user_prompt = "Proceed with the task described in the system prompt."
 
     runner = ClaudeCLIRunner(db)
     try:
         result = await runner.run(
-            prompt=prompt,
+            prompt=user_prompt,
+            system=system,
             model=action.model or "sonnet",
             caller="ai_action",
             allowed_tools=action.allowed_mcp_tools or [],
