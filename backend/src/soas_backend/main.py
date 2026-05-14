@@ -41,12 +41,34 @@ async def lifespan(app: FastAPI):
 
     # Background heartbeat task
     async def _heartbeat_loop():
+        # Resolve a stable agenttype_id once at startup (matches the worker
+        # heartbeat semantics — restarts re-use the same id).
+        from soas_backend.services.agent_registry_service import (
+            record_agent_sample,
+            resolve_agenttype_id,
+        )
+        import os, time
+        role = os.environ.get("SOAS_AGENT_ROLE", "backend")
+        agenttype_id = resolve_agenttype_id(role)
+        version = os.environ.get("SOAS_VERSION", "0.1.0")
+        boot_ts = time.time()
+
         while True:
             await asyncio.sleep(settings.monitoring_quorum_heartbeat_interval)
             try:
                 await quorum_svc.heartbeat(INSTANCE_ID)
             except Exception:
                 logger.warning("Quorum heartbeat failed", exc_info=True)
+            try:
+                await record_agent_sample(
+                    agenttype_id=agenttype_id,
+                    role=role,
+                    version=version,
+                    instance_id=f"{hostname}:{INSTANCE_ID}",
+                    uptime_seconds=int(time.time() - boot_ts),
+                )
+            except Exception:
+                logger.warning("Agent metric sample failed", exc_info=True)
 
     task = asyncio.create_task(_heartbeat_loop())
 

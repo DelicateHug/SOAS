@@ -17,6 +17,9 @@ class InstanceMetricSample(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     instance_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    # Phase 11: stable agenttype_id (e.g. worker_001). Falls back to instance_id
+    # when an old agent hasn't been given a stable id yet.
+    agenttype_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     role: Mapped[str | None] = mapped_column(String(32), nullable=True)
     cpu_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
     mem_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -31,6 +34,7 @@ class InstanceMetricSample(Base):
 
     __table_args__ = (
         Index("idx_instance_metric_samples_instance_captured", "instance_id", "captured_at"),
+        Index("idx_instance_metric_samples_agent_captured", "agenttype_id", "captured_at"),
     )
 
 

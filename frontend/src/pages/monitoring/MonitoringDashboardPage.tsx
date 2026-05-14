@@ -23,7 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { MetricsChart } from "./MetricsChart";
-import { ClusterPanel } from "@/pages/admin/AdminClusterPage";
+import { RegisteredAgentsPanel, LookupPanel } from "./AgentPanels";
 import type {
   SystemHealthOverview,
   AlertItem,
@@ -74,7 +74,7 @@ const COMPONENT_LABELS: Record<string, string> = {
   websocket: "WebSockets",
 };
 
-type Tab = "overview" | "alerts" | "rules" | "quorum" | "agents" | "git_sync" | "cluster";
+type Tab = "overview" | "alerts" | "rules" | "quorum" | "agents" | "checkers" | "git_sync" | "lookup";
 
 export function MonitoringDashboardPage() {
   const { hasPermission } = useAuthStore();
@@ -87,8 +87,9 @@ export function MonitoringDashboardPage() {
     { id: "rules", label: "Alert Rules", adminOnly: true },
     { id: "quorum", label: "Quorum" },
     { id: "agents", label: "Agents" },
+    { id: "checkers", label: "Checkers" },
     { id: "git_sync", label: "Git Sync" },
-    { id: "cluster", label: "Cluster" },
+    { id: "lookup", label: "Lookup" },
   ];
 
   return (
@@ -119,9 +120,10 @@ export function MonitoringDashboardPage() {
       {activeTab === "alerts" && <AlertsPanel isAdmin={isAdmin} />}
       {activeTab === "rules" && isAdmin && <AlertRulesPanel />}
       {activeTab === "quorum" && <QuorumPanel />}
-      {activeTab === "agents" && <AgentsPanel isAdmin={isAdmin} />}
+      {activeTab === "agents" && <RegisteredAgentsPanel isAdmin={isAdmin} />}
+      {activeTab === "checkers" && <AgentsPanel isAdmin={isAdmin} />}
       {activeTab === "git_sync" && <GitSyncPanel isAdmin={isAdmin} />}
-      {activeTab === "cluster" && <ClusterPanel />}
+      {activeTab === "lookup" && <LookupPanel />}
     </div>
   );
 }

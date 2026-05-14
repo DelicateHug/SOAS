@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 import socket
 import time
 from datetime import datetime, timezone
@@ -36,41 +37,84 @@ def _sample_resource_metrics() -> dict[str, float | int | None]:
         return {"cpu_pct": None, "mem_pct": None, "mem_rss_bytes": None}
 
 
+def _resolve_agenttype_id(role: str) -> str:
+    """Return a stable agenttype_id of the form `<role>_<n>`.
+
+    Resolution order:
+      1. $SOAS_AGENT_ID env var if set and well-formed.
+      2. Otherwise allocate a deterministic id from hostname (treats
+         restarts of the same container as the same agent).
+    """
+    candidate = os.environ.get("SOAS_AGENT_ID", "").strip()
+    if candidate and re.fullmatch(r"[a-z][a-z0-9_]*_[0-9]{1,6}", candidate):
+        return candidate
+    # Hostname is stable within a container's lifetime; in docker-compose,
+    # restart preserves the same name. Containers usually look like
+    # "soas-worker" or just a random hex id when scaled.
+    host = socket.gethostname().split(".", 1)[0]
+    short = re.sub(r"^soas[-_]", "", host)
+    m = re.match(r"^(\w+?)[-_]?(\d+)?$", short)
+    if m and m.group(1):
+        base = m.group(1).lower()
+        num = m.group(2) or "001"
+        return f"{base}_{num.zfill(3)}"
+    return f"{role}_001"
+
+
 @app.task(name="soas.worker_heartbeat")
 def worker_heartbeat():
     """Report worker health to Redis and write a cluster sample row."""
     r = redis.from_url(config.REDIS_URL)
+    role = os.environ.get("SOAS_AGENT_ROLE", "worker")
+    agenttype_id = _resolve_agenttype_id(role)
+    version = os.environ.get("SOAS_VERSION", "0.1.0")
+
     info = {
         "hostname": socket.gethostname(),
         "pid": os.getpid(),
+        "agenttype_id": agenttype_id,
+        "role": role,
+        "version": version,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    key = f"worker:health:{info['hostname']}:{info['pid']}"
+    key = f"worker:health:{agenttype_id}"
     r.setex(key, 30, json.dumps(info))
 
-    # Phase 10: also write an instance_metric_samples row so the Cluster
-    # panel shows live workers. Best-effort — never fail the heartbeat.
+    # Phase 10/11: write an instance_metric_samples row keyed by the stable
+    # agenttype_id (so restarts extend the same lifetime). Auto-register the
+    # agent in registered_agents on first sight. Best-effort — never fail
+    # the heartbeat.
     try:
         metrics = _sample_resource_metrics()
         instance_id = f"{info['hostname']}:{info['pid']}"
         uptime_seconds = int(time.time() - _BOOT_TS)
         with get_connection() as conn:
             with conn.cursor() as cur:
+                # Auto-register the agent slot if it doesn't exist.
+                cur.execute(
+                    """
+                    INSERT INTO registered_agents (agenttype_id, role, label)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (agenttype_id) DO NOTHING
+                    """,
+                    (agenttype_id, role, f"{role.title()} {agenttype_id.rsplit('_', 1)[-1]}"),
+                )
                 cur.execute(
                     """
                     INSERT INTO instance_metric_samples
-                      (instance_id, role, cpu_pct, mem_pct, mem_rss_bytes,
+                      (instance_id, agenttype_id, role, cpu_pct, mem_pct, mem_rss_bytes,
                        uptime_seconds, version)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         instance_id,
-                        "worker",
+                        agenttype_id,
+                        role,
                         metrics["cpu_pct"],
                         metrics["mem_pct"],
                         metrics["mem_rss_bytes"],
                         uptime_seconds,
-                        os.environ.get("SOAS_VERSION", "0.1.0"),
+                        version,
                     ),
                 )
             conn.commit()

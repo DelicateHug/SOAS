@@ -49,6 +49,9 @@ services:
       USER_SECRET_ENCRYPTION_KEY: ${USER_SECRET_ENCRYPTION_KEY:-}
       EMBEDDING_SERVICE_URL: http://embeddings:8200
       MCP_TOKEN_FILE: /run/mcp/mcp_token
+      SOAS_AGENT_ID: backend_001
+      SOAS_AGENT_ROLE: backend
+      SOAS_VERSION: "0.1.0"
     ports:
       - "8000:8000"
     depends_on:
@@ -82,6 +85,9 @@ services:
       SOAS_API_URL: http://backend:8000/api/v1
       USER_SECRET_ENCRYPTION_KEY: ${USER_SECRET_ENCRYPTION_KEY:-}
       EMBEDDING_SERVICE_URL: http://embeddings:8200
+      SOAS_AGENT_ID: worker_001
+      SOAS_AGENT_ROLE: worker
+      SOAS_VERSION: "0.1.0"
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,8 +104,12 @@ services:
       dockerfile: workers/Dockerfile
     container_name: soas-worker-beat
     environment:
+      DATABASE_URL: postgresql://soas:${POSTGRES_PASSWORD:-changeme}@postgres:5432/soas
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
+      SOAS_AGENT_ID: beat_001
+      SOAS_AGENT_ROLE: beat
+      SOAS_VERSION: "0.1.0"
     depends_on:
       redis:
         condition: service_healthy
@@ -112,6 +122,9 @@ services:
     container_name: soas-frontend
     environment:
       VITE_API_URL: http://localhost:8000
+      SOAS_AGENT_ID: frontend_001
+      SOAS_AGENT_ROLE: frontend
+      SOAS_VERSION: "0.1.0"
     ports:
       - "3000:3000"
     depends_on:
@@ -156,6 +169,9 @@ services:
       # Optional: when set, MCP clients must present this bearer to call the MCP server
       # itself. Leave unset for the default Docker-network-only deployment.
       MCP_SERVER_TOKEN: ${MCP_SERVER_TOKEN:-}
+      SOAS_AGENT_ID: mcp_001
+      SOAS_AGENT_ROLE: mcp
+      SOAS_VERSION: "0.1.0"
     ports:
       - "8765:8765"
     depends_on:
