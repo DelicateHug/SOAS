@@ -1,0 +1,36 @@
+# Routes from the user gateway to the right backend service.
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: soas-user
+  namespace: soas
+spec:
+  hosts:
+    - "soas.example.com"
+  gateways:
+    - soas-user-gateway
+  http:
+    # API and WebSocket calls go to the backend
+    - match:
+        - uri:
+            prefix: "/api/"
+      route:
+        - destination:
+            host: backend.soas.svc.cluster.local
+            port:
+              number: 8000
+    # MCP server (Claude Code endpoint)
+    - match:
+        - uri:
+            prefix: "/mcp"
+      route:
+        - destination:
+            host: mcp.soas.svc.cluster.local
+            port:
+              number: 8765
+    # Everything else is the SPA
+    - route:
+        - destination:
+            host: frontend.soas.svc.cluster.local
+            port:
+              number: 3000

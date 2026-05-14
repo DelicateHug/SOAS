@@ -100,6 +100,24 @@ async def lifespan(app: FastAPI):
     logging.getLogger().addHandler(agent_log_handler)
     await agent_log_handler.start()
 
+    # Phase 12: CAE revocation listener. Drops cached CAE entries and
+    # closes WebSockets for revoked users when something publishes on
+    # the auth:revocation channel.
+    from soas_backend.services.cae_service import revocation_listener_loop
+
+    async def _on_revoke(payload):
+        # Close any user-specific WS by user id. Most WS routers track
+        # connections by user; a no-op here is fine if they don't.
+        try:
+            from soas_backend.api.v1.collaboration import close_for_user as collab_close
+            user_id = payload.get("user_id")
+            if user_id:
+                await collab_close(user_id)
+        except Exception:
+            pass
+
+    revocation_task = asyncio.create_task(revocation_listener_loop(r, on_revoke=_on_revoke))
+
     # Seed default data (idempotent, non-fatal)
     try:
         from soas_backend.seed import seed_defaults
@@ -112,7 +130,8 @@ async def lifespan(app: FastAPI):
     # Shutdown: deregister and cleanup
     task.cancel()
     log_cleanup_task.cancel()
-    for t in (task, log_cleanup_task):
+    revocation_task.cancel()
+    for t in (task, log_cleanup_task, revocation_task):
         try:
             await t
         except asyncio.CancelledError:

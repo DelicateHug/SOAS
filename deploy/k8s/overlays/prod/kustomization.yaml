@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: soas
+resources:
+  - ../../pki
+  - ../../base
+  - ../../istio
+
+# Replace placeholder host + tenant id before applying. See
+# patch-host.yaml + patch-tenant.yaml for the template.
+patches:
+  - path: patch-host.yaml
+  - path: patch-tenant.yaml

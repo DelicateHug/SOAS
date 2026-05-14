@@ -108,6 +108,24 @@ class ApiClient {
 
     let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
+    // If the gateway / backend tells us the token was revoked via CAE,
+    // skip the refresh dance and send the user back to /login with a
+    // reason so they understand what happened.
+    if (res.status === 401 && res.headers.get("x-cae-revoked") === "true") {
+      this.accessToken = null;
+      this.refreshToken = null;
+      try {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+      } catch {
+        /* ignore */
+      }
+      if (typeof window !== "undefined") {
+        window.location.href = "/login?reason=revoked";
+      }
+      throw new Error("Session revoked");
+    }
+
     // If 401 on a non-auth endpoint, try refreshing the token
     const isAuthPath = AUTH_PATHS.some((p) => path.startsWith(p));
     if (res.status === 401 && this.refreshToken && !isAuthPath) {

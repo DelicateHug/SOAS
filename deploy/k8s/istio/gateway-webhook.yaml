@@ -1,0 +1,21 @@
+# Webhook edge — port 8443. Server-side TLS only; clients don't need
+# a cert because external SIEMs / sensors can't easily hold one. The
+# secret token in the path is the auth factor for these calls.
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: soas-webhook-gateway
+  namespace: soas
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 8443
+        name: https-webhook
+        protocol: HTTPS
+      hosts:
+        - "webhooks.soas.example.com"
+      tls:
+        mode: SIMPLE
+        credentialName: soas-webhook-tls

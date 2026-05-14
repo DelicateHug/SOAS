@@ -17,6 +17,7 @@ from soas_backend.database import get_db
 from soas_backend.models.user import User
 from soas_backend.models.automation import Automation
 from soas_backend.services.automation_service import AutomationService
+from soas_backend.services.audit import audit
 from soas_backend.services.rbac_service import RBACService
 from soas_backend.services.version_service import VersionService
 from soas_shared.schemas.automation import (
@@ -140,6 +141,12 @@ async def list_automations(
 
 
 @router.post("", response_model=AutomationRead, status_code=status.HTTP_201_CREATED)
+@audit(
+    "automation.created",
+    target_kind="automation",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "name", None),
+)
 async def create_automation(
     body: AutomationCreate,
     current_user: User = Depends(get_current_user),
@@ -301,6 +308,12 @@ async def get_automation(
 
 
 @router.patch("/{automation_id}", response_model=AutomationRead)
+@audit(
+    "automation.updated",
+    target_kind="automation",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "name", None),
+)
 async def update_automation(
     automation_id: UUID,
     body: AutomationUpdate,
@@ -344,6 +357,7 @@ async def update_automation(
 
 
 @router.delete("/{automation_id}", status_code=status.HTTP_204_NO_CONTENT)
+@audit("automation.deleted", target_kind="automation", severity="warn")
 async def delete_automation(
     automation_id: UUID,
     _: dict = Depends(require_permission("automation", "delete")),
@@ -356,6 +370,7 @@ async def delete_automation(
 
 
 @router.post("/{automation_id}/execute", status_code=status.HTTP_202_ACCEPTED)
+@audit("automation.executed", target_kind="automation")
 async def execute_automation(
     automation_id: UUID,
     body: AutomationExecuteRequest,

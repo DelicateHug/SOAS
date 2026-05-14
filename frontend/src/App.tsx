@@ -51,6 +51,8 @@ const WikiPageView = lazy(() => import("@/pages/wiki/WikiPageView").then((m) => 
 const WikiPageEditor = lazy(() => import("@/pages/wiki/WikiPageEditor").then((m) => ({ default: m.WikiPageEditor })));
 const WikiVersionHistory = lazy(() => import("@/pages/wiki/WikiVersionHistory").then((m) => ({ default: m.WikiVersionHistory })));
 const UserSecretsPage = lazy(() => import("@/pages/UserSecretsPage").then((m) => ({ default: m.UserSecretsPage })));
+const UserCertificatesPage = lazy(() => import("@/pages/UserCertificatesPage").then((m) => ({ default: m.UserCertificatesPage })));
+const OIDCCallbackPage = lazy(() => import("@/pages/auth/OIDCCallbackPage").then((m) => ({ default: m.OIDCCallbackPage })));
 const AdminUserSecretsPage = lazy(() => import("@/pages/admin/AdminUserSecretsPage").then((m) => ({ default: m.AdminUserSecretsPage })));
 const LocalChangesPage = lazy(() => import("@/pages/LocalChangesPage").then((m) => ({ default: m.LocalChangesPage })));
 const ReviewChangesPage = lazy(() => import("@/pages/admin/ReviewChangesPage").then((m) => ({ default: m.ReviewChangesPage })));
@@ -89,6 +91,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
+        <Route path="/oidc-callback" element={<OIDCCallbackPage />} />
 
         {/* Protected routes */}
         <Route
@@ -150,6 +153,7 @@ export default function App() {
 
           {/* My Secrets */}
           <Route path="my-secrets" element={<UserSecretsPage />} />
+          <Route path="my-certificates" element={<UserCertificatesPage />} />
 
           {/* Local Changes */}
           <Route path="local-changes" element={<LocalChangesPage />} />

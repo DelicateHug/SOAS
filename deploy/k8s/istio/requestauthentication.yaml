@@ -1,0 +1,26 @@
+# Declares the two JWT issuers we accept at the user-facing gateway:
+#   1. The SOAS backend (signs its own JWTs via its RSA keypair).
+#   2. Microsoft Entra (per-tenant). The tenant id is templated at
+#      deploy time via kustomize — see overlays/prod/patch-jwt-issuer.yaml.
+#
+# Tokens that match neither issuer are rejected with 401 before they
+# ever reach the backend. The backend still re-validates (see
+# get_authenticated_user) for defense in depth + CAE.
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: jwt-issuers
+  namespace: soas
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  jwtRules:
+    - issuer: "https://soas.example.com"
+      # The /api/v1/auth/jwks endpoint is wired in a separate route
+      # (operators can also pin the public key directly via `jwks:`).
+      jwksUri: "https://soas.example.com/api/v1/auth/jwks"
+      forwardOriginalToken: true
+    - issuer: "https://login.microsoftonline.com/REPLACE_TENANT_ID/v2.0"
+      jwksUri: "https://login.microsoftonline.com/REPLACE_TENANT_ID/discovery/v2.0/keys"
+      forwardOriginalToken: true

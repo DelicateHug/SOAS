@@ -1,0 +1,32 @@
+# Separate CA dedicated to per-user client certs. Kept distinct from
+# the internal-services CA so a compromise of one doesn't blow up the
+# other, and so the Istio gateway's caCertificates can be pinned to
+# just this root.
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: soas-user-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: SOAS User CA
+  subject:
+    organizations: ["SOC on a Stick"]
+  duration: "87600h"
+  renewBefore: "8760h"
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+  issuerRef:
+    name: soas-bootstrap-selfsigned
+    kind: ClusterIssuer
+  secretName: soas-user-ca-cert
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: soas-user-ca
+spec:
+  ca:
+    secretName: soas-user-ca-cert

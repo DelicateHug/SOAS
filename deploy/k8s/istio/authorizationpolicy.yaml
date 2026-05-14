@@ -1,0 +1,144 @@
+# Authorization rules per service, layered on top of mesh-mTLS.
+#
+# Backend: callers must be either (a) a peer with one of the known
+# in-mesh ServiceAccounts, OR (b) a request that came through the
+# user-facing gateway and carries a valid JWT. Webhook ingest path is
+# the explicit exception — it accepts requests from the webhook
+# gateway without a JWT.
+#
+# Frontend & MCP: only the user-facing gateway can reach them.
+#
+# postgres / redis / embeddings: only backend + workers + (embeddings
+# also from mcp). No external path.
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: backend
+  namespace: soas
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  action: ALLOW
+  rules:
+    # In-mesh service-to-service: any mesh-identified peer in the
+    # soas namespace we trust.
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/soas/sa/worker"
+              - "cluster.local/ns/soas/sa/worker-beat"
+              - "cluster.local/ns/soas/sa/mcp"
+              - "cluster.local/ns/soas/sa/embeddings"
+              - "cluster.local/ns/soas/sa/frontend"
+    # User-facing gateway: must present a JWT from one of the trusted
+    # issuers (configured in RequestAuthentication). The JWT principal
+    # is asserted by Istio after validation.
+    - from:
+        - source:
+            namespaces: ["istio-system"]
+      when:
+        - key: request.auth.claims[iss]
+          values:
+            - "https://soas.example.com"
+            - "https://login.microsoftonline.com/REPLACE_TENANT_ID/v2.0"
+      to:
+        - operation:
+            notPaths: ["/api/v1/webhooks/ingest/*"]
+    # Webhook ingest: from the webhook gateway only, no JWT.
+    - from:
+        - source:
+            namespaces: ["istio-system"]
+      to:
+        - operation:
+            paths: ["/api/v1/webhooks/ingest/*"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: frontend
+  namespace: soas
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            namespaces: ["istio-system"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp
+  namespace: soas
+spec:
+  selector:
+    matchLabels:
+      app: mcp
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            namespaces: ["istio-system"]
+            principals:
+              # MCP can also be reached by the user-facing gateway with
+              # a JWT (so signed-in Claude Code clients work).
+              - "cluster.local/ns/soas/sa/backend"
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: postgres
+  namespace: soas
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/soas/sa/backend"
+              - "cluster.local/ns/soas/sa/worker"
+              - "cluster.local/ns/soas/sa/worker-beat"
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: redis
+  namespace: soas
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/soas/sa/backend"
+              - "cluster.local/ns/soas/sa/worker"
+              - "cluster.local/ns/soas/sa/worker-beat"
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: embeddings
+  namespace: soas
+spec:
+  selector:
+    matchLabels:
+      app: embeddings
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/soas/sa/backend"
+              - "cluster.local/ns/soas/sa/worker"
+              - "cluster.local/ns/soas/sa/mcp"

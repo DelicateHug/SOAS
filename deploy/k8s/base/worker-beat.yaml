@@ -1,0 +1,57 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: worker-beat
+  namespace: soas
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-beat
+  namespace: soas
+  labels:
+    app: worker-beat
+spec:
+  replicas: 1  # Beat is singleton by design — never scale.
+  selector:
+    matchLabels:
+      app: worker-beat
+  strategy:
+    type: Recreate  # don't run two beats during a rolling update
+  template:
+    metadata:
+      labels:
+        app: worker-beat
+    spec:
+      serviceAccountName: worker-beat
+      containers:
+        - name: worker-beat
+          image: soas-worker:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            ["celery", "-A", "soas_workers.celery_app", "beat", "--loglevel=info",
+             "--schedule=/tmp/celerybeat-schedule"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: backend-db
+                  key: url-sync
+            - name: CELERY_BROKER_URL
+              value: redis://redis:6379/0
+            - name: CELERY_RESULT_BACKEND
+              value: redis://redis:6379/1
+            - name: SOAS_AGENT_ID
+              value: beat_001
+            - name: SOAS_AGENT_ROLE
+              value: beat
+            - name: SOAS_VERSION
+              value: "0.1.0"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

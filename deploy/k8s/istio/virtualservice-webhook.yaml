@@ -1,0 +1,21 @@
+# Webhook ingest gateway routes only the /api/v1/webhooks/ingest/ path
+# to the backend. Anything else returns 404 at the gateway.
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: soas-webhook
+  namespace: soas
+spec:
+  hosts:
+    - "webhooks.soas.example.com"
+  gateways:
+    - soas-webhook-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/api/v1/webhooks/ingest/"
+      route:
+        - destination:
+            host: backend.soas.svc.cluster.local
+            port:
+              number: 8000

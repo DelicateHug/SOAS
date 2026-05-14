@@ -55,6 +55,8 @@ from soas_backend.api.v1.reports import router as reports_router
 from soas_backend.api.v1.agents import router as agents_router
 from soas_backend.api.v1.work_sessions import router as work_sessions_router
 from soas_backend.api.v1.evidence_mentions_security import router as ems_router
+from soas_backend.api.v1.user_certificates import router as user_certs_router
+from soas_backend.api.v1.auth_oidc import router as auth_oidc_router
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth_router)
@@ -110,3 +112,5 @@ v1_router.include_router(reports_router)
 v1_router.include_router(agents_router)
 v1_router.include_router(work_sessions_router)
 v1_router.include_router(ems_router)
+v1_router.include_router(user_certs_router)
+v1_router.include_router(auth_oidc_router)

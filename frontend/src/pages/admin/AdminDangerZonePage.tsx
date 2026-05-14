@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ShieldCheck, ShieldOff } from "lucide-react";
 import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
+import { AdminAuthSettingsPanel } from "./AdminAuthSettingsPanel";
 
 interface Optin {
   user_id: string;
@@ -94,6 +95,8 @@ export function AdminDangerZonePage() {
           </div>
         </CardBody>
       </Card>
+
+      <AdminAuthSettingsPanel />
     </div>
   );
 }

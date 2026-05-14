@@ -31,6 +31,14 @@ class User(Base):
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Auth provider that owns this user. "local" = password+TOTP+WebAuthn.
+    # "entra" = provisioned via Microsoft OIDC; oidc_subject is the
+    # immutable Entra `oid` claim.
+    auth_provider: Mapped[str] = mapped_column(
+        String(32), default="local", server_default="local", nullable=False
+    )
+    oidc_subject: Mapped[str | None] = mapped_column(String(128), nullable=True, unique=True)
+
     # Per-user Data Encryption Key (DEK) for secret encryption
     dek_salt: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     password_wrapped_dek: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -5,7 +5,7 @@ from typing import Any
 from uuid import UUID
 
 import redis.asyncio as aioredis
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -267,6 +267,130 @@ def require_role(*role_names: str):
 # ---------------------------------------------------------------------------
 # Deployment mode guard
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Phase 12: hybrid auth (cert verifies transport, JWT identifies user, CAE re-check)
+# ---------------------------------------------------------------------------
+
+
+async def get_authenticated_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Resolve the calling user with three layers of evidence.
+
+    1. JWT/service token (existing logic) — identifies the user.
+    2. Continuous Access Evaluation (CAE) — re-checks revocation on
+       every request. SOAS-issued JWTs hit a Redis revoked-jti set;
+       OIDC users get a short-cached call back to Entra.
+    3. Client cert via X-Forwarded-Client-Cert (when SOAS_TRUST_XFCC=1
+       and auth_cert_login_enabled=true) — must match the JWT's `sub`.
+
+    Routes that previously used `get_current_user` can switch to this
+    dep at their own pace. The old dep stays in place.
+    """
+    from soas_backend.auth.cert import parse_xfcc_header, trust_enabled
+    from soas_backend.services.app_setting_service import AppSettingService
+    from soas_backend.services.cae_service import CAEService
+
+    raw = credentials.credentials
+
+    # JWT or service token → payload + user
+    if _is_service_token(raw):
+        st_result = await _payload_from_service_token(raw, db)
+        if st_result is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or revoked service token",
+            )
+        payload, user = st_result
+    else:
+        payload = decode_access_token(raw)
+        if payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
+            )
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload",
+            )
+        result = await db.execute(
+            select(User)
+            .options(selectinload(User.user_roles))
+            .where(User.id == UUID(user_id))
+        )
+        user = result.scalar_one_or_none()
+        if user is None or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive",
+            )
+
+    # CAE — service tokens bypass; everyone else re-validates.
+    if payload.get("auth_type") != "service_token":
+        try:
+            redis = await get_redis_pool()
+            cae = CAEService(db, redis)
+            result_cae = await cae.evaluate(payload)
+            if not result_cae.valid:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Token revoked: {result_cae.reason or 'unknown'}",
+                    headers={"X-Cae-Revoked": "true"},
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            # CAE failure mode is configured by auth_cae_strict
+            settings_svc = AppSettingService(db)
+            strict = (await settings_svc.get_value("auth_cae_strict", "true") or "true").lower() == "true"
+            if strict:
+                raise HTTPException(status_code=503, detail="CAE check unavailable")
+
+    # Client-cert binding (only when the gateway is trusted)
+    if trust_enabled():
+        settings_svc = AppSettingService(db)
+        cert_required = (await settings_svc.get_value("auth_cert_login_enabled", "true") or "true").lower() == "true"
+        if cert_required:
+            xfcc = request.headers.get("x-forwarded-client-cert")
+            peers = parse_xfcc_header(xfcc)
+            if not peers:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Client cert required",
+                )
+            # Look up the cert by fingerprint; must belong to the same user.
+            from soas_backend.services.cert_authority_service import CertAuthorityService
+
+            ca = CertAuthorityService(db)
+            cert_row = None
+            for p in peers:
+                cert_row = await ca.lookup_by_fingerprint(p.fingerprint_sha256)
+                if cert_row is not None:
+                    break
+            if cert_row is None or cert_row.revoked_at is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Client cert not recognised or revoked",
+                )
+            if cert_row.user_id != user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Client cert does not match JWT subject",
+                )
+
+    # Stash for downstream consumers (e.g. @audit decorator)
+    try:
+        request.state.user = user
+        request.state.jwt_payload = payload
+    except Exception:
+        pass
+    return user
 
 
 async def require_dev_mode(

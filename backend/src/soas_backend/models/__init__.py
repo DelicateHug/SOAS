@@ -59,6 +59,7 @@ from soas_backend.models.work_session import WorkSession
 from soas_backend.models.evidence_snapshot import EvidenceSnapshot
 from soas_backend.models.chat_mention import ChatMention, ChatReadReceipt
 from soas_backend.models.security_event import SecurityEvent
+from soas_backend.models.user_certificate import UserCertificate
 from soas_backend.models.reporting import Report
 from soas_backend.models.wiki_link import WikiPageLink
 
@@ -153,4 +154,5 @@ __all__ = [
     "ChatMention",
     "ChatReadReceipt",
     "SecurityEvent",
+    "UserCertificate",
 ]

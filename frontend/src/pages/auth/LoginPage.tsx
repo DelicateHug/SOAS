@@ -14,10 +14,15 @@ export function LoginPage() {
   const { login, verifyMfa, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
+  const [providers, setProviders] = useState<{ password: boolean; oidc: boolean; cert: boolean } | null>(null);
+
   useEffect(() => {
     api.get<{ open: boolean }>("/auth/registration-open").then((res) => {
       setRegistrationOpen(res.open);
     }).catch(() => {});
+    api.get<{ password: boolean; oidc: boolean; cert: boolean }>("/auth/providers")
+      .then(setProviders)
+      .catch(() => setProviders({ password: true, oidc: false, cert: false }));
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -126,6 +131,26 @@ export function LoginPage() {
                   Register
                 </Link>
               </p>
+            )}
+            {providers?.oidc && (
+              <>
+                <div className="relative my-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[var(--color-border)]" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-2 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface)]">
+                      or
+                    </span>
+                  </div>
+                </div>
+                <a
+                  href="/api/v1/auth/oidc/start"
+                  className="block w-full py-2 text-center rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)] text-sm font-medium"
+                >
+                  Sign in with Microsoft
+                </a>
+              </>
             )}
           </form>
         )}

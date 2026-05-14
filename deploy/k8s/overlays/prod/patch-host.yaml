@@ -1,0 +1,29 @@
+# Replace soas.example.com / webhooks.soas.example.com with your real
+# production hostnames before running `kubectl apply -k`.
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: soas-user-gateway
+  namespace: soas
+spec:
+  servers:
+    - port:
+        number: 443
+        name: https-user
+        protocol: HTTPS
+      hosts:
+        - "REPLACE-WITH-PROD-HOST.example.com"
+      tls:
+        mode: MUTUAL
+        credentialName: soas-ingress-tls
+        caCertificates: /etc/istio/soas-user-ca/ca.crt
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: soas-user
+  namespace: soas
+spec:
+  hosts:
+    - "REPLACE-WITH-PROD-HOST.example.com"

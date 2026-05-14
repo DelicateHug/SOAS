@@ -1,0 +1,26 @@
+# User-facing edge — port 443. Requires:
+#   - Server TLS (cert from ingress-cert, signed by an external CA)
+#   - Mutual TLS (client cert signed by soas-user-ca)
+#
+# Hosts and TLS secrets are templated per overlay. Replace
+# soas.example.com with your actual hostname.
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: soas-user-gateway
+  namespace: soas
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https-user
+        protocol: HTTPS
+      hosts:
+        - "soas.example.com"
+      tls:
+        mode: MUTUAL
+        credentialName: soas-ingress-tls
+        # Trust roots used to validate client certs.
+        caCertificates: /etc/istio/soas-user-ca/ca.crt

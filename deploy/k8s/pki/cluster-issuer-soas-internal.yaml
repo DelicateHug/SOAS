@@ -1,0 +1,42 @@
+# Bootstrap CA used to sign internal service certs (postgres TLS,
+# ingress server cert, the soas-user-ca certificate itself).
+#
+# This is a self-signed root meant for a private SOAS cluster. To
+# substitute an external/corporate CA, replace this file with a
+# `Vault` or `CA` issuer pointing at your real root — nothing else
+# in the manifests needs to change.
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: soas-bootstrap-selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: soas-internal-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: SOAS Internal Root CA
+  subject:
+    organizations: ["SOC on a Stick"]
+  duration: "87600h" # 10 years
+  renewBefore: "8760h"
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+  issuerRef:
+    name: soas-bootstrap-selfsigned
+    kind: ClusterIssuer
+  secretName: soas-internal-ca-cert
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: soas-internal-ca
+spec:
+  ca:
+    secretName: soas-internal-ca-cert

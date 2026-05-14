@@ -1,0 +1,42 @@
+# Server certificate for the user-facing gateway. For production this
+# is usually swapped to a Let's Encrypt or org-CA-signed cert via an
+# overlay patch; the base manifest uses the internal CA as a fallback.
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: soas-ingress-tls
+  namespace: istio-system
+spec:
+  secretName: soas-ingress-tls
+  duration: "2160h"  # 90 days
+  renewBefore: "168h"
+  commonName: soas.example.com
+  dnsNames:
+    - soas.example.com
+    - webhooks.soas.example.com
+  issuerRef:
+    name: soas-internal-ca
+    kind: ClusterIssuer
+  privateKey:
+    algorithm: RSA
+    size: 2048
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: soas-webhook-tls
+  namespace: istio-system
+spec:
+  secretName: soas-webhook-tls
+  duration: "2160h"
+  renewBefore: "168h"
+  commonName: webhooks.soas.example.com
+  dnsNames:
+    - webhooks.soas.example.com
+  issuerRef:
+    name: soas-internal-ca
+    kind: ClusterIssuer
+  privateKey:
+    algorithm: RSA
+    size: 2048

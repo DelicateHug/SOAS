@@ -1,0 +1,14 @@
+# Tell client sidecars to use Istio mutual TLS when talking to any
+# Service inside the soas namespace. Without this, mesh-internal HTTP
+# calls work but bypass the mutual-cert presentation.
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: default-mtls
+  namespace: soas
+spec:
+  host: "*.soas.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL

@@ -1,0 +1,103 @@
+# Defense-in-depth NetworkPolicies layered under the Istio mesh.
+# Even if a mesh sidecar is bypassed somehow, these block direct
+# pod-to-pod traffic outside the expected service graph.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: soas
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+  # Empty ingress means "deny all" — explicit allows below.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-from-mesh
+  namespace: soas
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  ingress:
+    - from:
+        - namespaceSelector: { matchLabels: { name: istio-system } }
+        - podSelector: { matchLabels: { app: worker } }
+        - podSelector: { matchLabels: { app: worker-beat } }
+        - podSelector: { matchLabels: { app: mcp } }
+        - podSelector: { matchLabels: { app: embeddings } }
+        - podSelector: { matchLabels: { app: frontend } }
+      ports:
+        - port: 8000
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgres-from-backend-workers
+  namespace: soas
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: backend } }
+        - podSelector: { matchLabels: { app: worker } }
+        - podSelector: { matchLabels: { app: worker-beat } }
+      ports:
+        - port: 5432
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis-from-backend-workers
+  namespace: soas
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: backend } }
+        - podSelector: { matchLabels: { app: worker } }
+        - podSelector: { matchLabels: { app: worker-beat } }
+      ports:
+        - port: 6379
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-embeddings-from-backend-workers-mcp
+  namespace: soas
+spec:
+  podSelector:
+    matchLabels:
+      app: embeddings
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: backend } }
+        - podSelector: { matchLabels: { app: worker } }
+        - podSelector: { matchLabels: { app: mcp } }
+      ports:
+        - port: 8200
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-mcp-from-gateway
+  namespace: soas
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: ["frontend", "mcp"]
+  ingress:
+    - from:
+        - namespaceSelector: { matchLabels: { name: istio-system } }

@@ -1,0 +1,21 @@
+# Replace REPLACE_TENANT_ID with your Entra tenant id before applying.
+# This is the same tenant id you'll paste into the Danger Zone OIDC
+# settings; keeping it consistent here means the Istio gateway can
+# validate Entra-signed JWTs natively.
+---
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: jwt-issuers
+  namespace: soas
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  jwtRules:
+    - issuer: "https://REPLACE-WITH-PROD-HOST.example.com"
+      jwksUri: "https://REPLACE-WITH-PROD-HOST.example.com/api/v1/auth/jwks"
+      forwardOriginalToken: true
+    - issuer: "https://login.microsoftonline.com/REPLACE-TENANT-ID/v2.0"
+      jwksUri: "https://login.microsoftonline.com/REPLACE-TENANT-ID/discovery/v2.0/keys"
+      forwardOriginalToken: true

@@ -91,6 +91,7 @@ const workspaceItems: NavItem[] = [
   { to: "/teams", label: "Teams", icon: UsersRound },
   { to: "/team-variables", label: "Team Variables", icon: Variable },
   { to: "/my-secrets", label: "My Secrets", icon: KeyRound },
+  { to: "/my-certificates", label: "My Certificates", icon: ShieldCheck },
   { to: "/local-changes", label: "Local Changes", icon: GitBranch },
 ];
 

@@ -1,0 +1,11 @@
+# Namespace-wide STRICT mTLS. Every pod-to-pod request inside soas
+# must be wrapped in mesh-mTLS (or it's dropped). This is the core
+# of "mTLS everywhere internally".
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: soas
+spec:
+  mtls:
+    mode: STRICT
