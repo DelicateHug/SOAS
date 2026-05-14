@@ -79,7 +79,7 @@ export function AdminRolesPage() {
         <ProductionGuard>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90"
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90"
           >
             <Plus className="w-4 h-4" /> Create Role
           </button>
@@ -106,10 +106,10 @@ export function AdminRolesPage() {
             </div>
           ))}
           {branchRoles.map(({ item: role, branchStatus, changeRequest }) => (
-            <div key={role.id} className={`border border-[hsl(var(--border))] rounded-lg ${branchStatus === "pending_delete" ? "opacity-50" : ""}`}>
+            <div key={role.id} className={`border border-[var(--color-border)] rounded-lg ${branchStatus === "pending_delete" ? "opacity-50" : ""}`}>
               <button
                 onClick={() => setExpandedRole(expandedRole === role.id ? null : role.id)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-[hsl(var(--accent))]"
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-[var(--color-surface-2)]"
               >
                 <div className="flex items-center gap-3">
                   {expandedRole === role.id ? (
@@ -123,7 +123,7 @@ export function AdminRolesPage() {
                       <BranchStatusBadge branchStatus={branchStatus} changeRequest={changeRequest} />
                     </p>
                     {role.description && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{role.description}</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">{role.description}</p>
                     )}
                   </div>
                 </div>
@@ -133,17 +133,17 @@ export function AdminRolesPage() {
                       System
                     </span>
                   )}
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <span className="text-xs text-[var(--color-text-muted)]">
                     {(role.permissions ?? []).length} permissions
                   </span>
                 </div>
               </button>
 
               {expandedRole === role.id && (
-                <div className="border-t border-[hsl(var(--border))] px-4 py-4">
+                <div className="border-t border-[var(--color-border)] px-4 py-4">
                   {Object.entries(permissionsByResource).map(([resource, permissions]) => (
                     <div key={resource} className="mb-3">
-                      <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase mb-1">
+                      <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase mb-1">
                         {resource}
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -156,8 +156,8 @@ export function AdminRolesPage() {
                                 <span
                                   className={`px-2 py-1 rounded text-xs border ${
                                     hasPermission
-                                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent"
-                                      : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
+                                      ? "bg-[var(--color-primary)] text-[#ffffff] border-transparent"
+                                      : "border-[var(--color-border)] text-[var(--color-text-muted)]"
                                   }`}
                                 >
                                   {perm.action}
@@ -168,8 +168,8 @@ export function AdminRolesPage() {
                                 onClick={() => togglePermission(role, perm)}
                                 className={`px-2 py-1 rounded text-xs border transition-colors ${
                                   hasPermission
-                                    ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent"
-                                    : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--primary))]"
+                                    ? "bg-[var(--color-primary)] text-[#ffffff] border-transparent"
+                                    : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]"
                                 }`}
                               >
                                 {perm.action}
@@ -190,7 +190,7 @@ export function AdminRolesPage() {
       {/* Create Role Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[hsl(var(--background))] rounded-lg p-6 w-full max-w-md border border-[hsl(var(--border))]">
+          <div className="bg-[var(--color-bg)] rounded-lg p-6 w-full max-w-md border border-[var(--color-border)]">
             <h2 className="text-lg font-semibold mb-4">Create Role</h2>
             <div className="space-y-3">
               <div>
@@ -199,7 +199,7 @@ export function AdminRolesPage() {
                   type="text"
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value.toLowerCase().replace(/\s+/g, "_"))}
-                  className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+                  className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
                   placeholder="custom_role"
                 />
               </div>
@@ -209,7 +209,7 @@ export function AdminRolesPage() {
                   type="text"
                   value={newRoleDisplayName}
                   onChange={(e) => setNewRoleDisplayName(e.target.value)}
-                  className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+                  className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
                   placeholder="Custom Role"
                 />
               </div>
@@ -219,7 +219,7 @@ export function AdminRolesPage() {
                   type="text"
                   value={newRoleDescription}
                   onChange={(e) => setNewRoleDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+                  className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
                   placeholder="Optional description"
                 />
               </div>
@@ -228,13 +228,13 @@ export function AdminRolesPage() {
               <button
                 onClick={() => createRole.mutate()}
                 disabled={!newRoleName || !newRoleDisplayName || createRole.isPending}
-                className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md disabled:opacity-50"
+                className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md disabled:opacity-50"
               >
                 {createRole.isPending ? "Creating..." : "Create"}
               </button>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 border border-[hsl(var(--border))] rounded-md"
+                className="px-4 py-2 border border-[var(--color-border)] rounded-md"
               >
                 Cancel
               </button>

@@ -5,7 +5,7 @@
   outline: none;
   padding: 0.75rem 1rem;
   min-height: 10rem;
-  color: hsl(var(--foreground));
+  color: var(--color-text);
   font-size: 0.9375rem;
   line-height: 1.7;
 }
@@ -14,7 +14,7 @@
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
   pointer-events: none;
   height: 0;
 }
@@ -75,17 +75,17 @@
 
 /* ── Blockquote ─────────────────────────────────────────────────────── */
 .tiptap blockquote {
-  border-left: 3px solid hsl(var(--border));
+  border-left: 3px solid var(--color-border);
   padding-left: 1rem;
   margin: 0.75rem 0;
   font-style: italic;
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
 }
 
 /* ── Code blocks ────────────────────────────────────────────────────── */
 .tiptap pre {
-  background: hsl(var(--muted));
-  border: 1px solid hsl(var(--border));
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
   border-radius: 0.375rem;
   padding: 0.75rem 1rem;
   margin: 0.75rem 0;
@@ -106,8 +106,8 @@
 
 /* ── Inline code ────────────────────────────────────────────────────── */
 .tiptap code {
-  background: hsl(var(--muted));
-  border: 1px solid hsl(var(--border));
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
   border-radius: 0.25rem;
   padding: 0.125rem 0.35rem;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
@@ -118,13 +118,13 @@
 /* ── Horizontal rule ────────────────────────────────────────────────── */
 .tiptap hr {
   border: none;
-  border-top: 1px solid hsl(var(--border));
+  border-top: 1px solid var(--color-border);
   margin: 1rem 0;
 }
 
 /* ── Links ──────────────────────────────────────────────────────────── */
 .tiptap a {
-  color: hsl(var(--primary));
+  color: var(--color-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
@@ -153,7 +153,7 @@
 
 .tiptap th,
 .tiptap td {
-  border: 1px solid hsl(var(--border));
+  border: 1px solid var(--color-border);
   padding: 0.4rem 0.65rem;
   text-align: left;
   vertical-align: top;
@@ -161,7 +161,7 @@
 }
 
 .tiptap th {
-  background: hsl(var(--muted));
+  background: var(--color-surface-2);
   font-weight: 600;
   font-size: 0.85rem;
 }
@@ -171,7 +171,7 @@
 }
 
 .tiptap .selectedCell {
-  background: hsl(var(--accent));
+  background: var(--color-surface-2);
 }
 
 /* ── Lowlight syntax highlighting (generic dark tokens) ─────────────── */
@@ -188,7 +188,7 @@
 
 .tiptap pre .hljs-comment,
 .tiptap pre .hljs-quote {
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
@@ -204,7 +204,7 @@
 
 .tiptap pre .hljs-variable,
 .tiptap pre .hljs-params {
-  color: hsl(var(--foreground));
+  color: var(--color-text);
 }
 
 .tiptap pre .hljs-type,

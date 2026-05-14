@@ -190,7 +190,7 @@ export function AutomationDetailPage() {
             )}
           </div>
           {automation.description && (
-            <p className="mt-2 text-[hsl(var(--muted-foreground))]">
+            <p className="mt-2 text-[var(--color-text-muted)]">
               {automation.description}
             </p>
           )}
@@ -199,7 +199,7 @@ export function AutomationDetailPage() {
           <ProductionGuard>
             <Link
               to={`/automations/${id}/editor`}
-              className="flex items-center gap-2 px-4 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] text-sm"
+              className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)] text-sm"
             >
               <Pencil className="w-4 h-4" /> Edit Graph
             </Link>
@@ -220,7 +220,7 @@ export function AutomationDetailPage() {
       {/* ── Execute Modal ─────────────────────────────────────────────── */}
       {showExecuteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[hsl(var(--background))] rounded-lg p-6 w-full max-w-md border border-[hsl(var(--border))]">
+          <div className="bg-[var(--color-bg)] rounded-lg p-6 w-full max-w-md border border-[var(--color-border)]">
             <h2 className="text-lg font-semibold mb-4">
               Execute {automation.name}
             </h2>
@@ -231,7 +231,7 @@ export function AutomationDetailPage() {
               <textarea
                 value={params}
                 onChange={(e) => setParams(e.target.value)}
-                className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md font-mono text-sm"
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md font-mono text-sm"
                 rows={5}
               />
             </div>
@@ -245,7 +245,7 @@ export function AutomationDetailPage() {
               </button>
               <button
                 onClick={() => setShowExecuteModal(false)}
-                className="px-4 py-2 border border-[hsl(var(--border))] rounded-md"
+                className="px-4 py-2 border border-[var(--color-border)] rounded-md"
               >
                 Cancel
               </button>
@@ -255,7 +255,7 @@ export function AutomationDetailPage() {
       )}
 
       {/* ── Tab Navigation ────────────────────────────────────────────── */}
-      <div className="border-b border-[hsl(var(--border))] mb-6">
+      <div className="border-b border-[var(--color-border)] mb-6">
         <nav className="flex gap-0 -mb-px">
           {tabs.map((tab) => (
             <button
@@ -263,8 +263,8 @@ export function AutomationDetailPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.key
-                  ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))]"
-                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:border-[hsl(var(--border))]"
+                  ? "border-[var(--color-primary)] text-[var(--color-text)]"
+                  : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
               }`}
             >
               {tab.label}
@@ -279,33 +279,33 @@ export function AutomationDetailPage() {
       {activeTab === "overview" && (
         <div>
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="border border-[hsl(var(--border))] rounded-lg p-3">
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">Timeout</p>
+            <div className="border border-[var(--color-border)] rounded-lg p-3">
+              <p className="text-xs text-[var(--color-text-muted)]">Timeout</p>
               <p className="font-medium">{automation.timeout_seconds}s</p>
             </div>
-            <div className="border border-[hsl(var(--border))] rounded-lg p-3">
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">Graph File</p>
+            <div className="border border-[var(--color-border)] rounded-lg p-3">
+              <p className="text-xs text-[var(--color-text-muted)]">Graph File</p>
               <p className="font-medium">{automation.graph_file || "None"}</p>
             </div>
-            <div className="border border-[hsl(var(--border))] rounded-lg p-3">
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">Tags</p>
+            <div className="border border-[var(--color-border)] rounded-lg p-3">
+              <p className="text-xs text-[var(--color-text-muted)]">Tags</p>
               <div className="flex flex-wrap gap-1 mt-1">
                 {automation.tags.length > 0 ? (
                   automation.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-2 py-0.5 rounded text-xs bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+                      className="px-2 py-0.5 rounded text-xs bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
                     >
                       {tag}
                     </span>
                   ))
                 ) : (
-                  <span className="text-sm text-[hsl(var(--muted-foreground))]">None</span>
+                  <span className="text-sm text-[var(--color-text-muted)]">None</span>
                 )}
               </div>
             </div>
-            <div className="border border-[hsl(var(--border))] rounded-lg p-3">
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">Trigger Tags</p>
+            <div className="border border-[var(--color-border)] rounded-lg p-3">
+              <p className="text-xs text-[var(--color-text-muted)]">Trigger Tags</p>
               <div className="flex flex-wrap gap-1 mt-1">
                 {automation.trigger_tags && automation.trigger_tags.length > 0 ? (
                   automation.trigger_tags.map((tag) => (
@@ -317,20 +317,20 @@ export function AutomationDetailPage() {
                     </span>
                   ))
                 ) : (
-                  <span className="text-sm text-[hsl(var(--muted-foreground))]">None</span>
+                  <span className="text-sm text-[var(--color-text-muted)]">None</span>
                 )}
               </div>
             </div>
-            <div className="border border-[hsl(var(--border))] rounded-lg p-3">
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">Created By</p>
+            <div className="border border-[var(--color-border)] rounded-lg p-3">
+              <p className="text-xs text-[var(--color-text-muted)]">Created By</p>
               <p className="font-medium">{automation.created_by.display_name}</p>
             </div>
-            <div className="border border-[hsl(var(--border))] rounded-lg p-3">
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">Created At</p>
+            <div className="border border-[var(--color-border)] rounded-lg p-3">
+              <p className="text-xs text-[var(--color-text-muted)]">Created At</p>
               <p className="font-medium">{formatDate(automation.created_at)}</p>
             </div>
-            <div className="border border-[hsl(var(--border))] rounded-lg p-3 col-span-2">
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">Updated At</p>
+            <div className="border border-[var(--color-border)] rounded-lg p-3 col-span-2">
+              <p className="text-xs text-[var(--color-text-muted)]">Updated At</p>
               <p className="font-medium">{formatDate(automation.updated_at)}</p>
             </div>
           </div>
@@ -341,22 +341,22 @@ export function AutomationDetailPage() {
       {activeTab === "documentation" && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            <p className="text-sm text-[var(--color-text-muted)]">
               {docMode === "edit"
                 ? "Write documentation for this automation. Changes are saved automatically."
                 : "Automation documentation."}
             </p>
             <div className="flex items-center gap-2">
               {docMode === "edit" && saveDocumentation.isPending && (
-                <span className="text-xs text-[hsl(var(--muted-foreground))]">Saving...</span>
+                <span className="text-xs text-[var(--color-text-muted)]">Saving...</span>
               )}
-              <div className="flex rounded-md border border-[hsl(var(--border))] overflow-hidden">
+              <div className="flex rounded-md border border-[var(--color-border)] overflow-hidden">
                 <button
                   onClick={() => setDocMode("view")}
                   className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-colors ${
                     docMode === "view"
-                      ? "bg-[hsl(var(--accent))] text-[hsl(var(--foreground))]"
-                      : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]/50"
+                      ? "bg-[var(--color-surface-2)] text-[var(--color-text)]"
+                      : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]/50"
                   }`}
                 >
                   <Eye className="w-3.5 h-3.5" />
@@ -365,10 +365,10 @@ export function AutomationDetailPage() {
                 <ProductionGuard>
                   <button
                     onClick={() => setDocMode("edit")}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border-l border-[hsl(var(--border))] transition-colors ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border-l border-[var(--color-border)] transition-colors ${
                       docMode === "edit"
-                        ? "bg-[hsl(var(--accent))] text-[hsl(var(--foreground))]"
-                        : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]/50"
+                        ? "bg-[var(--color-surface-2)] text-[var(--color-text)]"
+                        : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]/50"
                     }`}
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -393,34 +393,34 @@ export function AutomationDetailPage() {
 
       {/* Execution History */}
       {activeTab === "history" && (
-        <div className="border border-[hsl(var(--border))] rounded-lg">
-          <div className="px-4 py-3 border-b border-[hsl(var(--border))]">
+        <div className="border border-[var(--color-border)] rounded-lg">
+          <div className="px-4 py-3 border-b border-[var(--color-border)]">
             <h2 className="font-semibold">Execution History</h2>
           </div>
-          <div className="divide-y divide-[hsl(var(--border))]">
+          <div className="divide-y divide-[var(--color-border)]">
             {executions?.data.map((exec) => (
               <Link
                 key={exec.id}
                 to={`/executions/${exec.id}`}
-                className="px-4 py-3 flex items-center gap-4 hover:bg-[hsl(var(--accent))] transition-colors cursor-pointer block"
+                className="px-4 py-3 flex items-center gap-4 hover:bg-[var(--color-surface-2)] transition-colors cursor-pointer block"
               >
                 <span
                   className={`px-2 py-0.5 rounded text-xs ${executionStatusColors[exec.status]}`}
                 >
                   {exec.status}
                 </span>
-                <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                <span className="text-sm text-[var(--color-text-muted)]">
                   {exec.triggered_by.display_name}
                 </span>
                 <span
-                  className="text-xs text-[hsl(var(--muted-foreground))] font-mono"
+                  className="text-xs text-[var(--color-text-muted)] font-mono"
                   title={exec.id}
                 >
                   {exec.id.slice(0, 8)}
                 </span>
                 {exec.worker_id && (
                   <span
-                    className="text-xs text-[hsl(var(--muted-foreground))] font-mono"
+                    className="text-xs text-[var(--color-text-muted)] font-mono"
                     title={`Worker: ${exec.worker_id}`}
                   >
                     {exec.worker_id}
@@ -428,17 +428,17 @@ export function AutomationDetailPage() {
                 )}
                 <span className="flex-1" />
                 {exec.duration_ms != null && (
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <span className="text-xs text-[var(--color-text-muted)]">
                     {formatDuration(exec.duration_ms)}
                   </span>
                 )}
-                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                <span className="text-xs text-[var(--color-text-muted)]">
                   {formatDate(exec.created_at)}
                 </span>
               </Link>
             ))}
             {(!executions?.data || executions.data.length === 0) && (
-              <div className="px-4 py-8 text-center text-[hsl(var(--muted-foreground))]">
+              <div className="px-4 py-8 text-center text-[var(--color-text-muted)]">
                 No executions yet
               </div>
             )}
@@ -453,7 +453,7 @@ export function AutomationDetailPage() {
           <div className="mb-6">
             <h3 className="text-sm font-semibold mb-3">Uses</h3>
             {!deps || deps.dependencies.length === 0 ? (
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              <p className="text-sm text-[var(--color-text-muted)]">
                 No dependencies
               </p>
             ) : (
@@ -466,9 +466,9 @@ export function AutomationDetailPage() {
                         ? `/automations/${dep.id}`
                         : "/code-library"
                     }
-                    className="flex items-center gap-3 px-3 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)] transition-colors"
                   >
-                    <span className="px-2 py-0.5 rounded text-xs bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
+                    <span className="px-2 py-0.5 rounded text-xs bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
                       {dep.type === "automation" ? "Automation" : "Code Block"}
                     </span>
                     <span className="text-sm">{dep.name || dep.id}</span>
@@ -482,7 +482,7 @@ export function AutomationDetailPage() {
           <div className="mb-6">
             <h3 className="text-sm font-semibold mb-3">Used By</h3>
             {!deps || deps.dependents.length === 0 ? (
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              <p className="text-sm text-[var(--color-text-muted)]">
                 No dependents
               </p>
             ) : (
@@ -495,9 +495,9 @@ export function AutomationDetailPage() {
                         ? `/automations/${dep.id}`
                         : "/code-library"
                     }
-                    className="flex items-center gap-3 px-3 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)] transition-colors"
                   >
-                    <span className="px-2 py-0.5 rounded text-xs bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
+                    <span className="px-2 py-0.5 rounded text-xs bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
                       {dep.type === "automation" ? "Automation" : "Code Block"}
                     </span>
                     <span className="text-sm">{dep.name || dep.id}</span>
@@ -510,7 +510,7 @@ export function AutomationDetailPage() {
           {/* View Full Graph link */}
           <Link
             to={`/automations/${id}/dependencies`}
-            className="flex items-center gap-2 text-sm text-[hsl(var(--primary))] hover:underline"
+            className="flex items-center gap-2 text-sm text-[var(--color-primary)] hover:underline"
           >
             <Network className="w-4 h-4" /> View Full Dependency Graph
           </Link>

@@ -106,7 +106,7 @@ export function FormsTab({ incidentId }: Props) {
   const renderField = (field: FormField) => {
     const value = formData[field.key];
     const baseClasses =
-      "w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm bg-transparent";
+      "w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent";
 
     switch (field.type) {
       case "text":
@@ -167,7 +167,7 @@ export function FormsTab({ incidentId }: Props) {
               onChange={(e) => updateFieldValue(field.key, e.target.checked)}
               className="rounded"
             />
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">
+            <span className="text-sm text-[var(--color-text-muted)]">
               {field.placeholder || "Yes"}
             </span>
           </label>
@@ -208,7 +208,7 @@ export function FormsTab({ incidentId }: Props) {
           !showSubmitForm ? (
             <button
               onClick={() => setShowSubmitForm(true)}
-              className="px-3 py-1.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-xs font-medium"
+              className="px-3 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-xs font-medium"
             >
               Submit Form
             </button>
@@ -218,16 +218,16 @@ export function FormsTab({ incidentId }: Props) {
 
       {/* Submit Form Panel */}
       {showSubmitForm && (
-        <div className="rounded-lg border border-[hsl(var(--border))] p-4 space-y-4">
+        <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-4">
           {/* Form Definition Selector */}
           <div>
-            <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+            <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
               Select Form
             </label>
             <select
               value={selectedFormId}
               onChange={(e) => handleSelectForm(e.target.value)}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm bg-transparent"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
             >
               <option value="">Choose a form...</option>
               {definitions.map((d) => (
@@ -244,7 +244,7 @@ export function FormsTab({ incidentId }: Props) {
             <div className="space-y-3">
               {selectedDefinition.fields.map((field) => (
                 <div key={field.key}>
-                  <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                  <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                     {field.label}
                     {field.required && (
                       <span className="text-red-400 ml-0.5">*</span>
@@ -252,7 +252,7 @@ export function FormsTab({ incidentId }: Props) {
                   </label>
                   {renderField(field)}
                   {field.help_text && (
-                    <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">
+                    <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
                       {field.help_text}
                     </p>
                   )}
@@ -266,7 +266,7 @@ export function FormsTab({ incidentId }: Props) {
             <button
               onClick={() => selectedFormId && submitForm.mutate()}
               disabled={!selectedFormId || submitForm.isPending}
-              className="px-4 py-1.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm disabled:opacity-50"
+              className="px-4 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
             >
               {submitForm.isPending ? "Submitting..." : "Submit"}
             </button>
@@ -276,7 +276,7 @@ export function FormsTab({ incidentId }: Props) {
                 setSelectedFormId("");
                 setFormData({});
               }}
-              className="px-4 py-1.5 border border-[hsl(var(--border))] rounded-md text-sm"
+              className="px-4 py-1.5 border border-[var(--color-border)] rounded-md text-sm"
             >
               Cancel
             </button>
@@ -289,14 +289,14 @@ export function FormsTab({ incidentId }: Props) {
         {submissions?.map((sub) => (
           <div
             key={sub.id}
-            className="rounded-lg border border-[hsl(var(--border))] p-4"
+            className="rounded-lg border border-[var(--color-border)] p-4"
           >
             {/* Header */}
             <div className="flex items-center gap-2 mb-3">
               <span className="text-sm font-medium">
                 {sub.form_definition.name}
               </span>
-              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+              <span className="text-xs text-[var(--color-text-muted)]">
                 &middot;
               </span>
               <UserAvatar
@@ -306,7 +306,7 @@ export function FormsTab({ incidentId }: Props) {
               <span className="text-xs font-medium">
                 {sub.submitted_by.display_name}
               </span>
-              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+              <span className="text-xs text-[var(--color-text-muted)]">
                 {formatDate(sub.created_at)}
               </span>
               {sub.is_evidence && (
@@ -320,7 +320,7 @@ export function FormsTab({ incidentId }: Props) {
                   className={`text-xs px-2 py-0.5 rounded border transition-colors ${
                     sub.is_evidence
                       ? "border-amber-500 text-amber-400"
-                      : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-amber-400"
+                      : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-amber-400"
                   }`}
                 >
                   {sub.is_evidence ? "Unmark" : "Evidence"}
@@ -330,7 +330,7 @@ export function FormsTab({ incidentId }: Props) {
                     if (confirm("Delete this submission?"))
                       deleteSubmission.mutate(sub.id);
                   }}
-                  className="text-xs px-2 py-0.5 rounded border border-[hsl(var(--border))] text-red-400 hover:text-red-300"
+                  className="text-xs px-2 py-0.5 rounded border border-[var(--color-border)] text-red-400 hover:text-red-300"
                 >
                   Delete
                 </button>
@@ -338,12 +338,12 @@ export function FormsTab({ incidentId }: Props) {
             </div>
 
             {/* Data */}
-            <div className="rounded border border-[hsl(var(--border))] overflow-hidden">
+            <div className="rounded border border-[var(--color-border)] overflow-hidden">
               <table className="w-full text-xs">
-                <tbody className="divide-y divide-[hsl(var(--border))]">
+                <tbody className="divide-y divide-[var(--color-border)]">
                   {Object.entries(sub.data).map(([key, value]) => (
                     <tr key={key}>
-                      <td className="px-3 py-1.5 font-medium text-[hsl(var(--muted-foreground))] w-1/3">
+                      <td className="px-3 py-1.5 font-medium text-[var(--color-text-muted)] w-1/3">
                         {key}
                       </td>
                       <td className="px-3 py-1.5 font-mono">
@@ -357,7 +357,7 @@ export function FormsTab({ incidentId }: Props) {
           </div>
         ))}
         {(!submissions || submissions.length === 0) && !showSubmitForm && (
-          <div className="py-8 text-center text-[hsl(var(--muted-foreground))]">
+          <div className="py-8 text-center text-[var(--color-text-muted)]">
             No form submissions yet
           </div>
         )}

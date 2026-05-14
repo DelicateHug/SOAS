@@ -106,12 +106,12 @@ export function TimelineTab({ incidentId }: Props) {
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           placeholder="Add a comment..."
-          className="flex-1 px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm bg-transparent"
+          className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
         />
         <button
           type="submit"
           disabled={!comment.trim() || addComment.isPending}
-          className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm disabled:opacity-50"
+          className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
         >
           Post
         </button>
@@ -129,8 +129,8 @@ export function TimelineTab({ incidentId }: Props) {
                   onClick={() => toggleTypeFilter(type)}
                   className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border transition-colors ${
                     isExcluded
-                      ? "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] opacity-40 line-through"
-                      : "border-[hsl(var(--border))] text-[hsl(var(--foreground))] bg-[hsl(var(--muted))]"
+                      ? "border-[var(--color-border)] text-[var(--color-text-muted)] opacity-40 line-through"
+                      : "border-[var(--color-border)] text-[var(--color-text)] bg-[var(--color-surface-2)]"
                   }`}
                 >
                   <span className={`inline-block h-2 w-2 rounded-full ${typeColors[type] || "bg-gray-400"} ${isExcluded ? "opacity-40" : ""}`} />
@@ -145,8 +145,8 @@ export function TimelineTab({ incidentId }: Props) {
               onClick={() => setShowUtc(false)}
               className={`text-xs px-2 py-1 rounded-l border transition-colors ${
                 !showUtc
-                  ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]"
-                  : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
+                  ? "bg-[var(--color-primary)] text-[#ffffff] border-[var(--color-primary)]"
+                  : "border-[var(--color-border)] text-[var(--color-text-muted)]"
               }`}
             >
               Local
@@ -155,8 +155,8 @@ export function TimelineTab({ incidentId }: Props) {
               onClick={() => setShowUtc(true)}
               className={`text-xs px-2 py-1 rounded-r border-t border-r border-b transition-colors ${
                 showUtc
-                  ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]"
-                  : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
+                  ? "bg-[var(--color-primary)] text-[#ffffff] border-[var(--color-primary)]"
+                  : "border-[var(--color-border)] text-[var(--color-text-muted)]"
               }`}
             >
               UTC
@@ -169,7 +169,7 @@ export function TimelineTab({ incidentId }: Props) {
       <div className="relative">
         {/* Vertical line */}
         {filteredTimeline.length > 0 && (
-          <div className="absolute left-[15px] top-2 bottom-2 w-px bg-[hsl(var(--border))]" />
+          <div className="absolute left-[15px] top-2 bottom-2 w-px bg-[var(--color-border)]" />
         )}
 
         <div className="space-y-0">
@@ -177,13 +177,13 @@ export function TimelineTab({ incidentId }: Props) {
             <div key={entry.id} className="relative flex gap-3 py-3">
               {/* Dot */}
               <div className="relative z-10 shrink-0 mt-0.5">
-                <div className={`h-[9px] w-[9px] rounded-full ring-2 ring-[hsl(var(--background))] ${typeColors[entry.entry_type] || "bg-gray-400"}`} />
+                <div className={`h-[9px] w-[9px] rounded-full ring-2 ring-[var(--color-bg)] ${typeColors[entry.entry_type] || "bg-gray-400"}`} />
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0 -mt-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] font-medium">
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-surface-2)] text-[var(--color-text-muted)] font-medium">
                     {entry.entry_type.replace(/_/g, " ")}
                   </span>
                   {entry.is_evidence && (
@@ -195,12 +195,12 @@ export function TimelineTab({ incidentId }: Props) {
                     {entry.created_by && (
                       <div className="flex items-center gap-1">
                         <UserAvatar displayName={entry.created_by.display_name} size="sm" />
-                        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        <span className="text-xs text-[var(--color-text-muted)]">
                           {entry.created_by.display_name}
                         </span>
                       </div>
                     )}
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <span className="text-xs text-[var(--color-text-muted)]">
                       {formatTimestamp(entry.created_at)}
                     </span>
                   </div>
@@ -211,7 +211,7 @@ export function TimelineTab({ incidentId }: Props) {
                   className={`mt-1.5 text-xs px-2 py-0.5 rounded border transition-colors ${
                     entry.is_evidence
                       ? "border-amber-500 text-amber-400"
-                      : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-amber-400"
+                      : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-amber-400"
                   }`}
                 >
                   {entry.is_evidence ? "Unmark evidence" : "Mark evidence"}
@@ -222,13 +222,13 @@ export function TimelineTab({ incidentId }: Props) {
         </div>
 
         {timeline && timeline.length > 0 && filteredTimeline.length === 0 && (
-          <div className="py-8 text-center text-[hsl(var(--muted-foreground))]">
+          <div className="py-8 text-center text-[var(--color-text-muted)]">
             No matching entries — adjust filters above
           </div>
         )}
 
         {(!timeline || timeline.length === 0) && (
-          <div className="py-8 text-center text-[hsl(var(--muted-foreground))]">
+          <div className="py-8 text-center text-[var(--color-text-muted)]">
             No timeline entries yet
           </div>
         )}

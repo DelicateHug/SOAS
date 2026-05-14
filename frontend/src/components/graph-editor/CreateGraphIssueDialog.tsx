@@ -66,10 +66,10 @@ export function CreateGraphIssueDialog({
 
   return createPortal(
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-[hsl(var(--background))] rounded-lg shadow-lg max-w-md w-full mx-4 border border-[hsl(var(--border))]">
-        <div className="p-4 border-b border-[hsl(var(--border))]">
+      <div className="bg-[var(--color-bg)] rounded-lg shadow-lg max-w-md w-full mx-4 border border-[var(--color-border)]">
+        <div className="p-4 border-b border-[var(--color-border)]">
           <h2 className="text-sm font-semibold">Create Graph Issue</h2>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-xs text-[var(--color-text-muted)] mt-1">
             This issue will be annotated on the graph at version {automationVersion}.
           </p>
         </div>
@@ -87,7 +87,7 @@ export function CreateGraphIssueDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Issue title..."
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
               required
               autoFocus
             />
@@ -100,7 +100,7 @@ export function CreateGraphIssueDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the issue..."
               rows={3}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm resize-y"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm resize-y"
             />
           </div>
 
@@ -108,14 +108,14 @@ export function CreateGraphIssueDialog({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 text-sm border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))]"
+              className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!title.trim() || create.isPending}
-              className="px-3 py-1.5 text-sm bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50"
+              className="px-3 py-1.5 text-sm bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50"
             >
               {create.isPending ? "Creating..." : "Create Issue"}
             </button>

@@ -72,13 +72,13 @@ export function IncidentGroupedView() {
   };
 
   if (groupsLoading) {
-    return <div className="text-center py-8 text-[hsl(var(--muted-foreground))]">Loading...</div>;
+    return <div className="text-center py-8 text-[var(--color-text-muted)]">Loading...</div>;
   }
 
   return (
     <div className="space-y-3">
       {groups.length === 0 && ungroupedIncidents.length === 0 && (
-        <div className="flex flex-col items-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="flex flex-col items-center py-12 text-[var(--color-text-muted)]">
           <Layers className="w-12 h-12 mb-3" />
           <p>No groups or incidents yet</p>
         </div>
@@ -87,12 +87,12 @@ export function IncidentGroupedView() {
       {groups.map((group) => (
         <div
           key={group.id}
-          className="border border-[hsl(var(--border))] rounded-lg overflow-hidden"
+          className="border border-[var(--color-border)] rounded-lg overflow-hidden"
         >
           {/* Group header */}
           <button
             onClick={() => toggleGroup(group.id)}
-            className="w-full flex items-center gap-3 px-4 py-3 bg-[hsl(var(--muted))] hover:bg-[hsl(var(--accent))] transition-colors text-left"
+            className="w-full flex items-center gap-3 px-4 py-3 bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-2)] transition-colors text-left"
           >
             {expanded.has(group.id) ? (
               <ChevronDown className="w-4 h-4 shrink-0" />
@@ -102,7 +102,7 @@ export function IncidentGroupedView() {
             <Link
               to={`/cases/${group.id}`}
               onClick={(e) => e.stopPropagation()}
-              className="font-medium text-sm hover:underline text-[hsl(var(--primary))]"
+              className="font-medium text-sm hover:underline text-[var(--color-primary)]"
             >
               {group.title}
             </Link>
@@ -113,10 +113,10 @@ export function IncidentGroupedView() {
             >
               {group.status}
             </span>
-            <span className="text-xs text-[hsl(var(--muted-foreground))]">
+            <span className="text-xs text-[var(--color-text-muted)]">
               {priorityLabels[group.priority] ?? `P${group.priority}`}
             </span>
-            <span className="ml-auto text-xs text-[hsl(var(--muted-foreground))]">
+            <span className="ml-auto text-xs text-[var(--color-text-muted)]">
               {group.incidents.length} incident{group.incidents.length !== 1 ? "s" : ""}
             </span>
           </button>
@@ -125,34 +125,34 @@ export function IncidentGroupedView() {
           {expanded.has(group.id) && (
             <div>
               {group.incidents.length === 0 ? (
-                <div className="px-4 py-4 text-sm text-[hsl(var(--muted-foreground))] text-center">
+                <div className="px-4 py-4 text-sm text-[var(--color-text-muted)] text-center">
                   No incidents in this group
                 </div>
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="border-t border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]">
-                      <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] pl-12">
+                    <tr className="border-t border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)] pl-12">
                         Severity
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                         Status
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                         Title
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                         Lead
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                         Created
                       </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                         Groups
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[hsl(var(--border))]">
+                  <tbody className="divide-y divide-[var(--color-border)]">
                     {group.incidents.map((incident) => (
                       <IncidentRow
                         key={incident.id}
@@ -177,36 +177,36 @@ export function IncidentGroupedView() {
 
       {/* Ungrouped incidents */}
       {ungroupedIncidents.length > 0 && (
-        <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
-          <div className="px-4 py-3 bg-[hsl(var(--muted))]">
-            <span className="text-sm font-medium text-[hsl(var(--muted-foreground))]">
+        <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+          <div className="px-4 py-3 bg-[var(--color-surface-2)]">
+            <span className="text-sm font-medium text-[var(--color-text-muted)]">
               Ungrouped Incidents ({ungroupedIncidents.length})
             </span>
           </div>
           <table className="w-full">
             <thead>
-              <tr className="border-t border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]">
-                <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+              <tr className="border-t border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                   Severity
                 </th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                   Status
                 </th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                   Title
                 </th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                   Lead
                 </th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                   Created
                 </th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                <th className="px-4 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">
                   Groups
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[hsl(var(--border))]">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {ungroupedIncidents.map((incident) => (
                 <IncidentRow
                   key={incident.id}
@@ -242,7 +242,7 @@ function IncidentRow({
   onClosePopover: () => void;
 }) {
   return (
-    <tr className="hover:bg-[hsl(var(--accent))]">
+    <tr className="hover:bg-[var(--color-surface-2)]">
       <td className={`px-4 py-3 ${indented ? "pl-12" : ""}`}>
         <span
           className={`px-2 py-0.5 rounded text-xs font-medium ${severityColors[incident.severity]}`}
@@ -258,21 +258,21 @@ function IncidentRow({
       <td className="px-4 py-3">
         <Link
           to={`/incidents/${incident.id}`}
-          className="text-sm text-[hsl(var(--primary))] hover:underline"
+          className="text-sm text-[var(--color-primary)] hover:underline"
         >
           {incident.title}
         </Link>
       </td>
-      <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+      <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
         {incident.lead?.display_name || "-"}
       </td>
-      <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+      <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
         {formatDate(incident.created_at)}
       </td>
       <td className="px-4 py-3 relative">
         <button
           onClick={onTogglePopover}
-          className="flex items-center gap-1 px-2 py-1 text-xs border border-[hsl(var(--border))] rounded hover:bg-[hsl(var(--accent))]"
+          className="flex items-center gap-1 px-2 py-1 text-xs border border-[var(--color-border)] rounded hover:bg-[var(--color-surface-2)]"
         >
           <Layers className="w-3 h-3" />
           {incident.group_ids?.length || 0}

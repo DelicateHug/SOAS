@@ -71,11 +71,11 @@ export function OverviewTab({ issue, canEdit }: Props) {
       <div className="lg:col-span-2">
         <h3 className="text-sm font-semibold mb-2">Description</h3>
         {issue.description ? (
-          <p className="text-sm text-[hsl(var(--muted-foreground))] whitespace-pre-wrap">
+          <p className="text-sm text-[var(--color-text-muted)] whitespace-pre-wrap">
             {issue.description}
           </p>
         ) : (
-          <p className="text-sm text-[hsl(var(--muted-foreground))] italic">
+          <p className="text-sm text-[var(--color-text-muted)] italic">
             No description provided.
           </p>
         )}
@@ -88,7 +88,7 @@ export function OverviewTab({ issue, canEdit }: Props) {
           {canEdit && (
             <button
               onClick={() => setShowAddLink(!showAddLink)}
-              className="flex items-center gap-1 text-xs text-[hsl(var(--primary))] hover:underline"
+              className="flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline"
             >
               <Plus className="w-3 h-3" />
               Add Link
@@ -97,11 +97,11 @@ export function OverviewTab({ issue, canEdit }: Props) {
         </div>
 
         {showAddLink && (
-          <div className="flex gap-2 mb-3 p-3 border border-[hsl(var(--border))] rounded-md">
+          <div className="flex gap-2 mb-3 p-3 border border-[var(--color-border)] rounded-md">
             <select
               value={addLinkType}
               onChange={(e) => setAddLinkType(e.target.value)}
-              className="px-2 py-1.5 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="px-2 py-1.5 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             >
               <option value="">Type...</option>
               {Object.entries(TARGET_TYPE_LABELS).map(([key, label]) => (
@@ -112,12 +112,12 @@ export function OverviewTab({ issue, canEdit }: Props) {
               value={addLinkId}
               onChange={(e) => setAddLinkId(e.target.value)}
               placeholder="Entity ID..."
-              className="flex-1 px-2 py-1.5 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="flex-1 px-2 py-1.5 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             />
             <button
               onClick={() => addLink.mutate()}
               disabled={!addLinkType || !addLinkId || addLink.isPending}
-              className="px-3 py-1.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm disabled:opacity-50"
+              className="px-3 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
             >
               Add
             </button>
@@ -125,7 +125,7 @@ export function OverviewTab({ issue, canEdit }: Props) {
         )}
 
         {issue.links.length === 0 ? (
-          <p className="text-sm text-[hsl(var(--muted-foreground))] italic">
+          <p className="text-sm text-[var(--color-text-muted)] italic">
             No linked entities.
           </p>
         ) : (
@@ -139,15 +139,15 @@ export function OverviewTab({ issue, canEdit }: Props) {
               return (
                 <div
                   key={link.id}
-                  className="flex items-center justify-between p-2 border border-[hsl(var(--border))] rounded-md"
+                  className="flex items-center justify-between p-2 border border-[var(--color-border)] rounded-md"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
                       {TARGET_TYPE_LABELS[link.target_type] ?? link.target_type}
                     </span>
                     <Link
                       to={href}
-                      className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                      className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1"
                     >
                       {link.target_name ?? link.target_id}
                       <ExternalLink className="w-3 h-3" />
@@ -156,7 +156,7 @@ export function OverviewTab({ issue, canEdit }: Props) {
                   {canEdit && (
                     <button
                       onClick={() => removeLink.mutate(link.id)}
-                      className="p-1 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                      className="p-1 text-[var(--color-text-muted)] hover:text-red-400"
                       title="Remove link"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -173,19 +173,19 @@ export function OverviewTab({ issue, canEdit }: Props) {
       <div>
         <h3 className="text-sm font-semibold mb-2">Details</h3>
         <dl className="grid grid-cols-2 gap-y-2 text-sm">
-          <dt className="text-[hsl(var(--muted-foreground))]">Created by</dt>
+          <dt className="text-[var(--color-text-muted)]">Created by</dt>
           <dd>{issue.created_by.display_name}</dd>
-          <dt className="text-[hsl(var(--muted-foreground))]">Assigned to</dt>
+          <dt className="text-[var(--color-text-muted)]">Assigned to</dt>
           <dd>{issue.assigned_to?.display_name ?? "Unassigned"}</dd>
           {issue.closed_at && (
             <>
-              <dt className="text-[hsl(var(--muted-foreground))]">Closed at</dt>
+              <dt className="text-[var(--color-text-muted)]">Closed at</dt>
               <dd>{new Date(issue.closed_at).toLocaleString()}</dd>
             </>
           )}
           {issue.graph_annotation && (
             <>
-              <dt className="text-[hsl(var(--muted-foreground))]">Graph annotation</dt>
+              <dt className="text-[var(--color-text-muted)]">Graph annotation</dt>
               <dd>Version {issue.graph_annotation.automation_version}</dd>
             </>
           )}

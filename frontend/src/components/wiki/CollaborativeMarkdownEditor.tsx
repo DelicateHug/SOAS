@@ -74,11 +74,11 @@ function ToolbarBtn({ onClick, active, disabled, title, children }: ToolbarBtnPr
       title={title}
       className={cn(
         "flex items-center justify-center rounded px-1.5 py-1 text-sm leading-none transition-colors",
-        "hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]",
+        "hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]",
         "disabled:pointer-events-none disabled:opacity-40",
         active
-          ? "bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]"
-          : "text-[hsl(var(--muted-foreground))]"
+          ? "bg-[var(--color-surface-2)] text-[var(--color-text)]"
+          : "text-[var(--color-text-muted)]"
       )}
     >
       {children}
@@ -104,7 +104,7 @@ function CollaboratorAvatars({ collaborators }: { collaborators: WikiCollaborato
           {c.display_name.charAt(0).toUpperCase()}
         </div>
       ))}
-      <span className="ml-1 text-xs text-[hsl(var(--muted-foreground))]">
+      <span className="ml-1 text-xs text-[var(--color-text-muted)]">
         {collaborators.length} editing
       </span>
     </div>
@@ -178,7 +178,7 @@ function SelectionIssuePopup({
   return (
     <div
       ref={popupRef}
-      className="fixed z-50 -translate-x-1/2 flex items-center gap-1 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--popover))] px-1 py-0.5 shadow-lg"
+      className="fixed z-50 -translate-x-1/2 flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 shadow-lg"
       style={{ top: pos.top, left: pos.left }}
     >
       <button
@@ -355,13 +355,13 @@ export function CollaborativeMarkdownEditor({
   return (
     <div
       className={cn(
-        "rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))]",
-        "focus-within:ring-1 focus-within:ring-[hsl(var(--ring))]",
+        "rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]",
+        "focus-within:ring-1 focus-within:ring-[var(--color-primary)]",
         className
       )}
     >
       {/* Collaboration bar */}
-      <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-3 py-1.5">
+      <div className="flex items-center justify-between border-b border-[var(--color-border)] px-3 py-1.5">
         <div className="flex items-center gap-2">
           <div
             className={cn(
@@ -370,7 +370,7 @@ export function CollaborativeMarkdownEditor({
             )}
             title={isConnected ? "Connected" : "Disconnected"}
           />
-          <span className="text-xs text-[hsl(var(--muted-foreground))]">
+          <span className="text-xs text-[var(--color-text-muted)]">
             {isConnected ? "Live" : "Offline"}
           </span>
         </div>
@@ -379,7 +379,7 @@ export function CollaborativeMarkdownEditor({
 
       {/* Block-level toolbar */}
       {editable && (
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-[hsl(var(--border))] px-2 py-1">
+        <div className="flex flex-wrap items-center gap-0.5 border-b border-[var(--color-border)] px-2 py-1">
           <ToolbarBtn
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             active={editor.isActive("heading", { level: 1 })}
@@ -401,7 +401,7 @@ export function CollaborativeMarkdownEditor({
           >
             H3
           </ToolbarBtn>
-          <div className="mx-1 h-4 w-px bg-[hsl(var(--border))]" />
+          <div className="mx-1 h-4 w-px bg-[var(--color-border)]" />
           <ToolbarBtn
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             active={editor.isActive("bulletList")}
@@ -416,7 +416,7 @@ export function CollaborativeMarkdownEditor({
           >
             1. List
           </ToolbarBtn>
-          <div className="mx-1 h-4 w-px bg-[hsl(var(--border))]" />
+          <div className="mx-1 h-4 w-px bg-[var(--color-border)]" />
           <ToolbarBtn
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             active={editor.isActive("blockquote")}
@@ -445,7 +445,7 @@ export function CollaborativeMarkdownEditor({
 
       {/* Inline formatting toolbar */}
       {editable && (
-        <div className="flex items-center gap-0.5 border-b border-[hsl(var(--border))] px-2 py-1">
+        <div className="flex items-center gap-0.5 border-b border-[var(--color-border)] px-2 py-1">
           <ToolbarBtn
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive("bold")}
@@ -474,7 +474,7 @@ export function CollaborativeMarkdownEditor({
           >
             {"<>"}
           </ToolbarBtn>
-          <div className="mx-1 h-4 w-px bg-[hsl(var(--border))]" />
+          <div className="mx-1 h-4 w-px bg-[var(--color-border)]" />
           <ToolbarBtn onClick={toggleLink} active={editor.isActive("link")} title="Link">
             Link
           </ToolbarBtn>

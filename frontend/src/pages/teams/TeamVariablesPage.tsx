@@ -11,7 +11,7 @@ export function TeamVariablesPage() {
 
   if (!activeTeamId) {
     return (
-      <div className="p-8 text-center text-[hsl(var(--muted-foreground))]">
+      <div className="p-8 text-center text-[var(--color-text-muted)]">
         No team selected. Please select a team first.
       </div>
     );

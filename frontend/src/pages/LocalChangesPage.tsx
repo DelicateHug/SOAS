@@ -81,13 +81,13 @@ const ACTION_LABELS: Record<string, { label: string; color: string }> = {
 
 function DiffView({ diff_summary }: { diff_summary: Record<string, { old: unknown; new: unknown }> }) {
   return (
-    <div className="rounded-md border border-[hsl(var(--border))] overflow-hidden font-mono text-xs">
+    <div className="rounded-md border border-[var(--color-border)] overflow-hidden font-mono text-xs">
       {Object.entries(diff_summary).map(([field, diff]) => (
-        <div key={field} className="border-b border-[hsl(var(--border))] last:border-b-0">
-          <div className="px-3 py-1.5 bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] font-semibold font-sans text-xs">
+        <div key={field} className="border-b border-[var(--color-border)] last:border-b-0">
+          <div className="px-3 py-1.5 bg-[var(--color-surface-2)] text-[var(--color-text-muted)] font-semibold font-sans text-xs">
             {field}
           </div>
-          <div className="divide-y divide-[hsl(var(--border))]">
+          <div className="divide-y divide-[var(--color-border)]">
             {diff.old != null && (
               <div className="px-3 py-1.5 bg-red-500/5 text-red-400 whitespace-pre-wrap break-all">
                 <span className="select-none mr-2 opacity-60">-</span>
@@ -144,18 +144,18 @@ function ChangeRequestCard({
   const action = ACTION_LABELS[cr.action] ?? { label: cr.action, color: "text-zinc-400" };
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden transition-colors hover:border-[hsl(var(--border))]/80">
+    <div className="border border-[var(--color-border)] rounded-lg overflow-hidden transition-colors hover:border-[var(--color-border)]/80">
       {/* Header - always visible */}
       <div
         className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
         onClick={onToggle}
       >
         {isExpanded ? (
-          <ChevronDown className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+          <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+          <ChevronRight className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
         )}
-        <Icon className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+        <Icon className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
 
         <div className="flex-1 min-w-0 flex items-center gap-2">
           <span className="font-medium truncate">{cr.title}</span>
@@ -196,16 +196,16 @@ function ChangeRequestCard({
           )}
         </div>
 
-        <span className="text-xs text-[hsl(var(--muted-foreground))] shrink-0 tabular-nums">
+        <span className="text-xs text-[var(--color-text-muted)] shrink-0 tabular-nums">
           {new Date(cr.updated_at).toLocaleDateString()}
         </span>
       </div>
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="border-t border-[hsl(var(--border))] px-4 py-3 space-y-3 bg-[hsl(var(--card))]/50">
+        <div className="border-t border-[var(--color-border)] px-4 py-3 space-y-3 bg-[var(--color-surface)]/50">
           {/* Meta info row */}
-          <div className="flex items-center gap-4 text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="flex items-center gap-4 text-xs text-[var(--color-text-muted)]">
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Updated {new Date(cr.updated_at).toLocaleString()}
@@ -225,7 +225,7 @@ function ChangeRequestCard({
                 href={cr.git_pr_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[hsl(var(--primary))] hover:underline font-medium"
+                className="text-[var(--color-primary)] hover:underline font-medium"
               >
                 View PR
               </a>
@@ -240,7 +240,7 @@ function ChangeRequestCard({
                   <MessageSquare className="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0" />
                   <div className="text-sm">
                     <span className="text-xs font-medium text-blue-400">Your note:</span>
-                    <p className="mt-0.5 text-[hsl(var(--foreground))]">{cr.submit_comment}</p>
+                    <p className="mt-0.5 text-[var(--color-text)]">{cr.submit_comment}</p>
                   </div>
                 </div>
               )}
@@ -251,7 +251,7 @@ function ChangeRequestCard({
                     <span className="text-xs font-medium text-amber-400">
                       Reviewer ({cr.reviewer?.display_name ?? "Admin"}):
                     </span>
-                    <p className="mt-0.5 text-[hsl(var(--foreground))]">{cr.review_comment}</p>
+                    <p className="mt-0.5 text-[var(--color-text)]">{cr.review_comment}</p>
                   </div>
                 </div>
               )}
@@ -277,7 +277,7 @@ function ChangeRequestCard({
                     setComment("");
                   }
                 }}
-                className="flex-1 px-3 py-1.5 text-sm rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
+                className="flex-1 px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
               />
               <button
                 onClick={() => { onSubmit(cr.id, comment); setComment(""); }}
@@ -400,9 +400,9 @@ export function LocalChangesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <GitBranch className="w-6 h-6 text-[hsl(var(--primary))]" />
+          <GitBranch className="w-6 h-6 text-[var(--color-primary)]" />
           <h1 className="text-2xl font-bold">Local Changes</h1>
-          <span className="text-sm text-[hsl(var(--muted-foreground))] tabular-nums">
+          <span className="text-sm text-[var(--color-text-muted)] tabular-nums">
             {allItems.length} total
           </span>
         </div>
@@ -423,21 +423,21 @@ export function LocalChangesPage() {
       {/* Search + Filter bar */}
       <div className="flex items-center gap-2 mb-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
           <input
             type="text"
             placeholder="Search changes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
           />
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={`p-2 rounded-md border transition-colors ${
             showFilters || statusFilter !== "all" || entityFilter !== "all"
-              ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5"
-              : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/5"
+              : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
           }`}
           title="Toggle filters"
         >
@@ -447,17 +447,17 @@ export function LocalChangesPage() {
 
       {/* Filters panel */}
       {showFilters && (
-        <div className="mb-4 p-3 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] space-y-3">
+        <div className="mb-4 p-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] space-y-3">
           {/* Status pills */}
           <div>
-            <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5 block">Status</label>
+            <label className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 block">Status</label>
             <div className="flex flex-wrap gap-1.5">
               <button
                 onClick={() => setStatusFilter("all")}
                 className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                   statusFilter === "all"
-                    ? "bg-[hsl(var(--primary))] text-white"
-                    : "bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                 }`}
               >
                 All ({statusCounts.all ?? 0})
@@ -471,7 +471,7 @@ export function LocalChangesPage() {
                     className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                       statusFilter === s
                         ? `${cfg.bg} ${cfg.color} ring-1 ring-current`
-                        : `bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]`
+                        : `bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]`
                     }`}
                   >
                     {cfg.label} ({statusCounts[s]})
@@ -484,14 +484,14 @@ export function LocalChangesPage() {
           {/* Entity type filter */}
           {entityTypes.length > 1 && (
             <div>
-              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5 block">Type</label>
+              <label className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 block">Type</label>
               <div className="flex flex-wrap gap-1.5">
                 <button
                   onClick={() => setEntityFilter("all")}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                     entityFilter === "all"
-                      ? "bg-[hsl(var(--primary))] text-white"
-                      : "bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                      ? "bg-[var(--color-primary)] text-white"
+                      : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                   }`}
                 >
                   All
@@ -502,8 +502,8 @@ export function LocalChangesPage() {
                     onClick={() => setEntityFilter(t)}
                     className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                       entityFilter === t
-                        ? "bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] ring-1 ring-[hsl(var(--primary))]"
-                        : "bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                        ? "bg-[var(--color-primary)]/20 text-[var(--color-primary)] ring-1 ring-[var(--color-primary)]"
+                        : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                     }`}
                   >
                     {ENTITY_LABELS[t] ?? t}
@@ -518,13 +518,13 @@ export function LocalChangesPage() {
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-16">
-          <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {/* Empty state */}
       {!isLoading && items.length === 0 && (
-        <div className="text-center py-16 text-[hsl(var(--muted-foreground))]">
+        <div className="text-center py-16 text-[var(--color-text-muted)]">
           <GitBranch className="w-12 h-12 mx-auto mb-3 opacity-20" />
           {allItems.length === 0 ? (
             <>
@@ -539,7 +539,7 @@ export function LocalChangesPage() {
               <p className="text-sm mt-1">Try adjusting your filters or search query.</p>
               <button
                 onClick={() => { setStatusFilter("all"); setEntityFilter("all"); setSearchQuery(""); }}
-                className="mt-3 text-sm text-[hsl(var(--primary))] hover:underline"
+                className="mt-3 text-sm text-[var(--color-primary)] hover:underline"
               >
                 Clear all filters
               </button>

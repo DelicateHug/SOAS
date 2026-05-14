@@ -223,7 +223,7 @@ export function IssueAnnotations({ issues, onSaveAnnotation, onDoubleClickIssue 
             {/* Hover popout */}
             {isHovered && (
               <div
-                className="absolute left-0 top-full mt-1 w-64 z-50 border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--popover))] shadow-xl p-3"
+                className="absolute left-0 top-full mt-1 w-64 z-50 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] shadow-xl p-3"
                 style={{ pointerEvents: "auto" }}
                 onMouseEnter={() => {
                   clearTimeout(hoverTimeoutRef.current);
@@ -232,7 +232,7 @@ export function IssueAnnotations({ issues, onSaveAnnotation, onDoubleClickIssue 
                 onMouseLeave={handleMouseLeave}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <h4 className="text-sm font-semibold text-[hsl(var(--foreground))] leading-tight">
+                  <h4 className="text-sm font-semibold text-[var(--color-text)] leading-tight">
                     {issue.title}
                   </h4>
                   <span
@@ -245,20 +245,20 @@ export function IssueAnnotations({ issues, onSaveAnnotation, onDoubleClickIssue 
                 </div>
 
                 {issue.description && (
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2 line-clamp-4 whitespace-pre-wrap">
+                  <p className="text-xs text-[var(--color-text-muted)] mb-2 line-clamp-4 whitespace-pre-wrap">
                     {issue.description}
                   </p>
                 )}
 
                 {issue.assigned_to && (
-                  <p className="text-[10px] text-[hsl(var(--muted-foreground))] mb-2">
-                    Assigned to: <span className="text-[hsl(var(--foreground))]">{issue.assigned_to.display_name}</span>
+                  <p className="text-[10px] text-[var(--color-text-muted)] mb-2">
+                    Assigned to: <span className="text-[var(--color-text)]">{issue.assigned_to.display_name}</span>
                   </p>
                 )}
 
                 <button
                   type="button"
-                  className="flex items-center gap-1 text-xs text-[hsl(var(--primary))] hover:underline"
+                  className="flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline"
                   onClick={() => navigate(`/issues/${issue.id}`)}
                 >
                   <ExternalLink className="w-3 h-3" />

@@ -146,7 +146,7 @@ export function SOASVariablesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">SOAS Variables</h1>
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Application-level variables accessible by automations. Permission-restricted per role.
           </p>
         </div>
@@ -156,7 +156,7 @@ export function SOASVariablesPage() {
               resetForm();
               setShowCreateModal(true);
             }}
-            className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 transition-colors"
           >
             <Plus className="w-4 h-4" /> Create Variable
           </button>
@@ -164,16 +164,16 @@ export function SOASVariablesPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
+        <p className="text-[var(--color-text-muted)]">Loading...</p>
       ) : branchItems.length === 0 && pendingCreates.length === 0 ? (
-        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="text-center py-12 text-[var(--color-text-muted)]">
           <p>No SOAS variables created yet.</p>
           <p className="text-sm mt-1">Create one to get started.</p>
         </div>
       ) : (
-        <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+        <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-[hsl(var(--accent))]">
+            <thead className="bg-[var(--color-surface-2)]">
               <tr>
                 <th className="text-left px-4 py-2 font-medium">Name</th>
                 <th className="text-left px-4 py-2 font-medium">Description</th>
@@ -182,7 +182,7 @@ export function SOASVariablesPage() {
                 <th className="text-right px-4 py-2 font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[hsl(var(--border))]">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {pendingCreates.map((cr) => (
                 <tr key={cr.id} className="bg-green-500/5">
                   <td className="px-4 py-2 font-mono text-xs">
@@ -191,14 +191,14 @@ export function SOASVariablesPage() {
                       <PendingCreateBadge changeRequest={cr} />
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-[hsl(var(--muted-foreground))]">-</td>
+                  <td className="px-4 py-2 text-[var(--color-text-muted)]">-</td>
                   <td className="px-4 py-2 font-mono text-xs">-</td>
                   <td className="px-4 py-2 text-center">-</td>
-                  <td className="px-4 py-2 text-right text-xs text-[hsl(var(--muted-foreground))] italic">pending</td>
+                  <td className="px-4 py-2 text-right text-xs text-[var(--color-text-muted)] italic">pending</td>
                 </tr>
               ))}
               {branchItems.map(({ item: v, branchStatus, changeRequest }) => (
-                <tr key={v.id} className={`hover:bg-[hsl(var(--accent))]/50 ${branchStatus === "pending_delete" ? "opacity-50 line-through" : ""}`}>
+                <tr key={v.id} className={`hover:bg-[var(--color-surface-2)]/50 ${branchStatus === "pending_delete" ? "opacity-50 line-through" : ""}`}>
                   <td className="px-4 py-2 font-mono text-xs">
                     <span className="flex items-center gap-1.5">
                       {v.name}
@@ -210,12 +210,12 @@ export function SOASVariablesPage() {
                       <BranchStatusBadge branchStatus={branchStatus} changeRequest={changeRequest} />
                     </span>
                     {v.owner_username && (
-                      <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                      <span className="text-[10px] text-[var(--color-text-muted)]">
                         by {v.owner_username}
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-[hsl(var(--muted-foreground))] max-w-[200px] truncate">
+                  <td className="px-4 py-2 text-[var(--color-text-muted)] max-w-[200px] truncate">
                     {v.description || "-"}
                   </td>
                   <td className="px-4 py-2 font-mono text-xs max-w-[200px] truncate">
@@ -225,25 +225,25 @@ export function SOASVariablesPage() {
                     {v.is_secret ? (
                       <EyeOff className="w-4 h-4 text-yellow-500 inline" />
                     ) : (
-                      <Eye className="w-4 h-4 text-[hsl(var(--muted-foreground))] inline" />
+                      <Eye className="w-4 h-4 text-[var(--color-text-muted)] inline" />
                     )}
                   </td>
                   <td className="px-4 py-2 text-right">
                     {v.source === "shared_secret" ? (
-                      <span className="text-xs text-[hsl(var(--muted-foreground))] italic">managed by owner</span>
+                      <span className="text-xs text-[var(--color-text-muted)] italic">managed by owner</span>
                     ) : (
                       <ProductionGuard>
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => setPermVar(v)}
-                            className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                            className="p-1 rounded hover:bg-[var(--color-surface-2)] transition-colors"
                             title="Permissions"
                           >
                             <Shield className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => openEdit(v)}
-                            className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                            className="p-1 rounded hover:bg-[var(--color-surface-2)] transition-colors"
                             title="Edit"
                           >
                             <Edit2 className="w-4 h-4" />
@@ -273,8 +273,8 @@ export function SOASVariablesPage() {
       {/* Create/Edit Modal */}
       {(showCreateModal || editingVar) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[450px]">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl w-[450px]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
               <h3 className="font-semibold text-sm">
                 {editingVar ? "Edit Variable" : "Create Variable"}
               </h3>
@@ -284,14 +284,14 @@ export function SOASVariablesPage() {
                   setEditingVar(null);
                   resetForm();
                 }}
-                className="p-1 rounded hover:bg-[hsl(var(--accent))]"
+                className="p-1 rounded hover:bg-[var(--color-surface-2)]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Name
                 </label>
                 <input
@@ -300,11 +300,11 @@ export function SOASVariablesPage() {
                   onChange={(e) => setFormName(e.target.value)}
                   disabled={!!editingVar}
                   placeholder="e.g. api_key_virustotal"
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Description
                 </label>
                 <input
@@ -312,11 +312,11 @@ export function SOASVariablesPage() {
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="What this variable is for"
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                 />
               </div>
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Value (JSON or plain string)
                 </label>
                 <textarea
@@ -324,7 +324,7 @@ export function SOASVariablesPage() {
                   onChange={(e) => setFormValue(e.target.value)}
                   rows={3}
                   placeholder='"my_value" or {"key": "value"}'
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] font-mono"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] font-mono"
                 />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -337,21 +337,21 @@ export function SOASVariablesPage() {
                 <span className="text-sm">Secret (mask value in UI)</span>
               </label>
             </div>
-            <div className="flex justify-end gap-2 px-4 py-3 border-t border-[hsl(var(--border))]">
+            <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--color-border)]">
               <button
                 onClick={() => {
                   setShowCreateModal(false);
                   setEditingVar(null);
                   resetForm();
                 }}
-                className="px-3 py-1.5 text-sm rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                className="px-3 py-1.5 text-sm rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => (editingVar ? updateVar.mutate() : createVar.mutate())}
                 disabled={!formName.trim() || createVar.isPending || updateVar.isPending}
-                className="px-3 py-1.5 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+                className="px-3 py-1.5 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
               >
                 {editingVar ? "Update" : "Create"}
               </button>
@@ -431,18 +431,18 @@ function PermissionsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[450px] max-h-[80vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl w-[450px] max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
           <h3 className="font-semibold text-sm">
             Permissions: <span className="font-mono">{variable.name}</span>
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[hsl(var(--accent))]">
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-surface-2)]">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {isLoading ? (
-          <div className="p-4 text-[hsl(var(--muted-foreground))]">Loading...</div>
+          <div className="p-4 text-[var(--color-text-muted)]">Loading...</div>
         ) : (
           <div className="p-4">
             <table className="w-full text-sm">
@@ -453,7 +453,7 @@ function PermissionsModal({
                   <th className="pb-2 font-medium text-center">Write</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[hsl(var(--border))]">
+              <tbody className="divide-y divide-[var(--color-border)]">
                 {roles.map((role) => {
                   const p = localPerms[role.id] || { can_read: false, can_write: false };
                   return (
@@ -483,17 +483,17 @@ function PermissionsModal({
           </div>
         )}
 
-        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[hsl(var(--border))]">
+        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--color-border)]">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-sm rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+            className="px-3 py-1.5 text-sm rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
           >
             Cancel
           </button>
           <button
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
-            className="px-3 py-1.5 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
           >
             Save Permissions
           </button>

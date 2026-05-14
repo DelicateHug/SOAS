@@ -48,14 +48,14 @@ export function TeamsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">My Teams</h1>
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Teams you are a member of. Select a team in the sidebar to scope all data views.
           </p>
         </div>
         {canCreate && (
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-sm font-medium hover:opacity-90"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--color-primary)] text-[#ffffff] text-sm font-medium hover:opacity-90"
           >
             <Plus className="w-4 h-4" />
             Create Team
@@ -65,10 +65,10 @@ export function TeamsPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[hsl(var(--primary))]" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]" />
         </div>
       ) : teams.length === 0 ? (
-        <div className="text-center py-16 text-[hsl(var(--muted-foreground))]">
+        <div className="text-center py-16 text-[var(--color-text-muted)]">
           <UsersRound className="w-12 h-12 mx-auto mb-3 opacity-40" />
           <p>You are not a member of any teams.</p>
         </div>
@@ -79,25 +79,25 @@ export function TeamsPage() {
               <button
                 key={team.id}
                 onClick={() => navigate(`/teams/${team.id}`)}
-                className="text-left p-5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] hover:border-[hsl(var(--primary))] transition-colors"
+                className="text-left p-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)] transition-colors"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <UsersRound className="w-5 h-5 text-[hsl(var(--primary))]" />
+                    <UsersRound className="w-5 h-5 text-[var(--color-primary)]" />
                     <h3 className="font-semibold">{team.display_name}</h3>
                   </div>
                   {team.is_default && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
+                    <span className="text-xs px-2 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
                       Default
                     </span>
                   )}
                 </div>
                 {team.description && (
-                  <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3 line-clamp-2">
+                  <p className="text-sm text-[var(--color-text-muted)] mb-3 line-clamp-2">
                     {team.description}
                   </p>
                 )}
-                <div className="flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))]">
+                <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
                   <span>{team.member_count} member{team.member_count !== 1 ? "s" : ""}</span>
                   <span>Created {formatDate(team.created_at)}</span>
                 </div>
@@ -110,17 +110,17 @@ export function TeamsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-1 rounded text-sm border border-[hsl(var(--border))] disabled:opacity-50"
+                className="px-3 py-1 rounded text-sm border border-[var(--color-border)] disabled:opacity-50"
               >
                 Previous
               </button>
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">
+              <span className="text-sm text-[var(--color-text-muted)]">
                 Page {page} of {meta.total_pages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(meta.total_pages, p + 1))}
                 disabled={page === meta.total_pages}
-                className="px-3 py-1 rounded text-sm border border-[hsl(var(--border))] disabled:opacity-50"
+                className="px-3 py-1 rounded text-sm border border-[var(--color-border)] disabled:opacity-50"
               >
                 Next
               </button>
@@ -132,7 +132,7 @@ export function TeamsPage() {
       {/* Create Team Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[hsl(var(--card))] rounded-lg border border-[hsl(var(--border))] p-6 w-full max-w-md">
+          <div className="bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] p-6 w-full max-w-md">
             <h2 className="text-lg font-semibold mb-4">Create Team</h2>
             <form
               onSubmit={(e) => {
@@ -150,7 +150,7 @@ export function TeamsPage() {
                   placeholder="alpha-team"
                   pattern="[a-z0-9][a-z0-9-]*[a-z0-9]"
                   required
-                  className="w-full px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-sm"
                 />
               </div>
               <div>
@@ -161,7 +161,7 @@ export function TeamsPage() {
                   onChange={(e) => setCreateForm((f) => ({ ...f, display_name: e.target.value }))}
                   placeholder="Alpha Team"
                   required
-                  className="w-full px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-sm"
                 />
               </div>
               <div>
@@ -171,21 +171,21 @@ export function TeamsPage() {
                   onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
                   placeholder="Optional description..."
                   rows={3}
-                  className="w-full px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm resize-none"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-sm resize-none"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-sm rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                  className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createTeam.isPending}
-                  className="px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+                  className="px-4 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
                 >
                   {createTeam.isPending ? "Creating..." : "Create"}
                 </button>

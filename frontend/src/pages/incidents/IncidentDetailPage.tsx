@@ -72,7 +72,7 @@ export function IncidentDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="h-6 w-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+        <div className="h-6 w-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -80,10 +80,10 @@ export function IncidentDetailPage() {
   if (!incident) {
     return (
       <div className="text-center py-16">
-        <p className="text-[hsl(var(--muted-foreground))]">Incident not found</p>
+        <p className="text-[var(--color-text-muted)]">Incident not found</p>
         <button
           onClick={() => navigate("/incidents")}
-          className="mt-3 text-sm text-[hsl(var(--primary))] hover:underline"
+          className="mt-3 text-sm text-[var(--color-primary)] hover:underline"
         >
           Back to incidents
         </button>
@@ -102,14 +102,14 @@ export function IncidentDetailPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate(-1)}
-              className="p-1 rounded hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+              className="p-1 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
               aria-label="Go back"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
             <button
               onClick={() => navigate("/incidents")}
-              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+              className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
             >
               Incidents /
             </button>
@@ -123,7 +123,7 @@ export function IncidentDetailPage() {
                   key={status}
                   onClick={() => transition.mutate(status)}
                   disabled={transition.isPending}
-                  className="px-3 py-1.5 border border-[hsl(var(--border))] rounded-md text-xs font-medium hover:bg-[hsl(var(--accent))] transition-colors disabled:opacity-50"
+                  className="px-3 py-1.5 border border-[var(--color-border)] rounded-md text-xs font-medium hover:bg-[var(--color-surface-2)] transition-colors disabled:opacity-50"
                 >
                   Move to {status.replace("_", " ")}
                 </button>
@@ -145,7 +145,7 @@ export function IncidentDetailPage() {
                 {incident.status.replace("_", " ")}
               </span>
               {incident.source && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
                   {incident.source}
                 </span>
               )}
@@ -154,7 +154,7 @@ export function IncidentDetailPage() {
         </div>
 
         {/* Meta row */}
-        <div className="flex items-center gap-4 mt-3 text-xs text-[hsl(var(--muted-foreground))]">
+        <div className="flex items-center gap-4 mt-3 text-xs text-[var(--color-text-muted)]">
           <div className="flex items-center gap-1.5">
             <UserAvatar displayName={incident.created_by.display_name} size="sm" />
             <span>{incident.created_by.display_name}</span>
@@ -162,7 +162,7 @@ export function IncidentDetailPage() {
           <span>{formatDate(incident.created_at)}</span>
           {incident.lead && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[hsl(var(--muted-foreground))]">Lead:</span>
+              <span className="text-[var(--color-text-muted)]">Lead:</span>
               <UserAvatar displayName={incident.lead.display_name} size="sm" />
               <span>{incident.lead.display_name}</span>
             </div>
@@ -174,7 +174,7 @@ export function IncidentDetailPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="border-b border-[hsl(var(--border))] mb-6">
+      <div className="border-b border-[var(--color-border)] mb-6">
         <nav className="flex gap-0 -mb-px">
           {tabs.map((tab) => (
             <button
@@ -182,8 +182,8 @@ export function IncidentDetailPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))]"
-                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:border-[hsl(var(--border))]"
+                  ? "border-[var(--color-primary)] text-[var(--color-text)]"
+                  : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
               }`}
             >
               {tab.label}

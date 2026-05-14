@@ -108,7 +108,7 @@ export function DashboardPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {/* Daily trend */}
-        <div className="md:col-span-2 border border-[hsl(var(--border))] rounded-lg p-4">
+        <div className="md:col-span-2 border border-[var(--color-border)] rounded-lg p-4">
           <h2 className="font-semibold text-sm mb-3">Incidents (Last 7 Days)</h2>
           {dailyData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
@@ -116,18 +116,18 @@ export function DashboardPage() {
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[200px] flex items-center justify-center text-sm text-[hsl(var(--muted-foreground))]">
+            <div className="h-[200px] flex items-center justify-center text-sm text-[var(--color-text-muted)]">
               No data yet
             </div>
           )}
         </div>
 
         {/* Severity distribution */}
-        <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+        <div className="border border-[var(--color-border)] rounded-lg p-4">
           <h2 className="font-semibold text-sm mb-3">By Severity</h2>
           {severityData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
@@ -150,7 +150,7 @@ export function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[200px] flex items-center justify-center text-sm text-[hsl(var(--muted-foreground))]">
+            <div className="h-[200px] flex items-center justify-center text-sm text-[var(--color-text-muted)]">
               No data yet
             </div>
           )}
@@ -160,13 +160,13 @@ export function DashboardPage() {
       {/* Status pipeline + Execution stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Status pipeline */}
-        <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+        <div className="border border-[var(--color-border)] rounded-lg p-4">
           <h2 className="font-semibold text-sm mb-3">Incident Pipeline</h2>
           <div className="space-y-2">
             {statusData.map(({ name, value }) => (
               <div key={name} className="flex items-center gap-2">
-                <span className="w-24 text-xs text-right text-[hsl(var(--muted-foreground))]">{name}</span>
-                <div className="flex-1 bg-[hsl(var(--accent))] rounded-full h-4 overflow-hidden">
+                <span className="w-24 text-xs text-right text-[var(--color-text-muted)]">{name}</span>
+                <div className="flex-1 bg-[var(--color-surface-2)] rounded-full h-4 overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{
@@ -179,13 +179,13 @@ export function DashboardPage() {
               </div>
             ))}
             {statusData.length === 0 && (
-              <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">No data yet</p>
+              <p className="text-sm text-[var(--color-text-muted)] text-center py-4">No data yet</p>
             )}
           </div>
         </div>
 
         {/* Execution stats */}
-        <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+        <div className="border border-[var(--color-border)] rounded-lg p-4">
           <h2 className="font-semibold text-sm mb-3">Execution Stats</h2>
           <div className="grid grid-cols-2 gap-3">
             <MiniStat label="Total Runs" value={stats?.executions.total ?? 0} />
@@ -209,26 +209,26 @@ export function DashboardPage() {
       </div>
 
       {/* Recent activity */}
-      <div className="border border-[hsl(var(--border))] rounded-lg">
-        <div className="px-4 py-3 border-b border-[hsl(var(--border))] flex items-center gap-2">
+      <div className="border border-[var(--color-border)] rounded-lg">
+        <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center gap-2">
           <Activity className="w-4 h-4" />
           <h2 className="font-semibold text-sm">Recent Activity</h2>
         </div>
-        <div className="divide-y divide-[hsl(var(--border))]">
+        <div className="divide-y divide-[var(--color-border)]">
           {activity?.map((entry) => (
             <div key={entry.id} className="px-4 py-3 flex items-center gap-3">
-              <span className="px-2 py-0.5 rounded text-xs bg-[hsl(var(--accent))]">
+              <span className="px-2 py-0.5 rounded text-xs bg-[var(--color-surface-2)]">
                 {entry.entry_type.replace(/_/g, " ")}
               </span>
               <span className="flex-1 text-sm truncate">{entry.content}</span>
-              <span className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1">
+              <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {formatDate(entry.created_at)}
               </span>
             </div>
           ))}
           {(!activity || activity.length === 0) && (
-            <div className="px-4 py-8 text-center text-[hsl(var(--muted-foreground))]">
+            <div className="px-4 py-8 text-center text-[var(--color-text-muted)]">
               No activity yet
             </div>
           )}
@@ -252,14 +252,14 @@ function StatCard({
   subtitle?: string;
 }) {
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+    <div className="border border-[var(--color-border)] rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-[hsl(var(--muted-foreground))]">{title}</span>
+        <span className="text-sm text-[var(--color-text-muted)]">{title}</span>
         <span className={color}>{icon}</span>
       </div>
       <p className="text-2xl font-bold">{value}</p>
       {subtitle && (
-        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">{subtitle}</p>
+        <p className="text-xs text-[var(--color-text-muted)] mt-1">{subtitle}</p>
       )}
     </div>
   );
@@ -277,8 +277,8 @@ function MiniStat({
   warn?: boolean;
 }) {
   return (
-    <div className="p-2 rounded bg-[hsl(var(--accent))]">
-      <p className="text-xs text-[hsl(var(--muted-foreground))]">{label}</p>
+    <div className="p-2 rounded bg-[var(--color-surface-2)]">
+      <p className="text-xs text-[var(--color-text-muted)]">{label}</p>
       <p className={`text-lg font-bold ${highlight ? "text-yellow-600" : warn ? "text-red-600" : ""}`}>
         {value}
       </p>

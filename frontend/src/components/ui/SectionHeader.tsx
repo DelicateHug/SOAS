@@ -9,7 +9,7 @@ interface Props {
 export function SectionHeader({ title, action, className }: Props) {
   return (
     <div className={cn("flex items-center justify-between mb-3", className)}>
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
         {title}
       </h3>
       {action}

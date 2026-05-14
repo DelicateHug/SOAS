@@ -25,7 +25,7 @@ export function CodePreviewPanel() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
         <div className="flex items-center gap-2">
           <Code2 className="w-3.5 h-3.5" />
           <span className="text-xs font-semibold">Generated Code</span>
@@ -39,7 +39,7 @@ export function CodePreviewPanel() {
         {generatedCode && (
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded hover:bg-[hsl(var(--accent))]"
+            className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded hover:bg-[var(--color-surface-2)]"
             title="Copy to clipboard"
           >
             {copied ? (

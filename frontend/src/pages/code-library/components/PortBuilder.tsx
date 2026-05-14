@@ -58,14 +58,14 @@ export function PortBuilder({ label, ports, onChange, direction }: PortBuilderPr
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+        <label className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
           {label}
         </label>
         <button
           type="button"
           onClick={addPort}
           disabled={ports.length >= MAX_CUSTOM_PORTS}
-          className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] disabled:opacity-40 transition-colors"
+          className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] disabled:opacity-40 transition-colors"
         >
           <Plus className="w-3 h-3" />
           Add
@@ -94,7 +94,7 @@ export function PortBuilder({ label, ports, onChange, direction }: PortBuilderPr
         ))}
 
         {ports.length === 0 && (
-          <div className="text-[10px] text-[hsl(var(--muted-foreground))] italic px-2 py-1">
+          <div className="text-[10px] text-[var(--color-text-muted)] italic px-2 py-1">
             No data ports. Click + to add one.
           </div>
         )}

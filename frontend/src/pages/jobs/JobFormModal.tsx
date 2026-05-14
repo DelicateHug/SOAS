@@ -211,11 +211,11 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[600px] max-h-[85vh] flex flex-col">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-xl w-[600px] max-h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--color-border)]">
           <h2 className="text-sm font-semibold">{isEdit ? "Edit Job" : "Create Scheduled Job"}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-[hsl(var(--accent))] rounded">
+          <button onClick={onClose} className="p-1 hover:bg-[var(--color-surface-2)] rounded">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -229,7 +229,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="e.g. Daily threat report"
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm"
             />
           </div>
 
@@ -239,7 +239,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm"
               rows={2}
               placeholder="Optional description"
             />
@@ -251,7 +251,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
             <select
               value={form.automation_id}
               onChange={(e) => setForm({ ...form, automation_id: e.target.value })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm"
             >
               <option value="">Select an automation...</option>
               {automationsData?.data.map((a) => (
@@ -265,15 +265,15 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
           {/* Schedule type tabs */}
           <div>
             <label className="block text-xs font-medium mb-2">Schedule</label>
-            <div className="flex border border-[hsl(var(--border))] rounded-md overflow-hidden mb-3">
+            <div className="flex border border-[var(--color-border)] rounded-md overflow-hidden mb-3">
               {(["interval", "calendar", "cron"] as ScheduleType[]).map((type) => (
                 <button
                   key={type}
                   onClick={() => setForm({ ...form, schedule_type: type })}
                   className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
                     form.schedule_type === type
-                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-                      : "hover:bg-[hsl(var(--accent))]"
+                      ? "bg-[var(--color-primary)] text-[#ffffff]"
+                      : "hover:bg-[var(--color-surface-2)]"
                   }`}
                 >
                   {type === "interval" ? "Simple Interval" : type === "calendar" ? "Calendar" : "Cron Expression"}
@@ -290,12 +290,12 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
                   min={1}
                   value={form.interval_value}
                   onChange={(e) => setForm({ ...form, interval_value: Math.max(1, Number(e.target.value)) })}
-                  className="w-20 px-2 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm"
+                  className="w-20 px-2 py-1.5 border border-[var(--color-border)] rounded-md text-sm"
                 />
                 <select
                   value={form.interval_unit}
                   onChange={(e) => setForm({ ...form, interval_unit: e.target.value as "minutes" | "hours" | "days" })}
-                  className="px-2 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm"
+                  className="px-2 py-1.5 border border-[var(--color-border)] rounded-md text-sm"
                 >
                   <option value="minutes">minutes</option>
                   <option value="hours">hours</option>
@@ -309,7 +309,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
               <div className="space-y-3">
                 {/* Presets */}
                 <div>
-                  <label className="block text-xs text-[hsl(var(--muted-foreground))] mb-1">Quick presets</label>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">Quick presets</label>
                   <div className="flex gap-1.5 flex-wrap">
                     {[
                       { id: "weekdays", label: "Every Weekday" },
@@ -320,7 +320,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
                       <button
                         key={p.id}
                         onClick={() => applyPreset(p.id)}
-                        className="px-2.5 py-1 text-xs border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))]"
+                        className="px-2.5 py-1 text-xs border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)]"
                       >
                         {p.label}
                       </button>
@@ -330,7 +330,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
 
                 {/* Day of week picker */}
                 <div>
-                  <label className="block text-xs text-[hsl(var(--muted-foreground))] mb-1">Days of week</label>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">Days of week</label>
                   <div className="flex gap-1">
                     {DAYS_OF_WEEK.map((label, idx) => (
                       <button
@@ -338,8 +338,8 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
                         onClick={() => toggleDayOfWeek(idx)}
                         className={`w-10 h-8 text-xs rounded-md border transition-colors ${
                           form.cal_days_of_week.includes(idx)
-                            ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]"
-                            : "border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                            ? "bg-[var(--color-primary)] text-[#ffffff] border-[var(--color-primary)]"
+                            : "border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
                         }`}
                       >
                         {label}
@@ -350,7 +350,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
 
                 {/* Day of month picker */}
                 <div>
-                  <label className="block text-xs text-[hsl(var(--muted-foreground))] mb-1">Days of month</label>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">Days of month</label>
                   <div className="grid grid-cols-7 gap-1">
                     {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                       <button
@@ -358,8 +358,8 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
                         onClick={() => toggleDayOfMonth(day)}
                         className={`h-7 text-xs rounded transition-colors ${
                           form.cal_days_of_month.includes(day)
-                            ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-                            : "border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                            ? "bg-[var(--color-primary)] text-[#ffffff]"
+                            : "border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
                         }`}
                       >
                         {day}
@@ -370,12 +370,12 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
 
                 {/* Time */}
                 <div>
-                  <label className="block text-xs text-[hsl(var(--muted-foreground))] mb-1">Time (24h)</label>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">Time (24h)</label>
                   <input
                     type="time"
                     value={form.cal_time}
                     onChange={(e) => setForm({ ...form, cal_time: e.target.value })}
-                    className="px-3 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm"
+                    className="px-3 py-1.5 border border-[var(--color-border)] rounded-md text-sm"
                   />
                 </div>
               </div>
@@ -388,17 +388,17 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
                   value={form.cron_expression}
                   onChange={(e) => setForm({ ...form, cron_expression: e.target.value })}
                   placeholder="0 9 * * 1-5"
-                  className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm font-mono"
+                  className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm font-mono"
                 />
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Format: <code className="bg-[hsl(var(--muted))] px-1 rounded">minute hour day-of-month month day-of-week</code>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Format: <code className="bg-[var(--color-surface-2)] px-1 rounded">minute hour day-of-month month day-of-week</code>
                 </p>
-                <div className="text-xs text-[hsl(var(--muted-foreground))] space-y-0.5">
+                <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
                   <p>Examples:</p>
-                  <p><code className="bg-[hsl(var(--muted))] px-1 rounded">0 9 * * *</code> — Every day at 9:00 AM</p>
-                  <p><code className="bg-[hsl(var(--muted))] px-1 rounded">0 9 * * 1</code> — Every Monday at 9:00 AM</p>
-                  <p><code className="bg-[hsl(var(--muted))] px-1 rounded">0 0 1 * *</code> — 1st of every month at midnight</p>
-                  <p><code className="bg-[hsl(var(--muted))] px-1 rounded">*/15 * * * *</code> — Every 15 minutes</p>
+                  <p><code className="bg-[var(--color-surface-2)] px-1 rounded">0 9 * * *</code> — Every day at 9:00 AM</p>
+                  <p><code className="bg-[var(--color-surface-2)] px-1 rounded">0 9 * * 1</code> — Every Monday at 9:00 AM</p>
+                  <p><code className="bg-[var(--color-surface-2)] px-1 rounded">0 0 1 * *</code> — 1st of every month at midnight</p>
+                  <p><code className="bg-[var(--color-surface-2)] px-1 rounded">*/15 * * * *</code> — Every 15 minutes</p>
                 </div>
               </div>
             )}
@@ -410,7 +410,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
             <select
               value={form.timezone}
               onChange={(e) => setForm({ ...form, timezone: e.target.value })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm"
             >
               {COMMON_TIMEZONES.map((tz) => (
                 <option key={tz} value={tz}>
@@ -426,7 +426,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
             <textarea
               value={form.parameters}
               onChange={(e) => setForm({ ...form, parameters: e.target.value })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm font-mono"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm font-mono"
               rows={3}
               placeholder="{}"
             />
@@ -440,7 +440,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
                 type="datetime-local"
                 value={form.start_date}
                 onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm"
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm"
               />
             </div>
             <div>
@@ -449,7 +449,7 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
                 type="datetime-local"
                 value={form.end_date}
                 onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm"
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm"
               />
             </div>
           </div>
@@ -460,17 +460,17 @@ export function JobFormModal({ job, onClose }: JobFormModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[hsl(var(--border))]">
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--color-border)]">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-xs rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+            className="px-3 py-1.5 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
           >
             Cancel
           </button>
           <button
             onClick={() => saveMutation.mutate()}
             disabled={!isValid || saveMutation.isPending}
-            className="px-3 py-1.5 text-xs rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+            className="px-3 py-1.5 text-xs rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
           >
             {saveMutation.isPending && <Loader2 className="w-3 h-3 animate-spin inline mr-1" />}
             {isEdit ? "Save Changes" : "Create Job"}

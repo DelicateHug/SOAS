@@ -120,7 +120,7 @@ function ActionMenu({
             setOpen(true);
           }
         }}
-        className="p-1 rounded hover:bg-[hsl(var(--accent))]"
+        className="p-1 rounded hover:bg-[var(--color-surface-2)]"
       >
         <EllipsisVertical className="w-4 h-4" />
       </button>
@@ -134,7 +134,7 @@ function ActionMenu({
             }}
           />
           <div
-            className="fixed z-50 w-44 bg-[hsl(var(--popover,var(--background)))] border border-[hsl(var(--border))] rounded-md shadow-lg py-1"
+            className="fixed z-50 w-44 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md shadow-lg py-1"
             style={{ top: menuPos.top, left: menuPos.left - 176 }}
           >
             <button
@@ -142,14 +142,14 @@ function ActionMenu({
                 onEdit(job);
                 setOpen(false);
               }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-[hsl(var(--accent))] text-left"
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-[var(--color-surface-2)] text-left"
             >
               <Pencil className="w-3.5 h-3.5" /> Edit
             </button>
             <button
               onClick={() => toggleMutation.mutate()}
               disabled={toggleMutation.isPending}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-[hsl(var(--accent))] text-left disabled:opacity-50"
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-[var(--color-surface-2)] text-left disabled:opacity-50"
             >
               {job.is_enabled ? (
                 <>
@@ -164,7 +164,7 @@ function ActionMenu({
                 <Loader2 className="w-3 h-3 animate-spin ml-auto" />
               )}
             </button>
-            <div className="border-t border-[hsl(var(--border))] my-1" />
+            <div className="border-t border-[var(--color-border)] my-1" />
             <button
               onClick={() => {
                 if (confirm("Delete this scheduled job?")) {
@@ -172,7 +172,7 @@ function ActionMenu({
                 }
               }}
               disabled={deleteMutation.isPending}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-[hsl(var(--accent))] text-left text-red-600 disabled:opacity-50"
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-[var(--color-surface-2)] text-left text-red-600 disabled:opacity-50"
             >
               <Trash2 className="w-3.5 h-3.5" /> Delete
               {deleteMutation.isPending && (
@@ -224,7 +224,7 @@ export function JobsTab() {
         <JobFilters filters={filters} onChange={handleFilterChange} />
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 text-sm shrink-0"
         >
           <Plus className="w-4 h-4" />
           Create Job
@@ -235,7 +235,7 @@ export function JobsTab() {
       {isLoading ? (
         <div className="text-center py-8">Loading...</div>
       ) : data?.data.length === 0 ? (
-        <div className="flex flex-col items-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="flex flex-col items-center py-12 text-[var(--color-text-muted)]">
           <Clock className="w-12 h-12 mb-3" />
           <p>No scheduled jobs yet</p>
           <p className="text-sm mt-1">
@@ -244,39 +244,39 @@ export function JobsTab() {
         </div>
       ) : (
         <>
-          <div className="border border-[hsl(var(--border))] rounded-lg overflow-x-auto">
+          <div className="border border-[var(--color-border)] rounded-lg overflow-x-auto">
             <table className="w-full min-w-[800px]">
               <thead>
-                <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">
                     Name
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">
                     Automation
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">
                     Schedule
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">
                     Last Run
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">
                     Next Run
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">
                     Runs
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-[hsl(var(--muted-foreground))] w-16" />
+                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--color-text-muted)] w-16" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[hsl(var(--border))]">
+              <tbody className="divide-y divide-[var(--color-border)]">
                 {data?.data.map((job) => (
                   <tr
                     key={job.id}
-                    className="hover:bg-[hsl(var(--accent))] transition-colors"
+                    className="hover:bg-[var(--color-surface-2)] transition-colors"
                   >
                     <td className="px-4 py-3">
                       <span
@@ -292,30 +292,30 @@ export function JobsTab() {
                     <td className="px-4 py-3">
                       <p className="text-sm font-medium">{job.name}</p>
                       {job.description && (
-                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 truncate max-w-xs">
+                        <p className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate max-w-xs">
                           {job.description}
                         </p>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                       {job.automation_name}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] font-mono">
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-surface-2)] text-[var(--color-text-muted)] font-mono">
                         {describeSchedule(job)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                       {job.last_run_at
                         ? formatDate(job.last_run_at)
                         : "Never"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                       {job.next_run_at
                         ? formatDate(job.next_run_at)
                         : "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                       {job.run_count}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -339,8 +339,8 @@ export function JobsTab() {
                   onClick={() => setPage(p)}
                   className={`px-3 py-1 rounded text-sm ${
                     p === page
-                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-                      : "border border-[hsl(var(--border))]"
+                      ? "bg-[var(--color-primary)] text-[#ffffff]"
+                      : "border border-[var(--color-border)]"
                   }`}
                 >
                   {p}

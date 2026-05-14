@@ -35,15 +35,15 @@ export function ChangePasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))]">
-      <div className="w-full max-w-sm p-8 border border-[hsl(var(--border))] rounded-lg">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)]">
+      <div className="w-full max-w-sm p-8 border border-[var(--color-border)] rounded-lg">
         <div className="flex items-center justify-center gap-2 mb-4">
-          <Shield className="w-8 h-8 text-[hsl(var(--primary))]" />
+          <Shield className="w-8 h-8 text-[var(--color-primary)]" />
           <h1 className="text-2xl font-bold">SOAS</h1>
         </div>
 
         <h2 className="text-lg font-semibold text-center mb-2">Password Reset Required</h2>
-        <p className="text-sm text-[hsl(var(--muted-foreground))] text-center mb-6">
+        <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
           You must change your password before continuing.
         </p>
 
@@ -60,7 +60,7 @@ export function ChangePasswordPage() {
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
               required
             />
           </div>
@@ -70,7 +70,7 @@ export function ChangePasswordPage() {
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
               required
               minLength={8}
             />
@@ -81,7 +81,7 @@ export function ChangePasswordPage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
               required
               minLength={8}
             />
@@ -89,7 +89,7 @@ export function ChangePasswordPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50"
+            className="w-full py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50"
           >
             {isLoading ? "Changing..." : "Change Password"}
           </button>

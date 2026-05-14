@@ -19,23 +19,23 @@ function TreeNode({ node, depth = 0 }: { node: WikiTreeNode; depth?: number }) {
   return (
     <div>
       <div
-        className="flex items-center gap-1 py-1 px-2 rounded-md hover:bg-[hsl(var(--accent))] cursor-pointer text-sm group"
+        className="flex items-center gap-1 py-1 px-2 rounded-md hover:bg-[var(--color-surface-2)] cursor-pointer text-sm group"
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >
         {hasChildren ? (
           <button
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="w-4 h-4 flex items-center justify-center shrink-0 text-[hsl(var(--muted-foreground))]"
+            className="w-4 h-4 flex items-center justify-center shrink-0 text-[var(--color-text-muted)]"
           >
             {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
           </button>
         ) : (
           <span className="w-4 shrink-0" />
         )}
-        <DynamicIcon name={node.icon} className="w-4 h-4 shrink-0 text-[hsl(var(--muted-foreground))]" />
+        <DynamicIcon name={node.icon} className="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
         <Link
           to={`/wiki/${node.slug}`}
-          className="truncate flex-1 text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))]"
+          className="truncate flex-1 text-[var(--color-text)] hover:text-[var(--color-primary)]"
         >
           {node.title}
         </Link>
@@ -116,14 +116,14 @@ export function WikiListPage() {
   return (
     <div className="flex gap-6">
       {/* Tree sidebar */}
-      <aside className="w-56 shrink-0 border-r border-[hsl(var(--border))] pr-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
+      <aside className="w-56 shrink-0 border-r border-[var(--color-border)] pr-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Pages</p>
+          <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Pages</p>
           <ProductionGuard>
             {hasPermission("wiki:create") && (
               <Link
                 to="/wiki/new"
-                className="text-[hsl(var(--primary))] hover:opacity-80"
+                className="text-[var(--color-primary)] hover:opacity-80"
                 title="New page"
               >
                 <Plus className="w-4 h-4" />
@@ -137,7 +137,7 @@ export function WikiListPage() {
           return (
             <div
               key={cr.id}
-              className="flex items-center gap-1 py-1 px-2 rounded-md hover:bg-[hsl(var(--accent))] text-sm group"
+              className="flex items-center gap-1 py-1 px-2 rounded-md hover:bg-[var(--color-surface-2)] text-sm group"
               style={{ paddingLeft: "8px" }}
             >
               <GitBranch className="w-3.5 h-3.5 shrink-0 text-green-400" />
@@ -172,7 +172,7 @@ export function WikiListPage() {
         {tree && tree.length > 0 ? (
           tree.map((node) => <TreeNode key={node.id} node={node} />)
         ) : pendingCreates.length === 0 ? (
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">No pages yet</p>
+          <p className="text-sm text-[var(--color-text-muted)]">No pages yet</p>
         ) : null}
       </aside>
 
@@ -184,7 +184,7 @@ export function WikiListPage() {
             {hasPermission("wiki:create") && (
               <Link
                 to="/wiki/new"
-                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 text-sm"
               >
                 <Plus className="w-4 h-4" />
                 New Page
@@ -196,7 +196,7 @@ export function WikiListPage() {
         {/* Search + filters */}
         <div className="flex gap-3 mb-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
             <input
               value={searchQuery || search}
               onChange={(e) => {
@@ -211,13 +211,13 @@ export function WikiListPage() {
                 setPage(1);
               }}
               placeholder="Search wiki pages..."
-              className="w-full pl-9 pr-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+            className="px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
           >
             <option value="">All statuses</option>
             <option value="published">Published</option>
@@ -228,7 +228,7 @@ export function WikiListPage() {
             <select
               value={tagFilter}
               onChange={(e) => { setTagFilter(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             >
               <option value="">All tags</option>
               {allTags.map((t) => (
@@ -243,7 +243,7 @@ export function WikiListPage() {
           isSearching ? (
             <div className="text-center py-8">Searching...</div>
           ) : searchResults?.data.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-[hsl(var(--muted-foreground))]">
+            <div className="flex flex-col items-center py-12 text-[var(--color-text-muted)]">
               <Search className="w-12 h-12 mb-3" />
               <p>No results found for &ldquo;{searchQuery}&rdquo;</p>
             </div>
@@ -253,17 +253,17 @@ export function WikiListPage() {
                 <Link
                   key={result.id}
                   to={`/wiki/${result.slug}`}
-                  className="border border-[hsl(var(--border))] rounded-lg p-4 hover:bg-[hsl(var(--accent))] transition-colors"
+                  className="border border-[var(--color-border)] rounded-lg p-4 hover:bg-[var(--color-surface-2)] transition-colors"
                 >
                   <h3 className="font-medium">{result.title}</h3>
                   <p
-                    className="text-sm text-[hsl(var(--muted-foreground))] mt-1 line-clamp-2"
+                    className="text-sm text-[var(--color-text-muted)] mt-1 line-clamp-2"
                     dangerouslySetInnerHTML={{ __html: result.snippet }}
                   />
                   {result.tags.length > 0 && (
                     <div className="flex gap-1 mt-2">
                       {result.tags.map((t) => (
-                        <span key={t} className="text-xs px-1.5 py-0.5 bg-[hsl(var(--accent))] rounded">
+                        <span key={t} className="text-xs px-1.5 py-0.5 bg-[var(--color-surface-2)] rounded">
                           {t}
                         </span>
                       ))}
@@ -276,14 +276,14 @@ export function WikiListPage() {
         ) : isLoading ? (
           <div className="text-center py-8">Loading...</div>
         ) : (data?.data.length === 0 && pendingCreates.length === 0) ? (
-          <div className="flex flex-col items-center py-12 text-[hsl(var(--muted-foreground))]">
+          <div className="flex flex-col items-center py-12 text-[var(--color-text-muted)]">
             <BookOpen className="w-12 h-12 mb-3" />
             <p>No wiki pages yet</p>
             <ProductionGuard>
               {hasPermission("wiki:create") && (
                 <button
                   onClick={() => navigate("/wiki/new")}
-                  className="mt-3 text-sm text-[hsl(var(--primary))] hover:underline"
+                  className="mt-3 text-sm text-[var(--color-primary)] hover:underline"
                 >
                   Create the first page
                 </button>
@@ -313,14 +313,14 @@ export function WikiListPage() {
                           {cr.status}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-4 mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+                      <div className="flex flex-wrap gap-4 mt-2 text-sm text-[var(--color-text-muted)]">
                         <span>By {cr.creator?.display_name ?? "Unknown"}</span>
                         <span>Created {formatDate(cr.created_at)}</span>
                       </div>
                       {crTags.length > 0 && (
                         <div className="flex gap-1 mt-2">
                           {crTags.map((t) => (
-                            <span key={t} className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-[hsl(var(--accent))] rounded">
+                            <span key={t} className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-[var(--color-surface-2)] rounded">
                               <Tag className="w-3 h-3" />
                               {t}
                             </span>
@@ -352,7 +352,7 @@ export function WikiListPage() {
                 <Link
                   key={pg.id}
                   to={`/wiki/${pg.slug}`}
-                  className="border border-[hsl(var(--border))] rounded-lg p-4 hover:bg-[hsl(var(--accent))] transition-colors"
+                  className="border border-[var(--color-border)] rounded-lg p-4 hover:bg-[var(--color-surface-2)] transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium flex items-center gap-2">
@@ -369,7 +369,7 @@ export function WikiListPage() {
                       {pg.status}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-4 mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+                  <div className="flex flex-wrap gap-4 mt-2 text-sm text-[var(--color-text-muted)]">
                     <span>By {pg.created_by.display_name}</span>
                     {pg.child_count > 0 && <span>{pg.child_count} subpages</span>}
                     <span>v{pg.version}</span>
@@ -378,7 +378,7 @@ export function WikiListPage() {
                   {pg.tags.length > 0 && (
                     <div className="flex gap-1 mt-2">
                       {pg.tags.map((t) => (
-                        <span key={t} className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-[hsl(var(--accent))] rounded">
+                        <span key={t} className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-[var(--color-surface-2)] rounded">
                           <Tag className="w-3 h-3" />
                           {t}
                         </span>
@@ -395,17 +395,17 @@ export function WikiListPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="px-3 py-1 text-sm border border-[hsl(var(--border))] rounded-md disabled:opacity-50"
+                  className="px-3 py-1 text-sm border border-[var(--color-border)] rounded-md disabled:opacity-50"
                 >
                   Previous
                 </button>
-                <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                <span className="text-sm text-[var(--color-text-muted)]">
                   Page {page} of {data.meta.total_pages}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(data.meta.total_pages, p + 1))}
                   disabled={page >= data.meta.total_pages}
-                  className="px-3 py-1 text-sm border border-[hsl(var(--border))] rounded-md disabled:opacity-50"
+                  className="px-3 py-1 text-sm border border-[var(--color-border)] rounded-md disabled:opacity-50"
                 >
                   Next
                 </button>

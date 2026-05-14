@@ -167,13 +167,13 @@ export default function TestContextDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[520px] max-h-[80vh] overflow-y-auto">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl w-[520px] max-h-[80vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
           <h2 className="text-sm font-semibold">Test Context</h2>
           <button
             onClick={onCancel}
-            className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+            className="p-1 rounded hover:bg-[var(--color-surface-2)] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -181,7 +181,7 @@ export default function TestContextDialog({
 
         <div className="p-4 space-y-4">
           {/* Quick Run Notice */}
-          <div className="flex items-start gap-2 p-2 rounded bg-[hsl(var(--accent))]/50 text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="flex items-start gap-2 p-2 rounded bg-[var(--color-surface-2)]/50 text-xs text-[var(--color-text-muted)]">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>
               Configure test context for incident variables and parameters.
@@ -197,36 +197,36 @@ export default function TestContextDialog({
                 type="checkbox"
                 checked={useMockIncident}
                 onChange={(e) => setUseMockIncident(e.target.checked)}
-                className="rounded border-[hsl(var(--border))]"
+                className="rounded border-[var(--color-border)]"
               />
               <span className="text-sm font-medium">Use Mock Incident</span>
             </label>
 
             {useMockIncident && (
-              <div className="space-y-3 pl-6 border-l-2 border-[hsl(var(--border))] ml-1">
+              <div className="space-y-3 pl-6 border-l-2 border-[var(--color-border)] ml-1">
                 {/* Title */}
                 <div>
-                  <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                  <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                     Title
                   </label>
                   <input
                     type="text"
                     value={incidentTitle}
                     onChange={(e) => setIncidentTitle(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                    className="w-full px-2 py-1.5 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                   />
                 </div>
 
                 {/* Severity + Status */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                    <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                       Severity
                     </label>
                     <select
                       value={incidentSeverity}
                       onChange={(e) => setIncidentSeverity(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                      className="w-full px-2 py-1.5 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                     >
                       {SEVERITY_OPTIONS.map((s) => (
                         <option key={s} value={s}>
@@ -236,13 +236,13 @@ export default function TestContextDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                    <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                       Status
                     </label>
                     <select
                       value={incidentStatus}
                       onChange={(e) => setIncidentStatus(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                      className="w-full px-2 py-1.5 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                     >
                       {STATUS_OPTIONS.map((s) => (
                         <option key={s} value={s}>
@@ -255,7 +255,7 @@ export default function TestContextDialog({
 
                 {/* Tags */}
                 <div>
-                  <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                  <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                     Tags
                   </label>
                   <div className="flex flex-wrap gap-1 mb-1">
@@ -281,11 +281,11 @@ export default function TestContextDialog({
                       onChange={(e) => setTagInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
                       placeholder="Add tag..."
-                      className="flex-1 px-2 py-1 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                      className="flex-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                     />
                     <button
                       onClick={handleAddTag}
-                      className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                      className="px-2 py-1 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
                     >
                       <Plus className="w-3 h-3" />
                     </button>
@@ -295,7 +295,7 @@ export default function TestContextDialog({
                 {/* Incident Variables */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <label className="text-xs text-[var(--color-text-muted)]">
                       Incident Variables
                     </label>
                     <button
@@ -321,7 +321,7 @@ export default function TestContextDialog({
                             )
                           }
                           placeholder="Key"
-                          className="flex-1 px-2 py-1 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                          className="flex-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                         />
                         <input
                           type="text"
@@ -336,7 +336,7 @@ export default function TestContextDialog({
                             )
                           }
                           placeholder="Value"
-                          className="flex-1 px-2 py-1 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                          className="flex-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                         />
                         <button
                           onClick={() => handleRemoveCustomVar(i)}
@@ -356,7 +356,7 @@ export default function TestContextDialog({
           <div>
             <button
               onClick={() => setShowParams(!showParams)}
-              className="flex items-center gap-1 text-sm font-medium hover:text-[hsl(var(--foreground))] text-[hsl(var(--muted-foreground))]"
+              className="flex items-center gap-1 text-sm font-medium hover:text-[var(--color-text)] text-[var(--color-text-muted)]"
             >
               {showParams ? (
                 <ChevronDown className="w-3.5 h-3.5" />
@@ -382,7 +382,7 @@ export default function TestContextDialog({
                         )
                       }
                       placeholder="Key"
-                      className="flex-1 px-2 py-1 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                      className="flex-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                     />
                     <input
                       type="text"
@@ -397,7 +397,7 @@ export default function TestContextDialog({
                         )
                       }
                       placeholder="Value (JSON or string)"
-                      className="flex-1 px-2 py-1 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                      className="flex-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                     />
                     <button
                       onClick={() => handleRemoveParam(i)}
@@ -419,10 +419,10 @@ export default function TestContextDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[hsl(var(--border))]">
+        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--color-border)]">
           <button
             onClick={onCancel}
-            className="px-3 py-1.5 text-xs rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors"
+            className="px-3 py-1.5 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors"
           >
             Cancel
           </button>

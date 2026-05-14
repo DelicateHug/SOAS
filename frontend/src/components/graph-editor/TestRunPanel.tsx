@@ -21,7 +21,7 @@ const statusConfig: Record<
   TestRunStatus,
   { label: string; className: string }
 > = {
-  idle: { label: "Idle", className: "text-[hsl(var(--muted-foreground))]" },
+  idle: { label: "Idle", className: "text-[var(--color-text-muted)]" },
   running: { label: "Running", className: "text-yellow-500" },
   completed: { label: "Completed", className: "text-green-500" },
   failed: { label: "Failed", className: "text-red-500" },
@@ -83,7 +83,7 @@ export function TestRunPanel({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
         <div className="flex items-center gap-2">
           <Terminal className="w-3.5 h-3.5" />
           <span className="text-xs font-semibold">Test Run Output</span>
@@ -100,7 +100,7 @@ export function TestRunPanel({
         </div>
         <button
           onClick={onClear}
-          className="p-1 hover:bg-[hsl(var(--accent))] rounded"
+          className="p-1 hover:bg-[var(--color-surface-2)] rounded"
           title="Clear output"
         >
           <Trash2 className="w-3 h-3" />
@@ -143,7 +143,7 @@ export function TestRunPanel({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 px-2 py-1 text-xs rounded border border-[hsl(var(--border))] bg-gray-900 text-gray-100 font-mono focus:outline-none focus:border-yellow-500"
+            className="flex-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-gray-900 text-gray-100 font-mono focus:outline-none focus:border-yellow-500"
             placeholder={pendingInput.defaultValue || "Type your response..."}
           />
           <button

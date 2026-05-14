@@ -48,7 +48,7 @@ export function IncidentVariableSelectField({ value, onChange }: IncidentVariabl
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))]">
+      <div className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
         <Loader2 className="w-3 h-3 animate-spin" />
         Loading variables...
       </div>
@@ -73,16 +73,16 @@ export function IncidentVariableSelectField({ value, onChange }: IncidentVariabl
           setTimeout(() => setIsOpen(false), 150);
         }}
         placeholder="Type or select a variable..."
-        className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-transparent"
+        className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-transparent"
       />
       {isOpen && variables.length > 0 && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-0.5 max-h-40 overflow-y-auto border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--popover))] shadow-lg">
+        <div className="absolute z-50 top-full left-0 right-0 mt-0.5 max-h-40 overflow-y-auto border border-[var(--color-border)] rounded-md bg-[var(--color-surface)] shadow-lg">
           {variables.map((v) => (
             <button
               key={v.id}
               type="button"
-              className={`w-full text-left px-2 py-1.5 text-xs hover:bg-[hsl(var(--accent))] flex flex-col ${
-                v.name === value ? "bg-[hsl(var(--accent))]" : ""
+              className={`w-full text-left px-2 py-1.5 text-xs hover:bg-[var(--color-surface-2)] flex flex-col ${
+                v.name === value ? "bg-[var(--color-surface-2)]" : ""
               }`}
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -93,7 +93,7 @@ export function IncidentVariableSelectField({ value, onChange }: IncidentVariabl
             >
               <span className="font-medium">{v.name}</span>
               {v.description && (
-                <span className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">
+                <span className="text-[10px] text-[var(--color-text-muted)] truncate">
                   {v.description}
                 </span>
               )}

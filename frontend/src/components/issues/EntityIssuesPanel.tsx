@@ -31,7 +31,7 @@ export function EntityIssuesPanel({ targetType, targetId, targetName }: Props) {
         {hasPermission("issue:create") && (
           <Link
             to={`/issues/new?linkType=${targetType}&linkId=${targetId}&linkName=${encodeURIComponent(targetName)}`}
-            className="flex items-center gap-1 text-xs text-[hsl(var(--primary))] hover:underline"
+            className="flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline"
           >
             <Plus className="w-3 h-3" />
             Create Issue
@@ -42,7 +42,7 @@ export function EntityIssuesPanel({ targetType, targetId, targetName }: Props) {
       {isLoading ? (
         <div className="text-center py-4 text-sm">Loading...</div>
       ) : issues?.length === 0 ? (
-        <div className="flex flex-col items-center py-8 text-[hsl(var(--muted-foreground))]">
+        <div className="flex flex-col items-center py-8 text-[var(--color-text-muted)]">
           <CircleDot className="w-8 h-8 mb-2" />
           <p className="text-sm">No issues linked to this item.</p>
         </div>
@@ -52,7 +52,7 @@ export function EntityIssuesPanel({ targetType, targetId, targetName }: Props) {
             <Link
               key={issue.id}
               to={`/issues/${issue.id}`}
-              className="flex items-center justify-between p-3 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] transition-colors"
+              className="flex items-center justify-between p-3 border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)] transition-colors"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -67,7 +67,7 @@ export function EntityIssuesPanel({ targetType, targetId, targetName }: Props) {
                     {issueStatusLabels[issue.status] ?? issue.status}
                   </span>
                 </div>
-                <div className="flex gap-3 mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                <div className="flex gap-3 mt-1 text-xs text-[var(--color-text-muted)]">
                   <span>By {issue.created_by.display_name}</span>
                   {issue.assigned_to && (
                     <span>Assigned: {issue.assigned_to.display_name}</span>
@@ -76,7 +76,7 @@ export function EntityIssuesPanel({ targetType, targetId, targetName }: Props) {
                 </div>
               </div>
               {issue.checklist_total > 0 && (
-                <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2 shrink-0">
+                <span className="text-xs text-[var(--color-text-muted)] ml-2 shrink-0">
                   {issue.checklist_checked}/{issue.checklist_total}
                 </span>
               )}

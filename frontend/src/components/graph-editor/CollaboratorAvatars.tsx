@@ -28,7 +28,7 @@ export function CollaboratorAvatars({
           {c.display_name.charAt(0).toUpperCase()}
         </div>
       ))}
-      <span className="text-[10px] text-[hsl(var(--muted-foreground))] ml-1">
+      <span className="text-[10px] text-[var(--color-text-muted)] ml-1">
         {others.length} collaborator{others.length !== 1 ? "s" : ""}
       </span>
     </div>

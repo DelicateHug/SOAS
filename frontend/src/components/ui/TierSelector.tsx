@@ -33,7 +33,7 @@ export function TierSelector({
 }: TierSelectorProps) {
   return (
     <div className={cn("flex items-center gap-1", className)}>
-      <span className="text-xs text-[hsl(var(--muted-foreground))] mr-1">
+      <span className="text-xs text-[var(--color-text-muted)] mr-1">
         Viewing:
       </span>
       {/* Auto (effective) button */}
@@ -43,8 +43,8 @@ export function TierSelector({
         className={cn(
           "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
           selectedTier === null
-            ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-            : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]",
+            ? "bg-[var(--color-primary)] text-[#ffffff]"
+            : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]",
         )}
       >
         Auto
@@ -60,10 +60,10 @@ export function TierSelector({
             className={cn(
               "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
               isActive
-                ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                ? "bg-[var(--color-primary)] text-[#ffffff]"
                 : isSource
-                  ? "bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] ring-1 ring-[hsl(var(--primary))]"
-                  : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]",
+                  ? "bg-[var(--color-surface-2)] text-[var(--color-text)] ring-1 ring-[var(--color-primary)]"
+                  : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]",
             )}
           >
             {t.label}

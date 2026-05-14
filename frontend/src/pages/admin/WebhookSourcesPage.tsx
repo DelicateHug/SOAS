@@ -116,13 +116,13 @@ export function WebhookSourcesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Webhook Sources</h1>
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Define sources and link automations that run when incidents are created from those sources.
           </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+          className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90"
         >
           <Plus className="w-4 h-4" /> Create Source
         </button>
@@ -130,7 +130,7 @@ export function WebhookSourcesPage() {
 
       {/* Create form */}
       {showCreate && (
-        <div className="border border-[hsl(var(--border))] rounded-lg p-4 mb-6">
+        <div className="border border-[var(--color-border)] rounded-lg p-4 mb-6">
           <h3 className="text-sm font-medium mb-3">New Source</h3>
           <div className="space-y-3">
             <input
@@ -138,20 +138,20 @@ export function WebhookSourcesPage() {
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               placeholder="Source name (e.g. CrowdStrike)"
-              className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+              className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
             />
             <input
               type="text"
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Description (optional)"
-              className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+              className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
             />
             <div className="flex gap-2">
               <button
                 onClick={() => formName.trim() && createSource.mutate()}
                 disabled={!formName.trim() || createSource.isPending}
-                className="px-3 py-1.5 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] disabled:opacity-50"
+                className="px-3 py-1.5 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] disabled:opacity-50"
               >
                 Create
               </button>
@@ -161,7 +161,7 @@ export function WebhookSourcesPage() {
                   setFormName("");
                   setFormDescription("");
                 }}
-                className="px-3 py-1.5 text-sm rounded border border-[hsl(var(--border))]"
+                className="px-3 py-1.5 text-sm rounded border border-[var(--color-border)]"
               >
                 Cancel
               </button>
@@ -172,9 +172,9 @@ export function WebhookSourcesPage() {
 
       {/* Sources list */}
       {isLoading ? (
-        <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
+        <p className="text-[var(--color-text-muted)]">Loading...</p>
       ) : branchSources.length === 0 && pendingCreates.length === 0 ? (
-        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="text-center py-12 text-[var(--color-text-muted)]">
           <p>No sources created yet.</p>
         </div>
       ) : (
@@ -265,9 +265,9 @@ function SourceRow({
   const availableAutomations = automations.filter((a) => !linkedIds.has(a.id));
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg">
+    <div className="border border-[var(--color-border)] rounded-lg">
       <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[hsl(var(--accent))]/50"
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[var(--color-surface-2)]/50"
         onClick={onToggle}
       >
         {expanded ? (
@@ -281,12 +281,12 @@ function SourceRow({
             <BranchStatusBadge branchStatus={branchStatus} changeRequest={branchChangeRequest} />
           )}
           {source.description && (
-            <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2">
+            <span className="text-xs text-[var(--color-text-muted)] ml-2">
               {source.description}
             </span>
           )}
         </div>
-        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+        <span className="text-xs text-[var(--color-text-muted)]">
           {source.automation_count} automation{source.automation_count !== 1 ? "s" : ""}
         </span>
         <button
@@ -294,15 +294,15 @@ function SourceRow({
             e.stopPropagation();
             onDelete();
           }}
-          className="p-1 rounded hover:bg-red-500/20 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+          className="p-1 rounded hover:bg-red-500/20 text-[var(--color-text-muted)] hover:text-red-400"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {expanded && (
-        <div className="border-t border-[hsl(var(--border))] px-4 py-3">
-          <h4 className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2 uppercase tracking-wider">
+        <div className="border-t border-[var(--color-border)] px-4 py-3">
+          <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-2 uppercase tracking-wider">
             Linked Automations
           </h4>
 
@@ -314,31 +314,31 @@ function SourceRow({
                 .map((link, idx, sorted) => (
                   <div
                     key={link.id}
-                    className="flex items-center gap-2 py-1.5 px-2 rounded bg-[hsl(var(--accent))]/30"
+                    className="flex items-center gap-2 py-1.5 px-2 rounded bg-[var(--color-surface-2)]/30"
                   >
                     <div className="flex flex-col">
                       <button
                         disabled={idx === 0}
                         onClick={() => moveItem(sorted, idx, -1)}
-                        className="p-0 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] disabled:opacity-25"
+                        className="p-0 text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-25"
                       >
                         <ArrowUp className="w-3 h-3" />
                       </button>
                       <button
                         disabled={idx === sorted.length - 1}
                         onClick={() => moveItem(sorted, idx, 1)}
-                        className="p-0 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] disabled:opacity-25"
+                        className="p-0 text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-25"
                       >
                         <ArrowDown className="w-3 h-3" />
                       </button>
                     </div>
                     <span className="text-sm flex-1">{link.automation_name}</span>
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <span className="text-xs text-[var(--color-text-muted)]">
                       order: {link.run_order}
                     </span>
                     <button
                       onClick={() => onUnlinkAutomation(link.automation_id)}
-                      className="p-0.5 rounded hover:bg-red-500/20 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                      className="p-0.5 rounded hover:bg-red-500/20 text-[var(--color-text-muted)] hover:text-red-400"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -346,18 +346,18 @@ function SourceRow({
                 ))}
             </div>
           ) : (
-            <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+            <p className="text-xs text-[var(--color-text-muted)] mb-3">
               No automations linked yet.
             </p>
           )}
 
           {/* Link new automation */}
-          {availableAutomations.length > 0 && (
+          {availableAutomations.length > 0 ? (
             <div className="flex gap-2">
               <select
                 value={linkId}
                 onChange={(e) => setLinkId(e.target.value)}
-                className="flex-1 px-2 py-1.5 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                className="flex-1 px-2 py-1.5 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
               >
                 <option value="">Select automation to link...</option>
                 {availableAutomations.map((a) => (
@@ -374,11 +374,28 @@ function SourceRow({
                   }
                 }}
                 disabled={!linkId}
-                className="px-3 py-1.5 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] disabled:opacity-50"
+                className="px-3 py-1.5 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] disabled:opacity-50"
               >
                 Link
               </button>
             </div>
+          ) : automations.length === 0 ? (
+            <p className="text-xs text-[var(--color-text-muted)] italic">
+              No active automations exist. Create an automation and set its status to{" "}
+              <span className="font-medium text-[var(--color-text)]">active</span> on
+              the{" "}
+              <a
+                href="/automations"
+                className="text-[var(--color-primary)] hover:underline"
+              >
+                Automations
+              </a>{" "}
+              page to link it here.
+            </p>
+          ) : (
+            <p className="text-xs text-[var(--color-text-muted)] italic">
+              All active automations are already linked to this source.
+            </p>
           )}
         </div>
       )}

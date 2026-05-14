@@ -98,12 +98,12 @@ function IssueListView({
   return (
     <div className="flex flex-col h-full">
       {hasPermission("issue:create") && (
-        <div className="p-2 border-b border-[hsl(var(--border))]">
+        <div className="p-2 border-b border-[var(--color-border)]">
           <a
             href={`/issues/new?linkType=automation&linkId=${automationId}`}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1 text-[10px] text-[hsl(var(--primary))] hover:underline"
+            className="flex items-center gap-1 text-[10px] text-[var(--color-primary)] hover:underline"
           >
             <Plus className="w-3 h-3" />
             New Issue
@@ -113,7 +113,7 @@ function IssueListView({
 
       <div className="flex-1 overflow-y-auto">
         {combined.length === 0 ? (
-          <div className="p-3 text-center text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="p-3 text-center text-xs text-[var(--color-text-muted)]">
             No issues linked to this automation.
           </div>
         ) : (
@@ -122,7 +122,7 @@ function IssueListView({
               key={issue.id}
               type="button"
               onClick={() => onSelect(issue.id)}
-              className="w-full text-left px-2 py-2 border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors"
+              className="w-full text-left px-2 py-2 border-b border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors"
             >
               <p className="text-xs font-medium truncate">{issue.title}</p>
               <div className="flex items-center gap-1 mt-0.5">
@@ -134,7 +134,7 @@ function IssueListView({
                   {issueStatusLabels[issue.status] ?? issue.status}
                 </span>
                 {issue.assigned_to && (
-                  <span className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">
+                  <span className="text-[10px] text-[var(--color-text-muted)] truncate">
                     {issue.assigned_to.display_name}
                   </span>
                 )}
@@ -189,14 +189,14 @@ function IssueDetailView({
   if (!issue) {
     return (
       <div className="flex flex-col h-full">
-        <div className="p-2 border-b border-[hsl(var(--border))]">
-          <button onClick={onBack} className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+        <div className="p-2 border-b border-[var(--color-border)]">
+          <button onClick={onBack} className="flex items-center gap-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
             <ChevronLeft className="w-3 h-3" />
             Back
           </button>
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">Loading...</p>
+          <p className="text-xs text-[var(--color-text-muted)]">Loading...</p>
         </div>
       </div>
     );
@@ -220,8 +220,8 @@ function IssueDetailView({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-2 border-b border-[hsl(var(--border))]">
-        <button onClick={onBack} className="flex items-center gap-1 text-[10px] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-1">
+      <div className="p-2 border-b border-[var(--color-border)]">
+        <button onClick={onBack} className="flex items-center gap-1 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-1">
           <ChevronLeft className="w-3 h-3" />
           All Issues
         </button>
@@ -229,15 +229,15 @@ function IssueDetailView({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[hsl(var(--border))]">
+      <div className="flex border-b border-[var(--color-border)]">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex-1 px-1 py-1.5 text-[10px] font-medium border-b-2 transition-colors ${
               tab === t.id
-                ? "border-blue-500 text-[hsl(var(--foreground))]"
-                : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                ? "border-blue-500 text-[var(--color-text)]"
+                : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
             }`}
           >
             {t.label}
@@ -322,7 +322,7 @@ function UserSearchSelect({
 
   if (disabled) {
     return (
-      <div className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] opacity-50">
+      <div className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] opacity-50">
         {selectedUser?.display_name ?? "Unassigned"}
       </div>
     );
@@ -339,10 +339,10 @@ function UserSearchSelect({
           setSearch("");
         }}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))]"
+        className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-[var(--color-bg)]"
       />
       {isOpen && (
-        <div className="absolute z-50 left-0 right-0 mt-0.5 max-h-40 overflow-y-auto border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--popover))] shadow-lg">
+        <div className="absolute z-50 left-0 right-0 mt-0.5 max-h-40 overflow-y-auto border border-[var(--color-border)] rounded-md bg-[var(--color-surface)] shadow-lg">
           <button
             type="button"
             onClick={() => {
@@ -350,8 +350,8 @@ function UserSearchSelect({
               setIsOpen(false);
               setSearch("");
             }}
-            className={`w-full text-left px-2 py-1 text-xs hover:bg-[hsl(var(--accent))] ${
-              !value ? "bg-[hsl(var(--accent))]" : ""
+            className={`w-full text-left px-2 py-1 text-xs hover:bg-[var(--color-surface-2)] ${
+              !value ? "bg-[var(--color-surface-2)]" : ""
             }`}
           >
             Unassigned
@@ -365,15 +365,15 @@ function UserSearchSelect({
                 setIsOpen(false);
                 setSearch("");
               }}
-              className={`w-full text-left px-2 py-1 text-xs hover:bg-[hsl(var(--accent))] ${
-                u.id === value ? "bg-[hsl(var(--accent))]" : ""
+              className={`w-full text-left px-2 py-1 text-xs hover:bg-[var(--color-surface-2)] ${
+                u.id === value ? "bg-[var(--color-surface-2)]" : ""
               }`}
             >
               {u.display_name}
             </button>
           ))}
           {filtered.length === 0 && (
-            <div className="px-2 py-1 text-xs text-[hsl(var(--muted-foreground))]">
+            <div className="px-2 py-1 text-xs text-[var(--color-text-muted)]">
               No matches
             </div>
           )}
@@ -402,14 +402,14 @@ function InfoTab({
     <div className="p-2 space-y-3">
       {/* Status */}
       <div>
-        <label className="block text-[10px] font-medium text-[hsl(var(--muted-foreground))] uppercase mb-0.5">
+        <label className="block text-[10px] font-medium text-[var(--color-text-muted)] uppercase mb-0.5">
           Status
         </label>
         <select
           value={issue.status}
           onChange={(e) => onUpdate({ status: e.target.value })}
           disabled={!canEdit}
-          className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] disabled:opacity-50"
+          className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] disabled:opacity-50"
         >
           {ALL_STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -421,7 +421,7 @@ function InfoTab({
 
       {/* Assigned To */}
       <div>
-        <label className="block text-[10px] font-medium text-[hsl(var(--muted-foreground))] uppercase mb-0.5">
+        <label className="block text-[10px] font-medium text-[var(--color-text-muted)] uppercase mb-0.5">
           Assigned To
         </label>
         <UserSearchSelect
@@ -435,17 +435,17 @@ function InfoTab({
       {/* Description */}
       {issue.description && (
         <div>
-          <label className="block text-[10px] font-medium text-[hsl(var(--muted-foreground))] uppercase mb-0.5">
+          <label className="block text-[10px] font-medium text-[var(--color-text-muted)] uppercase mb-0.5">
             Description
           </label>
-          <p className="text-xs text-[hsl(var(--foreground))] whitespace-pre-wrap">
+          <p className="text-xs text-[var(--color-text)] whitespace-pre-wrap">
             {issue.description}
           </p>
         </div>
       )}
 
       {/* Meta */}
-      <div className="text-[10px] text-[hsl(var(--muted-foreground))] space-y-0.5">
+      <div className="text-[10px] text-[var(--color-text-muted)] space-y-0.5">
         <p>Created by {issue.created_by.display_name}</p>
         <p>{new Date(issue.created_at).toLocaleString()}</p>
       </div>
@@ -521,7 +521,7 @@ function NotesTab({
       {/* Add note */}
       {hasPermission("issue:create") && (
         <form
-          className="p-2 border-b border-[hsl(var(--border))]"
+          className="p-2 border-b border-[var(--color-border)]"
           onSubmit={(e) => {
             e.preventDefault();
             if (newNote.trim()) addNote.mutate();
@@ -532,12 +532,12 @@ function NotesTab({
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Add a note..."
             rows={2}
-            className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] resize-none"
+            className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] resize-none"
           />
           <button
             type="submit"
             disabled={!newNote.trim() || addNote.isPending}
-            className="mt-1 px-2 py-0.5 text-[10px] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded disabled:opacity-50"
+            className="mt-1 px-2 py-0.5 text-[10px] bg-[var(--color-primary)] text-[#ffffff] rounded disabled:opacity-50"
           >
             Add
           </button>
@@ -547,14 +547,14 @@ function NotesTab({
       {/* Notes list */}
       <div className="flex-1 overflow-y-auto">
         {(notes ?? []).length === 0 ? (
-          <p className="p-3 text-center text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="p-3 text-center text-xs text-[var(--color-text-muted)]">
             No notes yet.
           </p>
         ) : (
           (notes ?? []).map((note) => (
             <div
               key={note.id}
-              className={`p-2 border-b border-[hsl(var(--border))] text-xs ${
+              className={`p-2 border-b border-[var(--color-border)] text-xs ${
                 note.is_evidence ? "bg-green-500/5 border-l-2 border-l-green-500" : ""
               }`}
             >
@@ -564,19 +564,19 @@ function NotesTab({
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     rows={2}
-                    className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] resize-none"
+                    className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] resize-none"
                     autoFocus
                   />
                   <div className="flex gap-1 mt-1">
                     <button
                       onClick={() => updateNote.mutate(note.id)}
-                      className="px-1.5 py-0.5 text-[10px] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded"
+                      className="px-1.5 py-0.5 text-[10px] bg-[var(--color-primary)] text-[#ffffff] rounded"
                     >
                       Save
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
-                      className="px-1.5 py-0.5 text-[10px] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                      className="px-1.5 py-0.5 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                     >
                       Cancel
                     </button>
@@ -586,7 +586,7 @@ function NotesTab({
                 <>
                   <p className="whitespace-pre-wrap break-words">{note.content}</p>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                    <span className="text-[10px] text-[var(--color-text-muted)]">
                       {note.created_by.display_name}
                     </span>
                     {canModify(note) && (
@@ -594,22 +594,22 @@ function NotesTab({
                         <button
                           onClick={() => toggleEvidence.mutate(note.id)}
                           title={note.is_evidence ? "Remove evidence mark" : "Mark as evidence"}
-                          className="p-0.5 hover:bg-[hsl(var(--accent))] rounded"
+                          className="p-0.5 hover:bg-[var(--color-surface-2)] rounded"
                         >
-                          <Shield className={`w-3 h-3 ${note.is_evidence ? "text-green-400" : "text-[hsl(var(--muted-foreground))]"}`} />
+                          <Shield className={`w-3 h-3 ${note.is_evidence ? "text-green-400" : "text-[var(--color-text-muted)]"}`} />
                         </button>
                         <button
                           onClick={() => {
                             setEditingId(note.id);
                             setEditContent(note.content);
                           }}
-                          className="p-0.5 hover:bg-[hsl(var(--accent))] rounded"
+                          className="p-0.5 hover:bg-[var(--color-surface-2)] rounded"
                         >
-                          <Pencil className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                          <Pencil className="w-3 h-3 text-[var(--color-text-muted)]" />
                         </button>
                         <button
                           onClick={() => deleteNote.mutate(note.id)}
-                          className="p-0.5 hover:bg-[hsl(var(--accent))] rounded"
+                          className="p-0.5 hover:bg-[var(--color-surface-2)] rounded"
                         >
                           <Trash2 className="w-3 h-3 text-red-400" />
                         </button>
@@ -704,11 +704,11 @@ function ChecklistTab({
       {/* Progress */}
       {total > 0 && (
         <div className="px-2 pt-2">
-          <div className="flex items-center justify-between text-[10px] text-[hsl(var(--muted-foreground))] mb-1">
+          <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)] mb-1">
             <span>{checked}/{total}</span>
             <span>{Math.round((checked / total) * 100)}%</span>
           </div>
-          <div className="h-1 bg-[hsl(var(--accent))] rounded-full overflow-hidden">
+          <div className="h-1 bg-[var(--color-surface-2)] rounded-full overflow-hidden">
             <div
               className="h-full bg-green-500 transition-all"
               style={{ width: `${(checked / total) * 100}%` }}
@@ -720,7 +720,7 @@ function ChecklistTab({
       {/* Add item */}
       {hasPermission("issue:create") && (
         <form
-          className="p-2 border-b border-[hsl(var(--border))]"
+          className="p-2 border-b border-[var(--color-border)]"
           onSubmit={(e) => {
             e.preventDefault();
             if (newItem.trim()) addItem.mutate();
@@ -731,12 +731,12 @@ function ChecklistTab({
               value={newItem}
               onChange={(e) => setNewItem(e.target.value)}
               placeholder="Add task..."
-              className="flex-1 px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))]"
+              className="flex-1 px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-[var(--color-bg)]"
             />
             <button
               type="submit"
               disabled={!newItem.trim() || addItem.isPending}
-              className="px-1.5 py-1 text-[hsl(var(--primary))] disabled:opacity-50"
+              className="px-1.5 py-1 text-[var(--color-primary)] disabled:opacity-50"
             >
               <Plus className="w-3 h-3" />
             </button>
@@ -747,14 +747,14 @@ function ChecklistTab({
       {/* Items list */}
       <div className="flex-1 overflow-y-auto">
         {(items ?? []).length === 0 ? (
-          <p className="p-3 text-center text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="p-3 text-center text-xs text-[var(--color-text-muted)]">
             No tasks yet.
           </p>
         ) : (
           (items ?? []).map((item) => (
             <div
               key={item.id}
-              className="flex items-start gap-1.5 px-2 py-1.5 border-b border-[hsl(var(--border))] group"
+              className="flex items-start gap-1.5 px-2 py-1.5 border-b border-[var(--color-border)] group"
             >
               <button
                 onClick={() => toggleItem.mutate(item)}
@@ -763,7 +763,7 @@ function ChecklistTab({
                 {item.is_checked ? (
                   <CheckSquare className="w-3.5 h-3.5 text-green-400" />
                 ) : (
-                  <Square className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+                  <Square className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
                 )}
               </button>
 
@@ -772,7 +772,7 @@ function ChecklistTab({
                   <input
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full px-1 py-0.5 text-xs border border-[hsl(var(--input))] rounded bg-[hsl(var(--background))]"
+                    className="w-full px-1 py-0.5 text-xs border border-[var(--color-border)] rounded bg-[var(--color-bg)]"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") updateItem.mutate(item.id);
@@ -784,7 +784,7 @@ function ChecklistTab({
                 <span
                   className={`flex-1 text-xs ${
                     item.is_checked
-                      ? "line-through text-[hsl(var(--muted-foreground))]"
+                      ? "line-through text-[var(--color-text-muted)]"
                       : ""
                   }`}
                 >
@@ -799,13 +799,13 @@ function ChecklistTab({
                       setEditingId(item.id);
                       setEditContent(item.content);
                     }}
-                    className="p-0.5 hover:bg-[hsl(var(--accent))] rounded"
+                    className="p-0.5 hover:bg-[var(--color-surface-2)] rounded"
                   >
-                    <Pencil className="w-2.5 h-2.5 text-[hsl(var(--muted-foreground))]" />
+                    <Pencil className="w-2.5 h-2.5 text-[var(--color-text-muted)]" />
                   </button>
                   <button
                     onClick={() => deleteItem.mutate(item.id)}
-                    className="p-0.5 hover:bg-[hsl(var(--accent))] rounded"
+                    className="p-0.5 hover:bg-[var(--color-surface-2)] rounded"
                   >
                     <Trash2 className="w-2.5 h-2.5 text-red-400" />
                   </button>

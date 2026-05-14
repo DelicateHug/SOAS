@@ -206,7 +206,7 @@ export function ExecutionDetailPage() {
     <div className="max-w-4xl">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-1 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-4"
+        className="flex items-center gap-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-4"
       >
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
@@ -219,7 +219,7 @@ export function ExecutionDetailPage() {
               {execution.status}
             </span>
             {execution.exit_code != null && (
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">
+              <span className="text-sm text-[var(--color-text-muted)]">
                 Exit code: {execution.exit_code}
               </span>
             )}
@@ -241,32 +241,32 @@ export function ExecutionDetailPage() {
 
       {/* Metadata grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="border border-[hsl(var(--border))] rounded-lg p-3">
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">Triggered By</p>
+        <div className="border border-[var(--color-border)] rounded-lg p-3">
+          <p className="text-xs text-[var(--color-text-muted)]">Triggered By</p>
           <p className="font-medium text-sm">{execution.triggered_by.display_name}</p>
         </div>
-        <div className="border border-[hsl(var(--border))] rounded-lg p-3">
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">Duration</p>
+        <div className="border border-[var(--color-border)] rounded-lg p-3">
+          <p className="text-xs text-[var(--color-text-muted)]">Duration</p>
           <p className="font-medium text-sm">
             {execution.duration_ms != null ? formatDuration(execution.duration_ms) : isActive ? "Running..." : "-"}
           </p>
         </div>
-        <div className="border border-[hsl(var(--border))] rounded-lg p-3">
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">Started</p>
+        <div className="border border-[var(--color-border)] rounded-lg p-3">
+          <p className="text-xs text-[var(--color-text-muted)]">Started</p>
           <p className="font-medium text-sm">
             {execution.started_at ? formatDate(execution.started_at) : "-"}
           </p>
         </div>
-        <div className="border border-[hsl(var(--border))] rounded-lg p-3">
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">Worker</p>
+        <div className="border border-[var(--color-border)] rounded-lg p-3">
+          <p className="text-xs text-[var(--color-text-muted)]">Worker</p>
           <p className="font-medium text-sm">{execution.worker_id || "-"}</p>
         </div>
       </div>
 
       {/* Parameters */}
       {Object.keys(execution.parameters).length > 0 && (
-        <div className="border border-[hsl(var(--border))] rounded-lg mb-6">
-          <div className="px-4 py-3 border-b border-[hsl(var(--border))]">
+        <div className="border border-[var(--color-border)] rounded-lg mb-6">
+          <div className="px-4 py-3 border-b border-[var(--color-border)]">
             <h2 className="font-semibold text-sm">Parameters</h2>
           </div>
           <pre className="p-4 text-sm font-mono overflow-x-auto">
@@ -276,8 +276,8 @@ export function ExecutionDetailPage() {
       )}
 
       {/* Output */}
-      <div className="border border-[hsl(var(--border))] rounded-lg mb-6">
-        <div className="px-4 py-3 border-b border-[hsl(var(--border))] flex items-center justify-between">
+      <div className="border border-[var(--color-border)] rounded-lg mb-6">
+        <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
           <h2 className="font-semibold text-sm">Output</h2>
           {isActive && (
             <span className="flex items-center gap-1 text-xs text-green-600">
@@ -288,7 +288,7 @@ export function ExecutionDetailPage() {
         </div>
         <pre
           ref={outputRef}
-          className="p-4 text-sm font-mono bg-[hsl(var(--card))] max-h-96 overflow-auto whitespace-pre-wrap"
+          className="p-4 text-sm font-mono bg-[var(--color-surface)] max-h-96 overflow-auto whitespace-pre-wrap"
         >
           {outputText || "No output yet"}
         </pre>
@@ -305,7 +305,7 @@ export function ExecutionDetailPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleInputKeyDown}
-              className="flex-1 px-3 py-1.5 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] font-mono focus:outline-none focus:border-yellow-500"
+              className="flex-1 px-3 py-1.5 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] font-mono focus:outline-none focus:border-yellow-500"
               placeholder={pendingInput.defaultValue || "Type your response..."}
             />
             <button
@@ -357,8 +357,8 @@ export function ExecutionDetailPage() {
       {execution.result_data &&
         !execution.result_data.debug &&
         Object.keys(execution.result_data).length > 0 && (
-          <div className="border border-[hsl(var(--border))] rounded-lg">
-            <div className="px-4 py-3 border-b border-[hsl(var(--border))]">
+          <div className="border border-[var(--color-border)] rounded-lg">
+            <div className="px-4 py-3 border-b border-[var(--color-border)]">
               <h2 className="font-semibold text-sm">Result Data</h2>
             </div>
             <pre className="p-4 text-sm font-mono overflow-x-auto">
@@ -384,7 +384,7 @@ function DebugGraphSection({
     <div className="mb-6">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-1 text-sm font-semibold text-[hsl(var(--foreground))] mb-2 hover:text-[hsl(var(--foreground))/80]"
+        className="flex items-center gap-1 text-sm font-semibold text-[var(--color-text)] mb-2 hover:text-[var(--color-text)/80]"
       >
         {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         Debug Graph

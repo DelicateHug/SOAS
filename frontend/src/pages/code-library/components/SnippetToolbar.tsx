@@ -80,7 +80,7 @@ function SnippetDropdown({ group, editorRef }: { group: SnippetGroup; editorRef:
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors"
+        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors"
       >
         {group.icon}
         {group.title}
@@ -88,19 +88,19 @@ function SnippetDropdown({ group, editorRef }: { group: SnippetGroup; editorRef:
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[220px] py-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] shadow-lg">
+        <div className="absolute top-full left-0 mt-1 z-50 min-w-[220px] py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-lg">
           {group.snippets.map((snippet) => (
             <button
               key={snippet.label}
               type="button"
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-[hsl(var(--accent))] transition-colors"
+              className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--color-surface-2)] transition-colors"
               onClick={() => {
                 editorRef.current?.insertAtCursor(snippet.code);
                 setOpen(false);
               }}
             >
               <div className="font-medium">{snippet.label}</div>
-              <div className="text-[hsl(var(--muted-foreground))] text-[10px] font-mono mt-0.5 truncate">
+              <div className="text-[var(--color-text-muted)] text-[10px] font-mono mt-0.5 truncate">
                 {snippet.code}
               </div>
             </button>
@@ -113,8 +113,8 @@ function SnippetDropdown({ group, editorRef }: { group: SnippetGroup; editorRef:
 
 export function SnippetToolbar({ editorRef }: SnippetToolbarProps) {
   return (
-    <div className="flex items-center gap-2 px-1 py-1.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]">
-      <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-medium mr-1">
+    <div className="flex items-center gap-2 px-1 py-1.5 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+      <span className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-medium mr-1">
         Insert
       </span>
       {SNIPPET_GROUPS.map((group) => (

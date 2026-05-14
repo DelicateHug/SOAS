@@ -174,7 +174,7 @@ export function NodePreview({ nodeType, compact }: { nodeType: string; compact?:
   if (compact) return nodeVisual;
 
   return (
-    <div className="flex items-start gap-6 p-4 mb-6 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
+    <div className="flex items-start gap-6 p-4 mb-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="shrink-0">{nodeVisual}</div>
 
       {/* Node info */}
@@ -186,24 +186,24 @@ export function NodePreview({ nodeType, compact }: { nodeType: string; compact?:
           >
             {node.category}
           </span>
-          <span className="text-xs text-[hsl(var(--muted-foreground))] font-mono">{node.type}</span>
+          <span className="text-xs text-[var(--color-text-muted)] font-mono">{node.type}</span>
         </div>
         {node.description && (
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3">{node.description}</p>
+          <p className="text-sm text-[var(--color-text-muted)] mb-3">{node.description}</p>
         )}
 
         {/* Ports summary */}
         <div className="grid grid-cols-2 gap-4">
           {node.inputs.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-1.5">
+              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5">
                 Inputs
               </p>
               <div className="space-y-1">
                 {node.inputs.map((p) => (
                   <div key={p.name} className="flex items-center gap-1.5 text-xs">
                     <PortDot type={p.type} />
-                    <span className="text-[hsl(var(--foreground))]">{p.label || p.name}</span>
+                    <span className="text-[var(--color-text)]">{p.label || p.name}</span>
                     <PortTypeBadge type={p.type} />
                   </div>
                 ))}
@@ -212,14 +212,14 @@ export function NodePreview({ nodeType, compact }: { nodeType: string; compact?:
           )}
           {node.outputs.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-1.5">
+              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5">
                 Outputs
               </p>
               <div className="space-y-1">
                 {node.outputs.map((p) => (
                   <div key={p.name} className="flex items-center gap-1.5 text-xs">
                     <PortDot type={p.type} />
-                    <span className="text-[hsl(var(--foreground))]">{p.label || p.name}</span>
+                    <span className="text-[var(--color-text)]">{p.label || p.name}</span>
                     <PortTypeBadge type={p.type} />
                   </div>
                 ))}

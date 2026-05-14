@@ -37,7 +37,7 @@ export function CaseListPage() {
         <ProductionGuard>
           <button
             onClick={() => setShowCreateGroup(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90"
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm hover:opacity-90"
           >
             <FolderPlus className="w-4 h-4" /> New Group
           </button>
@@ -49,7 +49,7 @@ export function CaseListPage() {
         <select
           value={filters.status}
           onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
-          className="px-3 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm"
+          className="px-3 py-1.5 border border-[var(--color-border)] rounded-md text-sm"
         >
           <option value="">All Statuses</option>
           {caseStatuses.map((s) => (
@@ -59,7 +59,7 @@ export function CaseListPage() {
         <select
           value={filters.priority}
           onChange={(e) => setFilters({ ...filters, priority: e.target.value, page: 1 })}
-          className="px-3 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm"
+          className="px-3 py-1.5 border border-[var(--color-border)] rounded-md text-sm"
         >
           <option value="">All Priorities</option>
           {priorities.map((p) => (
@@ -69,34 +69,34 @@ export function CaseListPage() {
       </div>
 
       {/* Table */}
-      <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+      <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
-              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">Priority</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">Title</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">Lead</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">Created</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))]">Incidents</th>
+            <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">Priority</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">Title</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">Lead</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">Created</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-muted)]">Incidents</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[hsl(var(--border))]">
+          <tbody className="divide-y divide-[var(--color-border)]">
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-[hsl(var(--muted-foreground))]">
+                <td colSpan={6} className="px-4 py-8 text-center text-[var(--color-text-muted)]">
                   Loading...
                 </td>
               </tr>
             ) : data?.data.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-[hsl(var(--muted-foreground))]">
+                <td colSpan={6} className="px-4 py-8 text-center text-[var(--color-text-muted)]">
                   No incident groups found
                 </td>
               </tr>
             ) : (
               data?.data.map((group) => (
-                <tr key={group.id} className="hover:bg-[hsl(var(--accent))]">
+                <tr key={group.id} className="hover:bg-[var(--color-surface-2)]">
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityColors[group.priority]}`}>
                       {priorityLabels[group.priority] ?? `P${group.priority}`}
@@ -110,18 +110,18 @@ export function CaseListPage() {
                   <td className="px-4 py-3">
                     <Link
                       to={`/cases/${group.id}`}
-                      className="text-sm text-[hsl(var(--primary))] hover:underline"
+                      className="text-sm text-[var(--color-primary)] hover:underline"
                     >
                       {group.title}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                     {group.lead?.display_name || "-"}
                   </td>
-                  <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                     {formatDate(group.created_at)}
                   </td>
-                  <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                     {group.incident_count}
                   </td>
                 </tr>
@@ -140,8 +140,8 @@ export function CaseListPage() {
               onClick={() => setFilters({ ...filters, page })}
               className={`px-3 py-1 rounded text-sm ${
                 page === filters.page
-                  ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-                  : "border border-[hsl(var(--border))]"
+                  ? "bg-[var(--color-primary)] text-[#ffffff]"
+                  : "border border-[var(--color-border)]"
               }`}
             >
               {page}

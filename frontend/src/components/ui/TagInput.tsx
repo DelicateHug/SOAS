@@ -98,7 +98,7 @@ export function TagInput({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-1.5 px-2 py-1.5 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus-within:ring-1 focus-within:ring-[hsl(var(--ring))] min-h-[38px] cursor-text",
+        "flex flex-wrap items-center gap-1.5 px-2 py-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] focus-within:ring-1 focus-within:ring-[var(--color-primary)] min-h-[38px] cursor-text",
         disabled && "opacity-50 cursor-not-allowed",
         className,
       )}
@@ -111,7 +111,7 @@ export function TagInput({
       {value.map((tag, index) => (
         <span
           key={`${index}-${tag}`}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--accent))] text-[hsl(var(--foreground))]"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[var(--color-surface-2)] text-[var(--color-text)]"
         >
           {editingIndex === index ? (
             <input
@@ -173,7 +173,7 @@ export function TagInput({
         onBlur={commitInput}
         placeholder={value.length === 0 ? placeholder : ""}
         disabled={disabled}
-        className="flex-1 min-w-[80px] bg-transparent outline-none text-sm placeholder:text-[hsl(var(--muted-foreground))]"
+        className="flex-1 min-w-[80px] bg-transparent outline-none text-sm placeholder:text-[var(--color-text-muted)]"
       />
     </div>
   );

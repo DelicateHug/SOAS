@@ -204,7 +204,7 @@ export function WebhooksPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Webhooks</h1>
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Manage ingest webhooks for receiving alerts from external sources.
           </p>
         </div>
@@ -214,7 +214,7 @@ export function WebhooksPage() {
               resetForm();
               setShowCreateModal(true);
             }}
-            className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 transition-colors"
           >
             <Plus className="w-4 h-4" /> Create Webhook
           </button>
@@ -222,16 +222,16 @@ export function WebhooksPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
+        <p className="text-[var(--color-text-muted)]">Loading...</p>
       ) : branchWebhooks.length === 0 && pendingCreates.length === 0 ? (
-        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="text-center py-12 text-[var(--color-text-muted)]">
           <p>No webhooks created yet.</p>
           <p className="text-sm mt-1">Create one to start ingesting alerts.</p>
         </div>
       ) : (
-        <div className="border border-[hsl(var(--border))] rounded-lg overflow-x-auto">
+        <div className="border border-[var(--color-border)] rounded-lg overflow-x-auto">
           <table className="w-full text-sm min-w-[700px]">
-            <thead className="bg-[hsl(var(--accent))]">
+            <thead className="bg-[var(--color-surface-2)]">
               <tr>
                 <th className="text-left px-4 py-2 font-medium">Name</th>
                 <th className="text-left px-4 py-2 font-medium">Source Type</th>
@@ -241,7 +241,7 @@ export function WebhooksPage() {
                 <th className="text-right px-4 py-2 font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[hsl(var(--border))]">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {pendingCreates.map((cr) => (
                 <tr key={cr.id} className="bg-green-500/5">
                   <td className="px-4 py-2 font-medium">
@@ -254,18 +254,18 @@ export function WebhooksPage() {
                   <td className="px-4 py-2 text-center">-</td>
                   <td className="px-4 py-2">-</td>
                   <td className="px-4 py-2 text-right">-</td>
-                  <td className="px-4 py-2 text-right text-xs text-[hsl(var(--muted-foreground))] italic">pending</td>
+                  <td className="px-4 py-2 text-right text-xs text-[var(--color-text-muted)] italic">pending</td>
                 </tr>
               ))}
               {branchWebhooks.map(({ item: wh, branchStatus, changeRequest }) => (
-                <tr key={wh.id} className={`hover:bg-[hsl(var(--accent))]/50 ${branchStatus === "pending_delete" ? "opacity-50 line-through" : ""}`}>
+                <tr key={wh.id} className={`hover:bg-[var(--color-surface-2)]/50 ${branchStatus === "pending_delete" ? "opacity-50 line-through" : ""}`}>
                   <td className="px-4 py-2 font-medium">
                     <span className="flex items-center gap-1.5">
                       {wh.name}
                       <BranchStatusBadge branchStatus={branchStatus} changeRequest={changeRequest} />
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-2 text-[var(--color-text-muted)]">
                     {wh.source_type}
                   </td>
                   <td className="px-4 py-2 text-center">
@@ -274,9 +274,9 @@ export function WebhooksPage() {
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           wh.is_enabled
                             ? "bg-green-500/20 text-green-400"
-                            : "bg-[hsl(var(--muted))]/50 text-[hsl(var(--muted-foreground))]"
+                            : "bg-[var(--color-surface-2)]/50 text-[var(--color-text-muted)]"
                         }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${wh.is_enabled ? "bg-green-400" : "bg-[hsl(var(--muted-foreground))]"}`} />
+                          <span className={`w-1.5 h-1.5 rounded-full ${wh.is_enabled ? "bg-green-400" : "bg-[var(--color-text-muted)]"}`} />
                           {wh.is_enabled ? "Enabled" : "Disabled"}
                         </span>
                       }
@@ -291,20 +291,20 @@ export function WebhooksPage() {
                         className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
                           wh.is_enabled
                             ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
-                            : "bg-[hsl(var(--muted))]/50 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/70"
+                            : "bg-[var(--color-surface-2)]/50 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]/70"
                         }`}
                         title={wh.is_enabled ? "Click to disable" : "Click to enable"}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
-                            wh.is_enabled ? "bg-green-400" : "bg-[hsl(var(--muted-foreground))]"
+                            wh.is_enabled ? "bg-green-400" : "bg-[var(--color-text-muted)]"
                           }`}
                         />
                         {wh.is_enabled ? "Enabled" : "Disabled"}
                       </button>
                     </ProductionGuard>
                   </td>
-                  <td className="px-4 py-2 text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-2 text-[var(--color-text-muted)]">
                     {wh.last_received_at ? formatDate(wh.last_received_at) : "Never"}
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums">
@@ -324,7 +324,7 @@ export function WebhooksPage() {
                             setOpenActionMenu(wh.id);
                           }
                         }}
-                        className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                        className="p-1 rounded hover:bg-[var(--color-surface-2)] transition-colors"
                         title="Actions"
                       >
                         <MoreHorizontal className="w-4 h-4" />
@@ -335,13 +335,13 @@ export function WebhooksPage() {
                             className="fixed inset-0 z-40"
                             onClick={() => { setOpenActionMenu(null); setMenuPos(null); }}
                           />
-                          <div className="fixed z-50 w-52 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-xl py-1" style={{ top: menuPos.top, left: menuPos.left - 208 }}>
+                          <div className="fixed z-50 w-52 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl py-1" style={{ top: menuPos.top, left: menuPos.left - 208 }}>
                             <button
                               onClick={() => {
                                 setOpenActionMenu(null);
                                 openEdit(wh);
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-[hsl(var(--accent))] text-left"
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-[var(--color-surface-2)] text-left"
                             >
                               <Edit2 className="w-3.5 h-3.5" /> Edit
                             </button>
@@ -350,11 +350,11 @@ export function WebhooksPage() {
                                 setOpenActionMenu(null);
                                 setLogsWebhook(wh);
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-[hsl(var(--accent))] text-left"
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-[var(--color-surface-2)] text-left"
                             >
                               <FileText className="w-3.5 h-3.5" /> View Logs
                             </button>
-                            <div className="border-t border-[hsl(var(--border))] my-1" />
+                            <div className="border-t border-[var(--color-border)] my-1" />
                             <button
                               onClick={() => {
                                 setOpenActionMenu(null);
@@ -366,7 +366,7 @@ export function WebhooksPage() {
                                   regenerateToken.mutate(wh.id);
                                 }
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-[hsl(var(--accent))] text-left text-yellow-400"
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-[var(--color-surface-2)] text-left text-yellow-400"
                             >
                               <RefreshCw className="w-3.5 h-3.5" /> Regenerate Token
                             </button>
@@ -397,8 +397,8 @@ export function WebhooksPage() {
       {/* Create/Edit Modal */}
       {(showCreateModal || editingWebhook) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[500px] max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl w-[500px] max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
               <h3 className="font-semibold text-sm">
                 {editingWebhook ? "Edit Webhook" : "Create Webhook"}
               </h3>
@@ -408,7 +408,7 @@ export function WebhooksPage() {
                   setEditingWebhook(null);
                   resetForm();
                 }}
-                className="p-1 rounded hover:bg-[hsl(var(--accent))]"
+                className="p-1 rounded hover:bg-[var(--color-surface-2)]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -416,7 +416,7 @@ export function WebhooksPage() {
             <div className="p-4 space-y-3">
               {/* Name */}
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Name
                 </label>
                 <input
@@ -424,13 +424,13 @@ export function WebhooksPage() {
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="e.g. Splunk Production Alerts"
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Description
                 </label>
                 <textarea
@@ -438,19 +438,19 @@ export function WebhooksPage() {
                   onChange={(e) => setFormDescription(e.target.value)}
                   rows={2}
                   placeholder="What this webhook receives"
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                 />
               </div>
 
               {/* Source Type */}
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Source Type
                 </label>
                 <select
                   value={formSourceType}
                   onChange={(e) => setFormSourceType(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                 >
                   {SOURCE_TYPE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -465,20 +465,20 @@ export function WebhooksPage() {
                     value={formCustomSourceType}
                     onChange={(e) => setFormCustomSourceType(e.target.value)}
                     placeholder="Enter custom source type"
-                    className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] mt-2"
+                    className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] mt-2"
                   />
                 )}
               </div>
 
               {/* Webhook Source */}
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Source (determines automations)
                 </label>
                 <select
                   value={formSourceId}
                   onChange={(e) => setFormSourceId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                 >
                   <option value="">No source</option>
                   {sources.map((s) => (
@@ -487,20 +487,20 @@ export function WebhooksPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
                   When a source is assigned, its linked automations will run on ingested incidents.
                 </p>
               </div>
 
               {/* Default Severity */}
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Default Severity
                 </label>
                 <select
                   value={formSeverity}
                   onChange={(e) => setFormSeverity(e.target.value as IncidentSeverity)}
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                 >
                   {SEVERITY_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -512,7 +512,7 @@ export function WebhooksPage() {
 
               {/* Default Tags */}
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Default Tags
                 </label>
                 <TagInput
@@ -524,7 +524,7 @@ export function WebhooksPage() {
 
               {/* Rate Limit */}
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Rate Limit (per minute)
                 </label>
                 <input
@@ -532,18 +532,18 @@ export function WebhooksPage() {
                   value={formRateLimit}
                   onChange={(e) => setFormRateLimit(Number(e.target.value))}
                   min={1}
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 px-4 py-3 border-t border-[hsl(var(--border))]">
+            <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--color-border)]">
               <button
                 onClick={() => {
                   setShowCreateModal(false);
                   setEditingWebhook(null);
                   resetForm();
                 }}
-                className="px-3 py-1.5 text-sm rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                className="px-3 py-1.5 text-sm rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
               >
                 Cancel
               </button>
@@ -557,7 +557,7 @@ export function WebhooksPage() {
                   createWebhook.isPending ||
                   updateWebhook.isPending
                 }
-                className="px-3 py-1.5 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+                className="px-3 py-1.5 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
               >
                 {editingWebhook ? "Update" : "Create"}
               </button>
@@ -569,24 +569,24 @@ export function WebhooksPage() {
       {/* Token Display Modal */}
       {tokenModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[520px]">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl w-[520px]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
               <h3 className="font-semibold text-sm">Webhook Ingest URL</h3>
               <button
                 onClick={() => setTokenModal(null)}
-                className="p-1 rounded hover:bg-[hsl(var(--accent))]"
+                className="p-1 rounded hover:bg-[var(--color-surface-2)]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="p-4 space-y-3">
-              <div className="flex items-center gap-2 p-3 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+              <div className="flex items-center gap-2 p-3 rounded border border-[var(--color-border)] bg-[var(--color-bg)]">
                 <code className="flex-1 text-xs break-all font-mono">
                   {tokenModal.url}
                 </code>
                 <button
                   onClick={() => navigator.clipboard.writeText(tokenModal.url)}
-                  className="p-1.5 rounded hover:bg-[hsl(var(--accent))] shrink-0"
+                  className="p-1.5 rounded hover:bg-[var(--color-surface-2)] shrink-0"
                   title="Copy to clipboard"
                 >
                   <Copy className="w-4 h-4" />
@@ -599,10 +599,10 @@ export function WebhooksPage() {
                 </p>
               </div>
             </div>
-            <div className="flex justify-end px-4 py-3 border-t border-[hsl(var(--border))]">
+            <div className="flex justify-end px-4 py-3 border-t border-[var(--color-border)]">
               <button
                 onClick={() => setTokenModal(null)}
-                className="px-3 py-1.5 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                className="px-3 py-1.5 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90"
               >
                 Close
               </button>
@@ -653,8 +653,8 @@ function WebhookLogsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[900px] max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl w-[900px] max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
           <h3 className="font-semibold text-sm">
             Webhook Logs — {webhook.name}
           </h3>
@@ -665,7 +665,7 @@ function WebhookLogsModal({
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+              className="px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
             >
               <option value="">All statuses</option>
               <option value="success">Success</option>
@@ -675,7 +675,7 @@ function WebhookLogsModal({
             </select>
             <button
               onClick={onClose}
-              className="p-1 rounded hover:bg-[hsl(var(--accent))]"
+              className="p-1 rounded hover:bg-[var(--color-surface-2)]"
             >
               <X className="w-4 h-4" />
             </button>
@@ -684,16 +684,16 @@ function WebhookLogsModal({
 
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="p-4 text-[hsl(var(--muted-foreground))]">
+            <div className="p-4 text-[var(--color-text-muted)]">
               Loading...
             </div>
           ) : logs.length === 0 ? (
-            <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+            <div className="text-center py-12 text-[var(--color-text-muted)]">
               <p>No logs found.</p>
             </div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--accent))] sticky top-0">
+              <thead className="bg-[var(--color-surface-2)] sticky top-0">
                 <tr>
                   <th className="w-8 px-2 py-2" />
                   <th className="text-left px-4 py-2 font-medium">Status</th>
@@ -704,7 +704,7 @@ function WebhookLogsModal({
                   <th className="text-left px-4 py-2 font-medium">Created At</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[hsl(var(--border))]">
+              <tbody className="divide-y divide-[var(--color-border)]">
                 {logs.map((log) => (
                   <LogRow
                     key={log.id}
@@ -722,8 +722,8 @@ function WebhookLogsModal({
 
         {/* Pagination */}
         {meta && meta.total_pages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-[hsl(var(--border))]">
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border)]">
+            <p className="text-xs text-[var(--color-text-muted)]">
               Showing {(page - 1) * perPage + 1}–
               {Math.min(page * perPage, meta.total)} of {meta.total}
             </p>
@@ -731,14 +731,14 @@ function WebhookLogsModal({
               <button
                 onClick={() => setPage(page - 1)}
                 disabled={page <= 1}
-                className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] disabled:opacity-50"
+                className="px-2 py-1 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] disabled:opacity-50"
               >
                 Previous
               </button>
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page >= meta.total_pages}
-                className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] disabled:opacity-50"
+                className="px-2 py-1 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] disabled:opacity-50"
               >
                 Next
               </button>
@@ -762,7 +762,7 @@ function LogRow({
   return (
     <>
       <tr
-        className="hover:bg-[hsl(var(--accent))]/50 cursor-pointer"
+        className="hover:bg-[var(--color-surface-2)]/50 cursor-pointer"
         onClick={onToggle}
       >
         <td className="px-2 py-2 text-center">
@@ -781,19 +781,19 @@ function LogRow({
             {log.status.replace(/_/g, " ")}
           </span>
         </td>
-        <td className="px-4 py-2 text-[hsl(var(--muted-foreground))] font-mono text-xs">
+        <td className="px-4 py-2 text-[var(--color-text-muted)] font-mono text-xs">
           {log.remote_ip || "-"}
         </td>
-        <td className="px-4 py-2 text-right tabular-nums text-[hsl(var(--muted-foreground))]">
+        <td className="px-4 py-2 text-right tabular-nums text-[var(--color-text-muted)]">
           {log.processing_time_ms != null ? `${log.processing_time_ms}ms` : "-"}
         </td>
-        <td className="px-4 py-2 text-[hsl(var(--muted-foreground))]">
+        <td className="px-4 py-2 text-[var(--color-text-muted)]">
           {formatDate(log.created_at)}
         </td>
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={5} className="px-4 py-3 bg-[hsl(var(--accent))]/30">
+          <td colSpan={5} className="px-4 py-3 bg-[var(--color-surface-2)]/30">
             <div className="space-y-3">
               {log.error_message && (
                 <div>
@@ -804,19 +804,19 @@ function LogRow({
                 </div>
               )}
               <div>
-                <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                <p className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
                   Request Body
                 </p>
-                <pre className="text-xs font-mono p-2 rounded bg-[hsl(var(--background))] border border-[hsl(var(--border))] overflow-x-auto max-h-[300px] overflow-y-auto">
+                <pre className="text-xs font-mono p-2 rounded bg-[var(--color-bg)] border border-[var(--color-border)] overflow-x-auto max-h-[300px] overflow-y-auto">
                   {JSON.stringify(log.request_body, null, 2)}
                 </pre>
               </div>
               {log.normalized_data && (
                 <div>
-                  <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                  <p className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
                     Normalized Data
                   </p>
-                  <pre className="text-xs font-mono p-2 rounded bg-[hsl(var(--background))] border border-[hsl(var(--border))] overflow-x-auto max-h-[300px] overflow-y-auto">
+                  <pre className="text-xs font-mono p-2 rounded bg-[var(--color-bg)] border border-[var(--color-border)] overflow-x-auto max-h-[300px] overflow-y-auto">
                     {JSON.stringify(log.normalized_data, null, 2)}
                   </pre>
                 </div>

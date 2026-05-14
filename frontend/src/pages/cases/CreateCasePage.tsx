@@ -45,7 +45,7 @@ export function CreateCasePage() {
             type="text"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
             required
             placeholder="Case title"
           />
@@ -56,7 +56,7 @@ export function CreateCasePage() {
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
             rows={4}
             placeholder="Case description..."
           />
@@ -67,7 +67,7 @@ export function CreateCasePage() {
           <select
             value={form.priority}
             onChange={(e) => setForm({ ...form, priority: Number(e.target.value) })}
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
           >
             <option value={1}>P1 - Critical</option>
             <option value={2}>P2 - High</option>
@@ -90,14 +90,14 @@ export function CreateCasePage() {
           <button
             type="submit"
             disabled={create.isPending || !form.title}
-            className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50"
           >
             {create.isPending ? "Creating..." : "Create Case"}
           </button>
           <button
             type="button"
             onClick={() => navigate("/cases")}
-            className="px-4 py-2 border border-[hsl(var(--border))] rounded-md"
+            className="px-4 py-2 border border-[var(--color-border)] rounded-md"
           >
             Cancel
           </button>

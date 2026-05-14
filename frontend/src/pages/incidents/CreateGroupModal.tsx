@@ -47,11 +47,11 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
   if (isProduction) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-lg w-full max-w-md p-6 text-center">
-          <p className="text-[hsl(var(--muted-foreground))]">
+        <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-lg w-full max-w-md p-6 text-center">
+          <p className="text-[var(--color-text-muted)]">
             Editing is disabled in production mode. Switch to dev mode to make changes.
           </p>
-          <button onClick={onClose} className="mt-4 px-4 py-2 border border-[hsl(var(--border))] rounded-md text-sm">Close</button>
+          <button onClick={onClose} className="mt-4 px-4 py-2 border border-[var(--color-border)] rounded-md text-sm">Close</button>
         </div>
       </div>
     );
@@ -59,12 +59,12 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-lg w-full max-w-md">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-lg w-full max-w-md">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
           <h2 className="font-semibold">Create Incident Group</h2>
           <button
             onClick={onClose}
-            className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+            className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
           >
             <X className="w-4 h-4" />
           </button>
@@ -83,7 +83,7 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="Group title..."
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
               required
             />
           </div>
@@ -95,7 +95,7 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Describe this group..."
               rows={3}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] resize-y text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] resize-y text-sm"
             />
           </div>
 
@@ -104,7 +104,7 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
             <select
               value={form.priority}
               onChange={(e) => setForm({ ...form, priority: Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             >
               <option value={1}>P1 - Critical</option>
               <option value={2}>P2 - High</option>
@@ -116,10 +116,10 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
 
           <div>
             <label className="block text-sm font-medium mb-1">Team</label>
-            <div className="px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--muted))] text-sm text-[hsl(var(--muted-foreground))]">
+            <div className="px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-surface-2)] text-sm text-[var(--color-text-muted)]">
               {userTeams.find((t) => t.id === form.team_id)?.name || "No team selected"}
             </div>
-            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">
               Uses the currently selected team.
             </p>
           </div>
@@ -130,7 +130,7 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
               value={form.tags}
               onChange={(e) => setForm({ ...form, tags: e.target.value })}
               placeholder="tag1, tag2, ..."
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             />
           </div>
 
@@ -138,14 +138,14 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
             <button
               type="submit"
               disabled={create.isPending || !form.title.trim()}
-              className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50 text-sm"
+              className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50 text-sm"
             >
               {create.isPending ? "Creating..." : "Create Group"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] text-sm"
+              className="px-4 py-2 border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)] text-sm"
             >
               Cancel
             </button>

@@ -48,7 +48,7 @@ export function ChatTab({ incidentId }: Props) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 pb-4">
         {comments.length === 0 && (
-          <div className="py-12 text-center text-[hsl(var(--muted-foreground))]">
+          <div className="py-12 text-center text-[var(--color-text-muted)]">
             No messages yet. Start the conversation.
           </div>
         )}
@@ -63,7 +63,7 @@ export function ChatTab({ incidentId }: Props) {
                 <span className="text-sm font-medium">
                   {entry.created_by?.display_name || "System"}
                 </span>
-                <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                <span className="text-[10px] text-[var(--color-text-muted)]">
                   {formatDate(entry.created_at)}
                 </span>
               </div>
@@ -80,19 +80,19 @@ export function ChatTab({ incidentId }: Props) {
           e.preventDefault();
           if (message.trim()) sendMessage.mutate(message.trim());
         }}
-        className="flex gap-2 pt-3 border-t border-[hsl(var(--border))]"
+        className="flex gap-2 pt-3 border-t border-[var(--color-border)]"
       >
         <input
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a message..."
-          className="flex-1 px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm bg-transparent"
+          className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
         />
         <button
           type="submit"
           disabled={!message.trim() || sendMessage.isPending}
-          className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm disabled:opacity-50"
+          className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
         >
           Send
         </button>

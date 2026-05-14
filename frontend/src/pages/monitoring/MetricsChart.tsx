@@ -25,7 +25,7 @@ export function MetricsChart({
   metricKey,
   label,
   hours = 24,
-  color = "hsl(var(--primary))",
+  color = "var(--color-primary)",
 }: MetricsChartProps) {
   const queryHours = Math.max(Math.ceil(hours), 1);
   const params = new URLSearchParams({ hours: String(queryHours) });
@@ -53,10 +53,10 @@ export function MetricsChart({
     })) ?? [];
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+    <div className="border border-[var(--color-border)] rounded-lg p-4">
       <h3 className="font-semibold text-sm mb-3">{label}</h3>
       {chartData.length === 0 ? (
-        <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-8">
+        <p className="text-sm text-[var(--color-text-muted)] text-center py-8">
           No data available
         </p>
       ) : (

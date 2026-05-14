@@ -225,13 +225,13 @@ export function TeamDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[hsl(var(--primary))]" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]" />
       </div>
     );
   }
 
   if (!team) {
-    return <div className="text-center py-16 text-[hsl(var(--muted-foreground))]">Team not found.</div>;
+    return <div className="text-center py-16 text-[var(--color-text-muted)]">Team not found.</div>;
   }
 
   const existingUserIds = new Set(members?.map((m) => m.user_id) ?? []);
@@ -264,7 +264,7 @@ export function TeamDetailPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate("/teams")}
-          className="p-1.5 rounded-md hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))]"
+          className="p-1.5 rounded-md hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -281,19 +281,19 @@ export function TeamDetailPage() {
                 type="text"
                 value={editForm.display_name}
                 onChange={(e) => setEditForm((f) => ({ ...f, display_name: e.target.value }))}
-                className="text-2xl font-bold bg-transparent border-b border-[hsl(var(--border))] focus:border-[hsl(var(--primary))] outline-none"
+                className="text-2xl font-bold bg-transparent border-b border-[var(--color-border)] focus:border-[var(--color-primary)] outline-none"
               />
               <button
                 type="submit"
                 disabled={updateTeam.isPending}
-                className="px-3 py-1 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                className="px-3 py-1 text-sm rounded bg-[var(--color-primary)] text-[#ffffff]"
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="px-3 py-1 text-sm rounded border border-[hsl(var(--border))]"
+                className="px-3 py-1 text-sm rounded border border-[var(--color-border)]"
               >
                 Cancel
               </button>
@@ -302,7 +302,7 @@ export function TeamDetailPage() {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{team.display_name}</h1>
               {team.is_default && (
-                <span className="text-xs px-2 py-0.5 rounded bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
+                <span className="text-xs px-2 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
                   Default
                 </span>
               )}
@@ -312,14 +312,14 @@ export function TeamDetailPage() {
                     setEditForm({ display_name: team.display_name, description: team.description || "" });
                     setEditing(true);
                   }}
-                  className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
               )}
             </div>
           )}
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             {team.description || "No description."}
           </p>
         </div>
@@ -341,14 +341,14 @@ export function TeamDetailPage() {
       </div>
 
       {/* Info bar */}
-      <div className="flex items-center gap-6 text-sm text-[hsl(var(--muted-foreground))]">
-        <span>Slug: <code className="text-xs bg-[hsl(var(--accent))] px-1.5 py-0.5 rounded">{team.name}</code></span>
+      <div className="flex items-center gap-6 text-sm text-[var(--color-text-muted)]">
+        <span>Slug: <code className="text-xs bg-[var(--color-surface-2)] px-1.5 py-0.5 rounded">{team.name}</code></span>
         <span>{team.member_count} member{team.member_count !== 1 ? "s" : ""}</span>
         <span>Created {formatDate(team.created_at)}</span>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-[hsl(var(--border))]">
+      <div className="flex gap-1 border-b border-[var(--color-border)]">
         {[
           { key: "members", label: "Members" },
           { key: "variables", label: "Variables" },
@@ -358,8 +358,8 @@ export function TeamDetailPage() {
             onClick={() => setSearchParams({ tab: tab.key })}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               activeTab === tab.key
-                ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))]"
-                : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                ? "border-[var(--color-primary)] text-[var(--color-text)]"
+                : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
             }`}
           >
             {tab.label}
@@ -375,7 +375,7 @@ export function TeamDetailPage() {
             {canManage && (
               <button
                 onClick={() => setShowAddMember(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90"
               >
                 <Plus className="w-4 h-4" />
                 Add Member
@@ -383,10 +383,10 @@ export function TeamDetailPage() {
             )}
           </div>
 
-          <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+          <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--accent))]/50">
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/50">
                   <th className="text-left px-4 py-2.5 font-medium">User</th>
                   <th className="text-left px-4 py-2.5 font-medium">Team Role</th>
                   <th className="text-left px-4 py-2.5 font-medium">Permission Roles</th>
@@ -396,15 +396,15 @@ export function TeamDetailPage() {
               </thead>
               <tbody>
                 {(members ?? []).map((member) => (
-                  <tr key={member.user_id} className="border-b border-[hsl(var(--border))] last:border-0">
+                  <tr key={member.user_id} className="border-b border-[var(--color-border)] last:border-0">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-[hsl(var(--primary))] flex items-center justify-center text-[hsl(var(--primary-foreground))] text-xs font-medium">
+                        <div className="w-7 h-7 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-[#ffffff] text-xs font-medium">
                           {member.display_name?.charAt(0).toUpperCase() || "?"}
                         </div>
                         <div>
                           <p className="font-medium">{member.display_name}</p>
-                          <p className="text-xs text-[hsl(var(--muted-foreground))]">@{member.username}</p>
+                          <p className="text-xs text-[var(--color-text-muted)]">@{member.username}</p>
                         </div>
                       </div>
                     </td>
@@ -413,7 +413,7 @@ export function TeamDetailPage() {
                         <select
                           value={memberEditForm.team_role}
                           onChange={(e) => setMemberEditForm((f) => ({ ...f, team_role: e.target.value }))}
-                          className="px-2 py-1 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm"
+                          className="px-2 py-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-sm"
                         >
                           <option value="member">Member</option>
                           <option value="owner">Owner</option>
@@ -441,7 +441,7 @@ export function TeamDetailPage() {
                                       : f.role_ids.filter((rid) => rid !== r.id),
                                   }));
                                 }}
-                                className="rounded border-[hsl(var(--border))]"
+                                className="rounded border-[var(--color-border)]"
                               />
                               {r.display_name}
                             </label>
@@ -450,17 +450,17 @@ export function TeamDetailPage() {
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {member.roles.map((r) => (
-                            <span key={r.id} className="text-xs px-2 py-0.5 rounded bg-[hsl(var(--accent))]">
+                            <span key={r.id} className="text-xs px-2 py-0.5 rounded bg-[var(--color-surface-2)]">
                               {r.display_name}
                             </span>
                           ))}
                           {member.roles.length === 0 && (
-                            <span className="text-xs text-[hsl(var(--muted-foreground))]">No roles</span>
+                            <span className="text-xs text-[var(--color-text-muted)]">No roles</span>
                           )}
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">
                       {formatDate(member.joined_at)}
                     </td>
                     {canManage && (
@@ -470,13 +470,13 @@ export function TeamDetailPage() {
                             <button
                               onClick={() => updateMember.mutate(member.user_id)}
                               disabled={updateMember.isPending}
-                              className="px-2 py-1 text-xs rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                              className="px-2 py-1 text-xs rounded bg-[var(--color-primary)] text-[#ffffff]"
                             >
                               Save
                             </button>
                             <button
                               onClick={() => setEditingMember(null)}
-                              className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))]"
+                              className="px-2 py-1 text-xs rounded border border-[var(--color-border)]"
                             >
                               Cancel
                             </button>
@@ -491,7 +491,7 @@ export function TeamDetailPage() {
                                   team_role: member.team_role,
                                 });
                               }}
-                              className="p-1.5 rounded hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))]"
+                              className="p-1.5 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
                               title="Edit role"
                             >
                               <Pencil className="w-3.5 h-3.5" />
@@ -502,7 +502,7 @@ export function TeamDetailPage() {
                                   removeMember.mutate(member.user_id);
                                 }
                               }}
-                              className="p-1.5 rounded hover:bg-red-500/10 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                              className="p-1.5 rounded hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400"
                               title="Remove member"
                             >
                               <UserMinus className="w-3.5 h-3.5" />
@@ -515,7 +515,7 @@ export function TeamDetailPage() {
                 ))}
                 {(members ?? []).length === 0 && (
                   <tr>
-                    <td colSpan={canManage ? 5 : 4} className="px-4 py-8 text-center text-[hsl(var(--muted-foreground))]">
+                    <td colSpan={canManage ? 5 : 4} className="px-4 py-8 text-center text-[var(--color-text-muted)]">
                       No members yet.
                     </td>
                   </tr>
@@ -534,7 +534,7 @@ export function TeamDetailPage() {
             {canManage && (
               <button
                 onClick={() => setShowAddVar(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90"
               >
                 <Plus className="w-4 h-4" />
                 Add Variable
@@ -542,10 +542,10 @@ export function TeamDetailPage() {
             )}
           </div>
 
-          <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+          <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--accent))]/50">
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/50">
                   <th className="text-left px-4 py-2.5 font-medium">Name</th>
                   <th className="text-left px-4 py-2.5 font-medium">Value</th>
                   <th className="text-left px-4 py-2.5 font-medium">Description</th>
@@ -555,7 +555,7 @@ export function TeamDetailPage() {
               </thead>
               <tbody>
                 {variables.map((v) => (
-                  <tr key={v.id} className="border-b border-[hsl(var(--border))] last:border-0">
+                  <tr key={v.id} className="border-b border-[var(--color-border)] last:border-0">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
                         {v.is_secret && <Lock className="w-3.5 h-3.5 text-yellow-500" />}
@@ -567,26 +567,26 @@ export function TeamDetailPage() {
                         <input
                           value={varEditForm.value}
                           onChange={(e) => setVarEditForm((f) => ({ ...f, value: e.target.value }))}
-                          className="w-full px-2 py-1 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm font-mono"
+                          className="w-full px-2 py-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-mono"
                         />
                       ) : (
-                        <span className="text-sm font-mono text-[hsl(var(--muted-foreground))]">
+                        <span className="text-sm font-mono text-[var(--color-text-muted)]">
                           {v.is_secret ? "***" : typeof v.value === "string" ? v.value : JSON.stringify(v.value)}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">
                       {editingVar === v.id ? (
                         <input
                           value={varEditForm.description}
                           onChange={(e) => setVarEditForm((f) => ({ ...f, description: e.target.value }))}
-                          className="w-full px-2 py-1 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm"
+                          className="w-full px-2 py-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-sm"
                         />
                       ) : (
                         v.description || "-"
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">
                       {formatDate(v.updated_at)}
                     </td>
                     {canManage && (
@@ -604,13 +604,13 @@ export function TeamDetailPage() {
                             <button
                               onClick={() => updateVar.mutate(v.id)}
                               disabled={updateVar.isPending}
-                              className="px-2 py-1 text-xs rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                              className="px-2 py-1 text-xs rounded bg-[var(--color-primary)] text-[#ffffff]"
                             >
                               Save
                             </button>
                             <button
                               onClick={() => setEditingVar(null)}
-                              className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))]"
+                              className="px-2 py-1 text-xs rounded border border-[var(--color-border)]"
                             >
                               Cancel
                             </button>
@@ -619,7 +619,7 @@ export function TeamDetailPage() {
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => openPermissions(v)}
-                              className="p-1.5 rounded hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))]"
+                              className="p-1.5 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
                               title="Manage permissions"
                             >
                               <Shield className="w-3.5 h-3.5" />
@@ -633,7 +633,7 @@ export function TeamDetailPage() {
                                   is_secret: v.is_secret,
                                 });
                               }}
-                              className="p-1.5 rounded hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))]"
+                              className="p-1.5 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
                               title="Edit variable"
                             >
                               <Pencil className="w-3.5 h-3.5" />
@@ -644,7 +644,7 @@ export function TeamDetailPage() {
                                   deleteVar.mutate(v.id);
                                 }
                               }}
-                              className="p-1.5 rounded hover:bg-red-500/10 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                              className="p-1.5 rounded hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-400"
                               title="Delete variable"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -657,7 +657,7 @@ export function TeamDetailPage() {
                 ))}
                 {variables.length === 0 && (
                   <tr>
-                    <td colSpan={canManage ? 5 : 4} className="px-4 py-8 text-center text-[hsl(var(--muted-foreground))]">
+                    <td colSpan={canManage ? 5 : 4} className="px-4 py-8 text-center text-[var(--color-text-muted)]">
                       <Variable className="w-8 h-8 mx-auto mb-2 opacity-40" />
                       No team variables yet.
                       {canManage && " Click \"Add Variable\" to create one."}
@@ -673,7 +673,7 @@ export function TeamDetailPage() {
       {/* Add Member Modal */}
       {showAddMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[hsl(var(--card))] rounded-lg border border-[hsl(var(--border))] p-6 w-full max-w-md">
+          <div className="bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] p-6 w-full max-w-md">
             <h2 className="text-lg font-semibold mb-4">Add Member</h2>
             <form
               onSubmit={(e) => {
@@ -688,7 +688,7 @@ export function TeamDetailPage() {
                   value={addForm.user_id}
                   onChange={(e) => setAddForm((f) => ({ ...f, user_id: e.target.value }))}
                   required
-                  className="w-full px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-sm"
                 >
                   <option value="">Select a user...</option>
                   {availableUsers.map((u) => (
@@ -700,7 +700,7 @@ export function TeamDetailPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Permission Roles</label>
-                <div className="space-y-1.5 p-2 border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--background))]">
+                <div className="space-y-1.5 p-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)]">
                   {(roles ?? []).map((r) => (
                     <label key={r.id} className="flex items-center gap-2 text-sm cursor-pointer">
                       <input
@@ -714,14 +714,14 @@ export function TeamDetailPage() {
                               : f.role_ids.filter((rid) => rid !== r.id),
                           }));
                         }}
-                        className="rounded border-[hsl(var(--border))]"
+                        className="rounded border-[var(--color-border)]"
                       />
                       {r.display_name}
                     </label>
                   ))}
                 </div>
                 {addForm.role_ids.length === 0 && (
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Select at least one role.</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">Select at least one role.</p>
                 )}
               </div>
               <div>
@@ -729,7 +729,7 @@ export function TeamDetailPage() {
                 <select
                   value={addForm.team_role}
                   onChange={(e) => setAddForm((f) => ({ ...f, team_role: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-sm"
                 >
                   <option value="member">Member</option>
                   <option value="owner">Owner</option>
@@ -739,14 +739,14 @@ export function TeamDetailPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddMember(false)}
-                  className="px-4 py-2 text-sm rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                  className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addMember.isPending || addForm.role_ids.length === 0}
-                  className="px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+                  className="px-4 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
                 >
                   {addMember.isPending ? "Adding..." : "Add"}
                 </button>
@@ -759,7 +759,7 @@ export function TeamDetailPage() {
       {/* Add Variable Modal */}
       {showAddVar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[hsl(var(--card))] rounded-lg border border-[hsl(var(--border))] p-6 w-full max-w-md">
+          <div className="bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] p-6 w-full max-w-md">
             <h2 className="text-lg font-semibold mb-4">Add Team Variable</h2>
             <form
               onSubmit={(e) => {
@@ -775,7 +775,7 @@ export function TeamDetailPage() {
                   onChange={(e) => setVarForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="VARIABLE_NAME"
                   required
-                  className="w-full px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm font-mono"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-mono"
                 />
               </div>
               <div>
@@ -785,7 +785,7 @@ export function TeamDetailPage() {
                   onChange={(e) => setVarForm((f) => ({ ...f, value: e.target.value }))}
                   placeholder="Value (string or JSON)"
                   rows={3}
-                  className="w-full px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm font-mono resize-y"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-mono resize-y"
                 />
               </div>
               <div>
@@ -794,7 +794,7 @@ export function TeamDetailPage() {
                   value={varForm.description}
                   onChange={(e) => setVarForm((f) => ({ ...f, description: e.target.value }))}
                   placeholder="What this variable is for..."
-                  className="w-full px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm"
+                  className="w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-sm"
                 />
               </div>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -809,14 +809,14 @@ export function TeamDetailPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddVar(false)}
-                  className="px-4 py-2 text-sm rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                  className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createVar.isPending || !varForm.name.trim()}
-                  className="px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+                  className="px-4 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
                 >
                   {createVar.isPending ? "Creating..." : "Create"}
                 </button>
@@ -829,17 +829,17 @@ export function TeamDetailPage() {
       {/* Variable Permissions Modal */}
       {permVar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[hsl(var(--card))] rounded-lg border border-[hsl(var(--border))] p-6 w-full max-w-lg">
+          <div className="bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] p-6 w-full max-w-lg">
             <h2 className="text-lg font-semibold mb-1">
               Permissions: <span className="font-mono">{permVar.name}</span>
             </h2>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+            <p className="text-sm text-[var(--color-text-muted)] mb-4">
               Control which roles can read or write this variable.
             </p>
-            <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden mb-4">
+            <div className="border border-[var(--color-border)] rounded-lg overflow-hidden mb-4">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--accent))]/50">
+                  <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/50">
                     <th className="text-left px-4 py-2 font-medium">Role</th>
                     <th className="text-center px-4 py-2 font-medium w-20">Read</th>
                     <th className="text-center px-4 py-2 font-medium w-20">Write</th>
@@ -847,7 +847,7 @@ export function TeamDetailPage() {
                 </thead>
                 <tbody>
                   {permEntries.map((entry, i) => (
-                    <tr key={entry.role_id} className="border-b border-[hsl(var(--border))] last:border-0">
+                    <tr key={entry.role_id} className="border-b border-[var(--color-border)] last:border-0">
                       <td className="px-4 py-2">{entry.role_name}</td>
                       <td className="px-4 py-2 text-center">
                         <input
@@ -855,7 +855,7 @@ export function TeamDetailPage() {
                           checked={entry.can_read}
                           onChange={(e) => {
                             const updated = [...permEntries];
-                            updated[i] = { ...updated[i], can_read: e.target.checked };
+                            updated[i] = { ...entry, can_read: e.target.checked };
                             setPermEntries(updated);
                           }}
                         />
@@ -866,7 +866,7 @@ export function TeamDetailPage() {
                           checked={entry.can_write}
                           onChange={(e) => {
                             const updated = [...permEntries];
-                            updated[i] = { ...updated[i], can_write: e.target.checked };
+                            updated[i] = { ...entry, can_write: e.target.checked };
                             setPermEntries(updated);
                           }}
                         />
@@ -879,14 +879,14 @@ export function TeamDetailPage() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setPermVar(null)}
-                className="px-4 py-2 text-sm rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => savePermissions.mutate()}
                 disabled={savePermissions.isPending}
-                className="px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+                className="px-4 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
               >
                 {savePermissions.isPending ? "Saving..." : "Save Permissions"}
               </button>

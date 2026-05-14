@@ -77,9 +77,9 @@ function CreateVersionForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="p-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--accent))]/30"
+      className="p-3 border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/30"
     >
-      <label className="block text-[11px] font-medium text-[hsl(var(--muted-foreground))] mb-1">
+      <label className="block text-[11px] font-medium text-[var(--color-text-muted)] mb-1">
         Version name <span className="text-red-400">*</span>
       </label>
       <input
@@ -88,9 +88,9 @@ function CreateVersionForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="e.g. v6 – added email alert"
-        className="w-full px-2 py-1 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:border-[hsl(var(--primary))] mb-2"
+        className="w-full px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)] focus:outline-none focus:border-[var(--color-primary)] mb-2"
       />
-      <label className="block text-[11px] font-medium text-[hsl(var(--muted-foreground))] mb-1">
+      <label className="block text-[11px] font-medium text-[var(--color-text-muted)] mb-1">
         Description
       </label>
       <input
@@ -98,21 +98,21 @@ function CreateVersionForm({
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Optional description"
-        className="w-full px-2 py-1 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:border-[hsl(var(--primary))] mb-2"
+        className="w-full px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)] focus:outline-none focus:border-[var(--color-primary)] mb-2"
       />
       <div className="flex items-center justify-end gap-1.5">
         <button
           type="button"
           onClick={onCancel}
           disabled={isPending}
-          className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors"
+          className="px-2 py-1 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={!name.trim() || isPending}
-          className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50 transition-colors"
         >
           {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
           Create
@@ -136,9 +136,9 @@ function RestoreConfirmDialog({
 }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[380px] p-4">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-xl w-[380px] p-4">
         <h3 className="text-sm font-semibold mb-2">Restore to version {versionNumber}?</h3>
-        <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">
+        <p className="text-xs text-[var(--color-text-muted)] mb-4">
           This will overwrite the current state. You may want to create a new version
           of the current state first.
         </p>
@@ -146,7 +146,7 @@ function RestoreConfirmDialog({
           <button
             onClick={onCancel}
             disabled={isPending}
-            className="px-3 py-1.5 text-xs rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors"
+            className="px-3 py-1.5 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors"
           >
             Cancel
           </button>
@@ -216,10 +216,10 @@ function VersionRow({
 
   return (
     <div
-      className={`group px-3 py-2 border-b border-[hsl(var(--border))] last:border-b-0 transition-colors ${
+      className={`group px-3 py-2 border-b border-[var(--color-border)] last:border-b-0 transition-colors ${
         isCurrent
-          ? "bg-[hsl(var(--primary))]/8 border-l-2 border-l-[hsl(var(--primary))]"
-          : "hover:bg-[hsl(var(--accent))]/50"
+          ? "bg-[var(--color-primary)]/8 border-l-2 border-l-[var(--color-primary)]"
+          : "hover:bg-[var(--color-surface-2)]/50"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -228,13 +228,13 @@ function VersionRow({
           <div className="flex items-center gap-1.5">
             <span
               className={`text-xs font-semibold ${
-                isCurrent ? "text-[hsl(var(--primary))]" : "text-[hsl(var(--foreground))]"
+                isCurrent ? "text-[var(--color-primary)]" : "text-[var(--color-text)]"
               }`}
             >
               v{version.version_number}
             </span>
             {isCurrent && (
-              <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] font-medium">
+              <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-[var(--color-primary)]/15 text-[var(--color-primary)] font-medium">
                 current
               </span>
             )}
@@ -249,7 +249,7 @@ function VersionRow({
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Version name"
-                className="w-full px-1.5 py-0.5 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:border-[hsl(var(--primary))]"
+                className="w-full px-1.5 py-0.5 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)] focus:outline-none focus:border-[var(--color-primary)]"
               />
               <input
                 type="text"
@@ -257,13 +257,13 @@ function VersionRow({
                 onChange={(e) => setEditDesc(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Description (optional)"
-                className="w-full px-1.5 py-0.5 text-xs rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:border-[hsl(var(--primary))]"
+                className="w-full px-1.5 py-0.5 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)] focus:outline-none focus:border-[var(--color-primary)]"
               />
               <div className="flex items-center gap-1">
                 <button
                   onClick={saveEdit}
                   disabled={isUpdating}
-                  className="p-0.5 rounded hover:bg-[hsl(var(--accent))] text-green-500"
+                  className="p-0.5 rounded hover:bg-[var(--color-surface-2)] text-green-500"
                   title="Save"
                 >
                   {isUpdating ? (
@@ -274,7 +274,7 @@ function VersionRow({
                 </button>
                 <button
                   onClick={cancelEditing}
-                  className="p-0.5 rounded hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))]"
+                  className="p-0.5 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
                   title="Cancel"
                 >
                   <X className="w-3 h-3" />
@@ -284,14 +284,14 @@ function VersionRow({
           ) : (
             <>
               {version.name && (
-                <p className="text-xs text-[hsl(var(--foreground))] mt-0.5 truncate">{version.name}</p>
+                <p className="text-xs text-[var(--color-text)] mt-0.5 truncate">{version.name}</p>
               )}
               {version.description && (
-                <p className="text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5 truncate max-w-[220px]">
+                <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5 truncate max-w-[220px]">
                   {version.description}
                 </p>
               )}
-              <div className="flex items-center gap-1.5 mt-1 text-[10px] text-[hsl(var(--muted-foreground))]">
+              <div className="flex items-center gap-1.5 mt-1 text-[10px] text-[var(--color-text-muted)]">
                 <span>{version.created_by.display_name}</span>
                 <span>&middot;</span>
                 <span>{formatDate(version.created_at)}</span>
@@ -305,7 +305,7 @@ function VersionRow({
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
             <button
               onClick={startEditing}
-              className="p-1 rounded hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              className="p-1 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
               title="Edit name/description"
             >
               <Pencil className="w-3 h-3" />
@@ -313,7 +313,7 @@ function VersionRow({
             {!isCurrent && (
               <button
                 onClick={() => onRestore(version.version_number)}
-                className="p-1 rounded hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                className="p-1 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                 title={`Restore to v${version.version_number}`}
               >
                 <RotateCcw className="w-3 h-3" />
@@ -495,8 +495,8 @@ export function VersionManager({
         onClick={togglePanel}
         className={`flex items-center gap-1 px-2 py-1.5 text-xs rounded border transition-colors ${
           isOpen
-            ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/8"
-            : "border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+            ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/8"
+            : "border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
         }`}
         title="Manage versions"
       >
@@ -510,16 +510,16 @@ export function VersionManager({
         createPortal(
           <div
             ref={panelRef}
-            className="fixed w-80 z-[9999] rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] shadow-xl overflow-hidden"
+            className="fixed w-80 z-[9999] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] shadow-xl overflow-hidden"
             style={{ top: panelPos.top, left: panelPos.left }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-[hsl(var(--border))]">
-              <span className="text-xs font-semibold text-[hsl(var(--foreground))]">Versions</span>
+            <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--color-border)]">
+              <span className="text-xs font-semibold text-[var(--color-text)]">Versions</span>
               {!showCreateForm && (
                 <button
                   onClick={() => setShowCreateForm(true)}
-                  className="flex items-center gap-1 px-2 py-1 text-[11px] rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 text-[11px] rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 transition-colors"
                 >
                   <Plus className="w-3 h-3" />
                   New Version
@@ -540,10 +540,10 @@ export function VersionManager({
             <div className="max-h-96 overflow-y-auto">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-4 h-4 animate-spin text-[hsl(var(--muted-foreground))]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--color-text-muted)]" />
                 </div>
               ) : sortedVersions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-[hsl(var(--muted-foreground))]">
+                <div className="flex flex-col items-center justify-center py-8 text-[var(--color-text-muted)]">
                   <History className="w-5 h-5 mb-2 opacity-40" />
                   <p className="text-xs">No versions yet</p>
                   <p className="text-[11px] mt-0.5">

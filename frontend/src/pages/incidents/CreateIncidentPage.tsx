@@ -15,7 +15,7 @@ export function CreateIncidentPage() {
     return (
       <div className="max-w-2xl py-12 text-center">
         <h1 className="text-2xl font-bold mb-4">New Incident</h1>
-        <p className="text-[hsl(var(--muted-foreground))]">
+        <p className="text-[var(--color-text-muted)]">
           Editing is disabled in production mode. Switch to dev mode to make changes.
         </p>
       </div>
@@ -67,7 +67,7 @@ export function CreateIncidentPage() {
             type="text"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
             required
             placeholder="Brief description of the incident"
           />
@@ -78,7 +78,7 @@ export function CreateIncidentPage() {
           <textarea
             value={form.summary}
             onChange={(e) => setForm({ ...form, summary: e.target.value })}
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
             rows={4}
             placeholder="Detailed description..."
           />
@@ -90,7 +90,7 @@ export function CreateIncidentPage() {
             <select
               value={form.severity}
               onChange={(e) => setForm({ ...form, severity: e.target.value as IncidentSeverity })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
             >
               <option value="critical">Critical</option>
               <option value="high">High</option>
@@ -105,7 +105,7 @@ export function CreateIncidentPage() {
               type="text"
               value={form.source}
               onChange={(e) => setForm({ ...form, source: e.target.value })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
               placeholder="e.g., SIEM, Manual, EDR"
             />
           </div>
@@ -113,10 +113,10 @@ export function CreateIncidentPage() {
 
         <div>
           <label className="block text-sm font-medium mb-1">Team</label>
-          <div className="px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--muted))] text-sm text-[hsl(var(--muted-foreground))]">
+          <div className="px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-surface-2)] text-sm text-[var(--color-text-muted)]">
             {userTeams.find((t) => t.id === form.team_id)?.name || "No team selected"}
           </div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-xs text-[var(--color-text-muted)] mt-1">
             Uses the currently selected team. Change teams via the sidebar selector.
           </p>
         </div>
@@ -134,14 +134,14 @@ export function CreateIncidentPage() {
           <button
             type="submit"
             disabled={create.isPending || !form.title}
-            className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50"
           >
             {create.isPending ? "Creating..." : "Create Incident"}
           </button>
           <button
             type="button"
             onClick={() => navigate("/incidents")}
-            className="px-4 py-2 border border-[hsl(var(--border))] rounded-md"
+            className="px-4 py-2 border border-[var(--color-border)] rounded-md"
           >
             Cancel
           </button>

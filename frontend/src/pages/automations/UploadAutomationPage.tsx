@@ -13,7 +13,7 @@ export function UploadAutomationPage() {
     return (
       <div className="max-w-2xl py-12 text-center">
         <h1 className="text-2xl font-bold mb-4">Upload Automation</h1>
-        <p className="text-[hsl(var(--muted-foreground))]">
+        <p className="text-[var(--color-text-muted)]">
           Editing is disabled in production mode. Switch to dev mode to make changes.
         </p>
       </div>
@@ -73,7 +73,7 @@ export function UploadAutomationPage() {
     <div className="max-w-2xl">
       <button
         onClick={() => navigate("/automations")}
-        className="flex items-center gap-1 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-4"
+        className="flex items-center gap-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-4"
       >
         <ArrowLeft className="w-4 h-4" /> Back to automations
       </button>
@@ -93,7 +93,7 @@ export function UploadAutomationPage() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
             placeholder="My Automation"
           />
         </div>
@@ -103,7 +103,7 @@ export function UploadAutomationPage() {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
             rows={3}
             placeholder="What does this automation do?"
           />
@@ -117,13 +117,13 @@ export function UploadAutomationPage() {
             onChange={(e) => setTimeoutSeconds(Number(e.target.value))}
             min={10}
             max={3600}
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">VisualPython File (.vpy) *</label>
-          <div className="border-2 border-dashed border-[hsl(var(--border))] rounded-lg p-6 text-center">
+          <div className="border-2 border-dashed border-[var(--color-border)] rounded-lg p-6 text-center">
             <input
               type="file"
               accept=".vpy,.json"
@@ -135,13 +135,13 @@ export function UploadAutomationPage() {
               htmlFor="vpy-upload"
               className="cursor-pointer flex flex-col items-center gap-2"
             >
-              <Upload className="w-8 h-8 text-[hsl(var(--muted-foreground))]" />
+              <Upload className="w-8 h-8 text-[var(--color-text-muted)]" />
               {file ? (
                 <span className="text-sm font-medium">{file.name}</span>
               ) : (
                 <>
                   <span className="text-sm font-medium">Click to select a .vpy file</span>
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <span className="text-xs text-[var(--color-text-muted)]">
                     VisualPython project files (.vpy) or JSON
                   </span>
                 </>
@@ -154,14 +154,14 @@ export function UploadAutomationPage() {
           <button
             type="submit"
             disabled={uploadMutation.isPending}
-            className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50"
           >
             {uploadMutation.isPending ? "Uploading..." : "Upload & Create"}
           </button>
           <button
             type="button"
             onClick={() => navigate("/automations")}
-            className="px-4 py-2 border border-[hsl(var(--border))] rounded-md"
+            className="px-4 py-2 border border-[var(--color-border)] rounded-md"
           >
             Cancel
           </button>

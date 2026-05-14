@@ -135,7 +135,7 @@ export function UserSecretsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">My Secrets</h1>
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Personal secrets accessible by automations you trigger. Only you can see the values.
           </p>
         </div>
@@ -144,23 +144,23 @@ export function UserSecretsPage() {
             resetForm();
             setShowCreateModal(true);
           }}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 transition-colors"
         >
           <Plus className="w-4 h-4" /> Add Secret
         </button>
       </div>
 
       {isLoading ? (
-        <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
+        <p className="text-[var(--color-text-muted)]">Loading...</p>
       ) : secrets.length === 0 ? (
-        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="text-center py-12 text-[var(--color-text-muted)]">
           <p>No secrets created yet.</p>
           <p className="text-sm mt-1">Add a secret to make it available in your automations.</p>
         </div>
       ) : (
-        <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+        <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-[hsl(var(--accent))]">
+            <thead className="bg-[var(--color-surface-2)]">
               <tr>
                 <th className="text-left px-4 py-2 font-medium">Name</th>
                 <th className="text-left px-4 py-2 font-medium">Description</th>
@@ -170,16 +170,16 @@ export function UserSecretsPage() {
                 <th className="text-right px-4 py-2 font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[hsl(var(--border))]">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {secrets.map((s) => (
-                <tr key={s.id} className="hover:bg-[hsl(var(--accent))]/50">
+                <tr key={s.id} className="hover:bg-[var(--color-surface-2)]/50">
                   <td className="px-4 py-2 font-mono text-xs">{s.name}</td>
-                  <td className="px-4 py-2 text-[hsl(var(--muted-foreground))] max-w-[200px] truncate">
+                  <td className="px-4 py-2 text-[var(--color-text-muted)] max-w-[200px] truncate">
                     {s.description || "-"}
                   </td>
                   <td className="px-4 py-2 font-mono text-xs max-w-[200px] truncate">
                     {s.sensitive ? (
-                      <span className="text-[hsl(var(--muted-foreground))] italic">sensitive</span>
+                      <span className="text-[var(--color-text-muted)] italic">sensitive</span>
                     ) : revealedId === s.id ? (
                       revealedValue
                     ) : (
@@ -192,17 +192,17 @@ export function UserSecretsPage() {
                         Shared
                       </span>
                     ) : (
-                      <span className="text-xs text-[hsl(var(--muted-foreground))]">-</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">-</span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-xs text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-2 text-xs text-[var(--color-text-muted)]">
                     {new Date(s.updated_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-2 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => setSharingSecret(s)}
-                        className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                        className="p-1 rounded hover:bg-[var(--color-surface-2)] transition-colors"
                         title="Share with roles"
                       >
                         <Share2 className="w-4 h-4" />
@@ -210,7 +210,7 @@ export function UserSecretsPage() {
                       {!s.sensitive && (
                         <button
                           onClick={() => revealSecret(s.id)}
-                          className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                          className="p-1 rounded hover:bg-[var(--color-surface-2)] transition-colors"
                           title={revealedId === s.id ? "Hide value" : "Reveal value"}
                         >
                           {revealedId === s.id ? (
@@ -222,7 +222,7 @@ export function UserSecretsPage() {
                       )}
                       <button
                         onClick={() => openEdit(s)}
-                        className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                        className="p-1 rounded hover:bg-[var(--color-surface-2)] transition-colors"
                         title="Edit"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -250,8 +250,8 @@ export function UserSecretsPage() {
       {/* Create/Edit Modal */}
       {(showCreateModal || editingSecret) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[450px]">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl w-[450px]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
               <h3 className="font-semibold text-sm">
                 {editingSecret ? "Edit Secret" : "Create Secret"}
               </h3>
@@ -261,14 +261,14 @@ export function UserSecretsPage() {
                   setEditingSecret(null);
                   resetForm();
                 }}
-                className="p-1 rounded hover:bg-[hsl(var(--accent))]"
+                className="p-1 rounded hover:bg-[var(--color-surface-2)]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Name
                 </label>
                 <input
@@ -277,11 +277,11 @@ export function UserSecretsPage() {
                   onChange={(e) => setFormName(e.target.value)}
                   disabled={!!editingSecret}
                   placeholder="e.g. my_api_key"
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Description
                 </label>
                 <input
@@ -289,11 +289,11 @@ export function UserSecretsPage() {
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="What this secret is for"
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                 />
               </div>
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Value {editingSecret && (editingSecret.sensitive ? "(sensitive \u2014 enter new value to replace)" : "(leave empty to keep current)")}
                 </label>
                 <div className="relative">
@@ -302,12 +302,12 @@ export function UserSecretsPage() {
                     value={formValue}
                     onChange={(e) => setFormValue(e.target.value)}
                     placeholder={editingSecret ? "Enter new value..." : "Secret value"}
-                    className="w-full px-3 py-2 pr-8 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] font-mono"
+                    className="w-full px-3 py-2 pr-8 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] font-mono"
                   />
                   <button
                     type="button"
                     onClick={() => setShowFormValue(!showFormValue)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                   >
                     {showFormValue ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
@@ -320,22 +320,22 @@ export function UserSecretsPage() {
                     id="sensitive"
                     checked={formSensitive}
                     onChange={(e) => setFormSensitive(e.target.checked)}
-                    className="rounded border-[hsl(var(--border))]"
+                    className="rounded border-[var(--color-border)]"
                   />
-                  <label htmlFor="sensitive" className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <label htmlFor="sensitive" className="text-xs text-[var(--color-text-muted)]">
                     Sensitive (value can never be viewed after saving)
                   </label>
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-2 px-4 py-3 border-t border-[hsl(var(--border))]">
+            <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--color-border)]">
               <button
                 onClick={() => {
                   setShowCreateModal(false);
                   setEditingSecret(null);
                   resetForm();
                 }}
-                className="px-3 py-1.5 text-sm rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                className="px-3 py-1.5 text-sm rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
               >
                 Cancel
               </button>
@@ -348,7 +348,7 @@ export function UserSecretsPage() {
                   createSecret.isPending ||
                   updateSecret.isPending
                 }
-                className="px-3 py-1.5 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+                className="px-3 py-1.5 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
               >
                 {editingSecret ? "Update" : "Create"}
               </button>
@@ -420,29 +420,29 @@ function ShareModal({ secret, onClose }: { secret: UserSecret; onClose: () => vo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[400px] max-h-[80vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl w-[400px] max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
           <h3 className="font-semibold text-sm">
             Share: <span className="font-mono">{secret.name}</span>
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[hsl(var(--accent))]">
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-surface-2)]">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="p-4">
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+          <p className="text-xs text-[var(--color-text-muted)] mb-3">
             Select roles that can access this secret via SOAS Variables. Shared secrets are accessible in automations via <code className="font-mono">get_soas_var</code>.
           </p>
 
           {permsLoading ? (
-            <p className="text-[hsl(var(--muted-foreground))] text-sm">Loading...</p>
+            <p className="text-[var(--color-text-muted)] text-sm">Loading...</p>
           ) : (
             <div className="space-y-1">
               {(roles || []).map((role) => (
                 <label
                   key={role.id}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[hsl(var(--accent))] cursor-pointer"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[var(--color-surface-2)] cursor-pointer"
                 >
                   <input
                     type="checkbox"
@@ -463,17 +463,17 @@ function ShareModal({ secret, onClose }: { secret: UserSecret; onClose: () => vo
           )}
         </div>
 
-        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[hsl(var(--border))]">
+        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--color-border)]">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-sm rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+            className="px-3 py-1.5 text-sm rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
           >
             Cancel
           </button>
           <button
             onClick={() => shareMutation.mutate()}
             disabled={shareMutation.isPending}
-            className="px-3 py-1.5 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
           >
             {shareMutation.isPending ? "Saving..." : "Save"}
           </button>

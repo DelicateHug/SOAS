@@ -95,14 +95,14 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
       {totalCount > 0 && (
         <div className="mb-4">
           <div className="flex items-center justify-between text-sm mb-1">
-            <span className="text-[hsl(var(--muted-foreground))]">
+            <span className="text-[var(--color-text-muted)]">
               {checkedCount}/{totalCount} completed
             </span>
-            <span className="text-[hsl(var(--muted-foreground))]">
+            <span className="text-[var(--color-text-muted)]">
               {totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0}%
             </span>
           </div>
-          <div className="w-full h-2 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-[var(--color-surface-2)] rounded-full overflow-hidden">
             <div
               className="h-full bg-green-500 transition-all duration-300"
               style={{ width: `${totalCount > 0 ? (checkedCount / totalCount) * 100 : 0}%` }}
@@ -117,7 +117,7 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
           value={newItemContent}
           onChange={(e) => setNewItemContent(e.target.value)}
           placeholder="Add checklist item..."
-          className="flex-1 px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+          className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
           onKeyDown={(e) => {
             if (e.key === "Enter" && newItemContent.trim()) {
               addItem.mutate();
@@ -127,7 +127,7 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
         <button
           onClick={() => addItem.mutate()}
           disabled={!newItemContent.trim() || addItem.isPending}
-          className="flex items-center gap-1 px-3 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md disabled:opacity-50 text-sm"
+          className="flex items-center gap-1 px-3 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md disabled:opacity-50 text-sm"
         >
           <Plus className="w-4 h-4" />
           Add
@@ -138,7 +138,7 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
       {isLoading ? (
         <div className="text-center py-4 text-sm">Loading...</div>
       ) : items?.length === 0 ? (
-        <p className="text-sm text-[hsl(var(--muted-foreground))] italic text-center py-4">
+        <p className="text-sm text-[var(--color-text-muted)] italic text-center py-4">
           No checklist items yet.
         </p>
       ) : (
@@ -146,14 +146,14 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
           {items?.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-3 p-2 rounded-md hover:bg-[hsl(var(--accent))] group"
+              className="flex items-center gap-3 p-2 rounded-md hover:bg-[var(--color-surface-2)] group"
             >
               <button
                 onClick={() => toggleItem.mutate(item)}
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
                   item.is_checked
                     ? "bg-green-500 border-green-500 text-white"
-                    : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]"
+                    : "border-[var(--color-border)] hover:border-[var(--color-primary)]"
                 }`}
               >
                 {item.is_checked && <Check className="w-3 h-3" />}
@@ -164,7 +164,7 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
                   <input
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="flex-1 px-2 py-1 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+                    className="flex-1 px-2 py-1 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") updateItem.mutate(item.id);
                       if (e.key === "Escape") setEditingId(null);
@@ -179,7 +179,7 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
                   </button>
                   <button
                     onClick={() => setEditingId(null)}
-                    className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                    className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -188,12 +188,12 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
                 <>
                   <span
                     className={`flex-1 text-sm ${
-                      item.is_checked ? "line-through text-[hsl(var(--muted-foreground))]" : ""
+                      item.is_checked ? "line-through text-[var(--color-text-muted)]" : ""
                     }`}
                   >
                     {item.content}
                   </span>
-                  <span className="text-xs text-[hsl(var(--muted-foreground))] hidden group-hover:block">
+                  <span className="text-xs text-[var(--color-text-muted)] hidden group-hover:block">
                     {item.created_by.display_name}
                   </span>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
@@ -203,7 +203,7 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
                           setEditingId(item.id);
                           setEditContent(item.content);
                         }}
-                        className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                        className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                         title="Edit"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
@@ -212,7 +212,7 @@ export function ChecklistTab({ issueId, issueCreatorId }: Props) {
                     {canDeleteItem(item) && (
                       <button
                         onClick={() => deleteItem.mutate(item.id)}
-                        className="p-1 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                        className="p-1 text-[var(--color-text-muted)] hover:text-red-400"
                         title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

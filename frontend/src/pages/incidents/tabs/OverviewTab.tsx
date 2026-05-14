@@ -13,7 +13,7 @@ export function OverviewTab({ incident }: Props) {
       <div className="lg:col-span-2 space-y-6">
         {/* Summary */}
         {incident.summary && (
-          <div className="rounded-lg border border-[hsl(var(--border))] p-4">
+          <div className="rounded-lg border border-[var(--color-border)] p-4">
             <SectionHeader title="Summary" />
             <p className="text-sm leading-relaxed">{incident.summary}</p>
           </div>
@@ -40,18 +40,18 @@ export function OverviewTab({ incident }: Props) {
       <div className="space-y-6">
         {/* Source */}
         {(incident.source || incident.source_ref) && (
-          <div className="rounded-lg border border-[hsl(var(--border))] p-4">
+          <div className="rounded-lg border border-[var(--color-border)] p-4">
             <SectionHeader title="Source" />
             <div className="space-y-2 text-sm">
               {incident.source && (
                 <div className="flex justify-between">
-                  <span className="text-[hsl(var(--muted-foreground))]">Type</span>
+                  <span className="text-[var(--color-text-muted)]">Type</span>
                   <span>{incident.source}</span>
                 </div>
               )}
               {incident.source_ref && (
                 <div className="flex justify-between">
-                  <span className="text-[hsl(var(--muted-foreground))]">Reference</span>
+                  <span className="text-[var(--color-text-muted)]">Reference</span>
                   <span className="text-right truncate max-w-[180px]" title={incident.source_ref}>
                     {incident.source_ref}
                   </span>
@@ -63,13 +63,13 @@ export function OverviewTab({ incident }: Props) {
 
         {/* Tags */}
         {incident.tags.length > 0 && (
-          <div className="rounded-lg border border-[hsl(var(--border))] p-4">
+          <div className="rounded-lg border border-[var(--color-border)] p-4">
             <SectionHeader title="Tags" />
             <div className="flex flex-wrap gap-1.5">
               {incident.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 text-xs rounded-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+                  className="px-2 py-0.5 text-xs rounded-full bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
                 >
                   {tag}
                 </span>
@@ -79,28 +79,28 @@ export function OverviewTab({ incident }: Props) {
         )}
 
         {/* Timestamps */}
-        <div className="rounded-lg border border-[hsl(var(--border))] p-4">
+        <div className="rounded-lg border border-[var(--color-border)] p-4">
           <SectionHeader title="Timestamps" />
           <div className="space-y-2 text-sm">
             {incident.detected_at && (
               <div className="flex justify-between">
-                <span className="text-[hsl(var(--muted-foreground))]">Detected</span>
+                <span className="text-[var(--color-text-muted)]">Detected</span>
                 <span>{new Date(incident.detected_at).toLocaleString()}</span>
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-[hsl(var(--muted-foreground))]">Created</span>
+              <span className="text-[var(--color-text-muted)]">Created</span>
               <span>{new Date(incident.created_at).toLocaleString()}</span>
             </div>
             {incident.resolved_at && (
               <div className="flex justify-between">
-                <span className="text-[hsl(var(--muted-foreground))]">Resolved</span>
+                <span className="text-[var(--color-text-muted)]">Resolved</span>
                 <span>{new Date(incident.resolved_at).toLocaleString()}</span>
               </div>
             )}
             {incident.closed_at && (
               <div className="flex justify-between">
-                <span className="text-[hsl(var(--muted-foreground))]">Closed</span>
+                <span className="text-[var(--color-text-muted)]">Closed</span>
                 <span>{new Date(incident.closed_at).toLocaleString()}</span>
               </div>
             )}

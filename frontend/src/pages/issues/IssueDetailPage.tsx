@@ -62,7 +62,7 @@ export function IssueDetailPage() {
   if (!issue) {
     return (
       <div className="text-center py-8">
-        <p className="text-[hsl(var(--muted-foreground))]">Issue not found.</p>
+        <p className="text-[var(--color-text-muted)]">Issue not found.</p>
       </div>
     );
   }
@@ -88,7 +88,7 @@ export function IssueDetailPage() {
       {/* Header */}
       <button
         onClick={() => navigate("/issues")}
-        className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-4"
+        className="flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-4"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Issues
@@ -97,7 +97,7 @@ export function IssueDetailPage() {
       <div className="flex items-start justify-between mb-6">
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{issue.title}</h1>
-          <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+          <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-[var(--color-text-muted)]">
             <span>Created by {issue.created_by.display_name}</span>
             <span>{formatDate(issue.created_at)}</span>
             {issue.checklist_total > 0 && (
@@ -119,7 +119,7 @@ export function IssueDetailPage() {
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="px-2 py-1 text-xs border border-[hsl(var(--border))] rounded"
+                  className="px-2 py-1 text-xs border border-[var(--color-border)] rounded"
                 >
                   Cancel
                 </button>
@@ -127,7 +127,7 @@ export function IssueDetailPage() {
             ) : (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="p-2 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                className="p-2 text-[var(--color-text-muted)] hover:text-red-400"
                 title="Delete issue"
               >
                 <Trash2 className="w-4 h-4" />
@@ -138,14 +138,14 @@ export function IssueDetailPage() {
       </div>
 
       {/* Status and assignment controls */}
-      <div className="flex flex-wrap items-center gap-4 mb-6 p-4 border border-[hsl(var(--border))] rounded-lg">
+      <div className="flex flex-wrap items-center gap-4 mb-6 p-4 border border-[var(--color-border)] rounded-lg">
         <div>
-          <label className="block text-xs text-[hsl(var(--muted-foreground))] mb-1">Status</label>
+          <label className="block text-xs text-[var(--color-text-muted)] mb-1">Status</label>
           {canEdit ? (
             <select
               value={issue.status}
               onChange={(e) => updateIssue.mutate({ status: e.target.value })}
-              className="px-2 py-1.5 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="px-2 py-1.5 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             >
               {ALL_STATUSES.map((s) => (
                 <option key={s} value={s}>{issueStatusLabels[s]}</option>
@@ -159,7 +159,7 @@ export function IssueDetailPage() {
         </div>
 
         <div>
-          <label className="block text-xs text-[hsl(var(--muted-foreground))] mb-1">Assigned to</label>
+          <label className="block text-xs text-[var(--color-text-muted)] mb-1">Assigned to</label>
           {canEdit ? (
             <select
               value={issue.assigned_to?.id ?? ""}
@@ -168,7 +168,7 @@ export function IssueDetailPage() {
                   assigned_to: e.target.value || null,
                 })
               }
-              className="px-2 py-1.5 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="px-2 py-1.5 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             >
               <option value="">Unassigned</option>
               {users?.data?.map((u) => (
@@ -184,7 +184,7 @@ export function IssueDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-[hsl(var(--border))] mb-6">
+      <div className="border-b border-[var(--color-border)] mb-6">
         <div className="flex gap-4">
           {tabs.map((tab) => (
             <button
@@ -192,13 +192,13 @@ export function IssueDetailPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))]"
-                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  ? "border-[var(--color-primary)] text-[var(--color-text)]"
+                  : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
               }`}
             >
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span className="ml-1 text-xs text-[hsl(var(--muted-foreground))]">
+                <span className="ml-1 text-xs text-[var(--color-text-muted)]">
                   ({tab.count})
                 </span>
               )}

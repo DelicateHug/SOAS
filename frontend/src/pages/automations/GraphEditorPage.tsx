@@ -184,7 +184,7 @@ export function GraphEditorPage() {
   if (isCatalogLoading || (!isNew && isAutomationLoading)) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-        <div className="flex flex-col items-center gap-3 text-[hsl(var(--muted-foreground))]">
+        <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
           <Loader2 className="w-8 h-8 animate-spin" />
           <p className="text-sm">
             Loading {isNew ? "editor" : "automation"}...
@@ -197,7 +197,7 @@ export function GraphEditorPage() {
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col -m-6">
       {/* Breadcrumb / back nav */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))] text-xs">
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--color-border)] bg-[var(--color-bg)] text-xs">
         <button
           onClick={() =>
             navigate(
@@ -206,12 +206,12 @@ export function GraphEditorPage() {
                 : "/automations"
             )
           }
-          className="flex items-center gap-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+          className="flex items-center gap-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
         >
           <ArrowLeft className="w-3 h-3" />
           {automationId ? "Back to automation" : "Back to automations"}
         </button>
-        <span className="text-[hsl(var(--muted-foreground))]">/</span>
+        <span className="text-[var(--color-text-muted)]">/</span>
         <span className="font-medium">
           {isNew ? "New Automation" : "Graph Editor"}
         </span>

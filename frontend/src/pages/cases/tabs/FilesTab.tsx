@@ -76,9 +76,9 @@ export function FilesTab({ caseId }: Props) {
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
-        className="border-2 border-dashed border-[hsl(var(--border))] rounded-lg p-8 text-center hover:border-[hsl(var(--primary))] transition-colors"
+        className="border-2 border-dashed border-[var(--color-border)] rounded-lg p-8 text-center hover:border-[var(--color-primary)] transition-colors"
       >
-        <p className="text-sm text-[hsl(var(--muted-foreground))] mb-2">
+        <p className="text-sm text-[var(--color-text-muted)] mb-2">
           Drag & drop files here, or
         </p>
         <input
@@ -92,12 +92,12 @@ export function FilesTab({ caseId }: Props) {
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="px-4 py-1.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm"
+          className="px-4 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm"
         >
           Choose File
         </button>
         {uploadFile.isPending && (
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">Uploading...</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-2">Uploading...</p>
         )}
       </div>
 
@@ -106,7 +106,7 @@ export function FilesTab({ caseId }: Props) {
         {files?.map((file) => (
           <div
             key={file.id}
-            className="flex items-center gap-3 rounded-lg border border-[hsl(var(--border))] px-4 py-3"
+            className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] px-4 py-3"
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -117,7 +117,7 @@ export function FilesTab({ caseId }: Props) {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+              <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)] mt-0.5">
                 <span>{formatFileSize(file.file_size)}</span>
                 <span>{file.content_type}</span>
                 <div className="flex items-center gap-1">
@@ -135,7 +135,7 @@ export function FilesTab({ caseId }: Props) {
             <div className="flex gap-1 shrink-0">
               <a
                 href={`/api/v1/cases/${caseId}/files/${file.id}/download`}
-                className="text-xs px-2 py-1 rounded border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                className="text-xs px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
               >
                 Download
               </a>
@@ -144,7 +144,7 @@ export function FilesTab({ caseId }: Props) {
                 className={`text-xs px-2 py-1 rounded border transition-colors ${
                   file.is_evidence
                     ? "border-amber-500 text-amber-400"
-                    : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-amber-400"
+                    : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-amber-400"
                 }`}
               >
                 {file.is_evidence ? "Unmark" : "Evidence"}
@@ -154,7 +154,7 @@ export function FilesTab({ caseId }: Props) {
                   onClick={() => {
                     if (confirm("Delete this file?")) deleteFile.mutate(file.id);
                   }}
-                  className="text-xs px-2 py-1 rounded border border-[hsl(var(--border))] text-red-400 hover:text-red-300 transition-colors"
+                  className="text-xs px-2 py-1 rounded border border-[var(--color-border)] text-red-400 hover:text-red-300 transition-colors"
                 >
                   Delete
                 </button>
@@ -163,7 +163,7 @@ export function FilesTab({ caseId }: Props) {
           </div>
         ))}
         {(!files || files.length === 0) && (
-          <div className="py-8 text-center text-[hsl(var(--muted-foreground))]">
+          <div className="py-8 text-center text-[var(--color-text-muted)]">
             No files attached yet
           </div>
         )}

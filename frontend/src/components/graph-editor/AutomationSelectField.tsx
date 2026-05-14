@@ -49,7 +49,7 @@ export function AutomationSelectField({
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))]">
+      <div className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
         <Loader2 className="w-3 h-3 animate-spin" />
         Loading automations...
       </div>
@@ -68,7 +68,7 @@ export function AutomationSelectField({
             selected?.parameters || []
           );
         }}
-        className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-transparent"
+        className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-transparent"
       >
         <option value="">-- Select Automation --</option>
         {items.map((a) => (
@@ -78,7 +78,7 @@ export function AutomationSelectField({
         ))}
       </select>
       {!isLoading && items.length === 0 && (
-        <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
+        <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
           No automations available. Automations must be set to
           &ldquo;active&rdquo; status and have read + add permissions.
         </p>

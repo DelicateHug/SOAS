@@ -140,7 +140,7 @@ export function CreateIssuePage() {
     <div className="max-w-2xl">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-4"
+        className="flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-4"
       >
         <ArrowLeft className="w-4 h-4" />
         Back
@@ -162,7 +162,7 @@ export function CreateIssuePage() {
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder="Issue title..."
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))]"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)]"
             required
           />
         </div>
@@ -175,7 +175,7 @@ export function CreateIssuePage() {
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             placeholder="Describe the issue..."
             rows={4}
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] resize-y"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] resize-y"
           />
         </div>
 
@@ -185,7 +185,7 @@ export function CreateIssuePage() {
           <select
             value={form.assigned_to}
             onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))]"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)]"
           >
             <option value="">Unassigned</option>
             {users?.data?.map((u) => (
@@ -197,10 +197,10 @@ export function CreateIssuePage() {
         </div>
 
         {/* Link to entity */}
-        <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+        <div className="border border-[var(--color-border)] rounded-lg p-4">
           <label className="block text-sm font-medium mb-2">Link to Entity (optional)</label>
           {initialLinkType && initialLinkId ? (
-            <div className="text-sm text-[hsl(var(--muted-foreground))]">
+            <div className="text-sm text-[var(--color-text-muted)]">
               Linked to: <strong>{TARGET_TYPE_LABELS[initialLinkType] ?? initialLinkType}</strong>
               {linkName && ` — ${linkName}`}
             </div>
@@ -214,7 +214,7 @@ export function CreateIssuePage() {
                   setSelectedEntityName("");
                   setEntityFilter("");
                 }}
-                className="px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+                className="px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
               >
                 <option value="">Select type...</option>
                 {Object.entries(TARGET_TYPE_LABELS).map(([key, label]) => (
@@ -224,7 +224,7 @@ export function CreateIssuePage() {
               {linkType && (
                 <div className="relative">
                   <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
                     <input
                       type="text"
                       value={entityDropdownOpen ? entityFilter : selectedEntityName}
@@ -240,16 +240,16 @@ export function CreateIssuePage() {
                         setTimeout(() => setEntityDropdownOpen(false), 150);
                       }}
                       placeholder={`Search ${TARGET_TYPE_LABELS[linkType as IssueLinkTargetType] ?? linkType}...`}
-                      className="w-full pl-8 pr-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+                      className="w-full pl-8 pr-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
                     />
                     {entitiesLoading && (
-                      <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-[hsl(var(--muted-foreground))]" />
+                      <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-[var(--color-text-muted)]" />
                     )}
                   </div>
                   {entityDropdownOpen && !entitiesLoading && (
-                    <div className="absolute z-50 top-full left-0 right-0 mt-0.5 max-h-52 overflow-y-auto border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--popover))] shadow-lg">
+                    <div className="absolute z-50 top-full left-0 right-0 mt-0.5 max-h-52 overflow-y-auto border border-[var(--color-border)] rounded-md bg-[var(--color-surface)] shadow-lg">
                       {filteredEntities.length === 0 ? (
-                        <div className="px-3 py-2 text-sm text-[hsl(var(--muted-foreground))]">
+                        <div className="px-3 py-2 text-sm text-[var(--color-text-muted)]">
                           No results found
                         </div>
                       ) : (
@@ -257,8 +257,8 @@ export function CreateIssuePage() {
                           <button
                             key={entity.id}
                             type="button"
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-[hsl(var(--accent))] flex flex-col ${
-                              entity.id === linkId ? "bg-[hsl(var(--accent))]" : ""
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-surface-2)] flex flex-col ${
+                              entity.id === linkId ? "bg-[var(--color-surface-2)]" : ""
                             }`}
                             onMouseDown={(e) => {
                               e.preventDefault();
@@ -270,7 +270,7 @@ export function CreateIssuePage() {
                           >
                             <span className="font-medium">{entity.label}</span>
                             {entity.sub && (
-                              <span className="text-xs text-[hsl(var(--muted-foreground))] truncate">
+                              <span className="text-xs text-[var(--color-text-muted)] truncate">
                                 {entity.sub}
                               </span>
                             )}
@@ -290,14 +290,14 @@ export function CreateIssuePage() {
           <button
             type="submit"
             disabled={create.isPending || !form.title.trim()}
-            className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50 text-sm"
+            className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50 text-sm"
           >
             {create.isPending ? "Creating..." : "Create Issue"}
           </button>
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-4 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] text-sm"
+            className="px-4 py-2 border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)] text-sm"
           >
             Cancel
           </button>

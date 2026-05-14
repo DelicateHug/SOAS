@@ -130,31 +130,31 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
     }
   };
 
-  const inputClasses = "w-full px-2.5 py-1.5 text-sm border border-[hsl(var(--input))] rounded-md bg-transparent";
+  const inputClasses = "w-full px-2.5 py-1.5 text-sm border border-[var(--color-border)] rounded-md bg-transparent";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-full max-w-6xl h-[85vh] flex flex-col">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-xl w-full max-w-6xl h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">
             {isEditing ? "Edit Code Block" : "New Code Block"}
           </h2>
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-3 py-1.5 text-sm border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))]"
+              className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)]"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={!name || isSaving}
-              className="px-4 py-1.5 text-sm bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50"
+              className="px-4 py-1.5 text-sm bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50"
             >
               {isSaving ? "Saving..." : isEditing ? "Save Changes" : "Create Block"}
             </button>
-            <button onClick={onClose} className="p-1 hover:bg-[hsl(var(--accent))] rounded ml-1">
+            <button onClick={onClose} className="p-1 hover:bg-[var(--color-surface-2)] rounded ml-1">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -163,7 +163,7 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
         {/* Body: two-column layout */}
         <div className="flex-1 flex min-h-0">
           {/* Left sidebar */}
-          <div className="w-72 shrink-0 border-r border-[hsl(var(--border))] overflow-y-auto p-4 space-y-4">
+          <div className="w-72 shrink-0 border-r border-[var(--color-border)] overflow-y-auto p-4 space-y-4">
             {/* Live node preview */}
             <NodePreview
               name={name}
@@ -171,7 +171,7 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
               outputPorts={outputPorts}
             />
 
-            <div className="border-t border-[hsl(var(--border))]" />
+            <div className="border-t border-[var(--color-border)]" />
 
             {/* Name */}
             <div>
@@ -203,7 +203,7 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
               <select
                 value={language}
                 onChange={(e) => handleLanguageChange(e.target.value as "python" | "javascript" | "bash")}
-                className={`${inputClasses} bg-[hsl(var(--background))]`}
+                className={`${inputClasses} bg-[var(--color-bg)]`}
               >
                 <option value="python">Python</option>
                 <option value="javascript">JavaScript</option>
@@ -212,7 +212,7 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
             </div>
 
             {/* Divider */}
-            <div className="border-t border-[hsl(var(--border))]" />
+            <div className="border-t border-[var(--color-border)]" />
 
             {/* Input Ports */}
             <PortBuilder
@@ -223,7 +223,7 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
             />
 
             {/* Divider */}
-            <div className="border-t border-[hsl(var(--border))]" />
+            <div className="border-t border-[var(--color-border)]" />
 
             {/* Output Ports */}
             <PortBuilder
@@ -234,7 +234,7 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
             />
 
             {/* Divider */}
-            <div className="border-t border-[hsl(var(--border))]" />
+            <div className="border-t border-[var(--color-border)]" />
 
             {/* Tags */}
             <div>
@@ -254,7 +254,7 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
                 type="checkbox"
                 checked={isPublic}
                 onChange={(e) => setIsPublic(e.target.checked)}
-                className="rounded border-[hsl(var(--input))]"
+                className="rounded border-[var(--color-border)]"
               />
               <span className="text-xs">Make public</span>
             </label>

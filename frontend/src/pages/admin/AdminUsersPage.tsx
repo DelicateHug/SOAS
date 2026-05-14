@@ -180,7 +180,7 @@ export function AdminUsersPage() {
         <ProductionGuard>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 text-sm"
           >
             <UserPlus className="w-4 h-4" />
             Add User
@@ -191,10 +191,10 @@ export function AdminUsersPage() {
       {isLoading ? (
         <div className="text-center py-8">Loading...</div>
       ) : (
-        <div className="border border-[hsl(var(--border))] rounded-lg">
+        <div className="border border-[var(--color-border)] rounded-lg">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[hsl(var(--border))] text-left text-sm text-[hsl(var(--muted-foreground))]">
+              <tr className="border-b border-[var(--color-border)] text-left text-sm text-[var(--color-text-muted)]">
                 <th className="px-4 py-3 font-medium">User</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Roles</th>
@@ -204,13 +204,13 @@ export function AdminUsersPage() {
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[hsl(var(--border))]">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {users?.data.map((user) => (
-                <tr key={user.id} className="hover:bg-[hsl(var(--accent))]">
+                <tr key={user.id} className="hover:bg-[var(--color-surface-2)]">
                   <td className="px-4 py-3">
                     <div>
                       <p className="text-sm font-medium">{user.display_name}</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">@{user.username}</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">@{user.username}</p>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm">{user.email}</td>
@@ -222,13 +222,13 @@ export function AdminUsersPage() {
                           <ProductionGuard
                             key={roleName}
                             fallback={
-                              <span className="px-1.5 py-0.5 bg-[hsl(var(--accent))] rounded text-xs">
+                              <span className="px-1.5 py-0.5 bg-[var(--color-surface-2)] rounded text-xs">
                                 {roleName}
                               </span>
                             }
                           >
                             <span
-                              className="px-1.5 py-0.5 bg-[hsl(var(--accent))] rounded text-xs cursor-pointer hover:bg-red-100 group"
+                              className="px-1.5 py-0.5 bg-[var(--color-surface-2)] rounded text-xs cursor-pointer hover:bg-red-100 group"
                               onClick={() => roleObj && removeRole.mutate({ userId: user.id, roleId: roleObj.id })}
                               title="Click to remove"
                             >
@@ -257,7 +257,7 @@ export function AdminUsersPage() {
                       <ProductionGuard>
                         <button
                           onClick={() => { setSelectedUser(user); setShowRoleModal(true); }}
-                          className="px-1.5 py-0.5 border border-dashed border-[hsl(var(--border))] rounded text-xs text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--primary))]"
+                          className="px-1.5 py-0.5 border border-dashed border-[var(--color-border)] rounded text-xs text-[var(--color-text-muted)] hover:border-[var(--color-primary)]"
                         >
                           +
                         </button>
@@ -270,7 +270,7 @@ export function AdminUsersPage() {
                         <Shield className="w-3 h-3" /> Enabled
                       </span>
                     ) : (
-                      <span className="text-xs text-[hsl(var(--muted-foreground))]">Off</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">Off</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -280,7 +280,7 @@ export function AdminUsersPage() {
                       {user.is_active ? "Active" : "Disabled"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
                     {user.last_login_at ? formatDate(user.last_login_at) : "Never"}
                   </td>
                   <td className="px-4 py-3">
@@ -288,7 +288,7 @@ export function AdminUsersPage() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleResetPassword(user)}
-                          className="p-1 rounded text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))]"
+                          className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]"
                           title="Reset password"
                         >
                           <KeyRound className="w-4 h-4" />
@@ -319,17 +319,17 @@ export function AdminUsersPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-3 py-1 text-sm border border-[hsl(var(--border))] rounded disabled:opacity-50"
+            className="px-3 py-1 text-sm border border-[var(--color-border)] rounded disabled:opacity-50"
           >
             Previous
           </button>
-          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+          <span className="text-sm text-[var(--color-text-muted)]">
             Page {page} of {users.meta.total_pages}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(users.meta.total_pages, p + 1))}
             disabled={page === users.meta.total_pages}
-            className="px-3 py-1 text-sm border border-[hsl(var(--border))] rounded disabled:opacity-50"
+            className="px-3 py-1 text-sm border border-[var(--color-border)] rounded disabled:opacity-50"
           >
             Next
           </button>
@@ -339,17 +339,17 @@ export function AdminUsersPage() {
       {/* Create User Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[hsl(var(--background))] rounded-lg p-6 w-full max-w-md border border-[hsl(var(--border))]">
+          <div className="bg-[var(--color-bg)] rounded-lg p-6 w-full max-w-md border border-[var(--color-border)]">
             {createdUser ? (
               <>
                 <h2 className="text-lg font-semibold mb-4">User Created Successfully</h2>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">Username</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">Username</p>
                     <p className="text-sm font-medium">{createdUser.username}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">Email</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">Email</p>
                     <p className="text-sm font-medium">{createdUser.email}</p>
                   </div>
                   <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
@@ -357,12 +357,12 @@ export function AdminUsersPage() {
                       Temporary Password
                     </p>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 text-sm font-mono bg-[hsl(var(--accent))] px-2 py-1 rounded break-all">
+                      <code className="flex-1 text-sm font-mono bg-[var(--color-surface-2)] px-2 py-1 rounded break-all">
                         {createdUser.temporary_password}
                       </code>
                       <button
                         onClick={handleCopyPassword}
-                        className="p-1.5 rounded hover:bg-[hsl(var(--accent))]"
+                        className="p-1.5 rounded hover:bg-[var(--color-surface-2)]"
                         title="Copy password"
                       >
                         {copied ? (
@@ -379,7 +379,7 @@ export function AdminUsersPage() {
                 </div>
                 <button
                   onClick={handleCloseCreateModal}
-                  className="mt-4 w-full px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90"
+                  className="mt-4 w-full px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm hover:opacity-90"
                 >
                   Done
                 </button>
@@ -399,7 +399,7 @@ export function AdminUsersPage() {
                       type="text"
                       value={createForm.username}
                       onChange={(e) => setCreateForm((f) => ({ ...f, username: e.target.value }))}
-                      className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-transparent"
+                      className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-transparent"
                       required
                       minLength={3}
                     />
@@ -410,7 +410,7 @@ export function AdminUsersPage() {
                       type="email"
                       value={createForm.email}
                       onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))}
-                      className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-transparent"
+                      className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-transparent"
                       required
                     />
                   </div>
@@ -420,25 +420,25 @@ export function AdminUsersPage() {
                       type="text"
                       value={createForm.display_name}
                       onChange={(e) => setCreateForm((f) => ({ ...f, display_name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-transparent"
+                      className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-transparent"
                       required
                     />
                   </div>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     A secure password will be automatically generated. The user must change it on first login.
                   </p>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={handleCloseCreateModal}
-                      className="flex-1 px-4 py-2 border border-[hsl(var(--border))] rounded-md text-sm"
+                      className="flex-1 px-4 py-2 border border-[var(--color-border)] rounded-md text-sm"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={createUser.isPending}
-                      className="flex-1 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90 disabled:opacity-50"
+                      className="flex-1 px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm hover:opacity-90 disabled:opacity-50"
                     >
                       {createUser.isPending ? "Creating..." : "Create User"}
                     </button>
@@ -453,22 +453,22 @@ export function AdminUsersPage() {
       {/* Reset Password Modal */}
       {resetPasswordUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[hsl(var(--background))] rounded-lg p-6 w-full max-w-md border border-[hsl(var(--border))]">
+          <div className="bg-[var(--color-bg)] rounded-lg p-6 w-full max-w-md border border-[var(--color-border)]">
             {resetPasswordResult ? (
               <>
                 <h2 className="text-lg font-semibold mb-4">Password Reset</h2>
                 <div className="space-y-3">
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                    New temporary password for <span className="font-medium text-[hsl(var(--foreground))]">{resetPasswordUser.display_name}</span>:
+                  <p className="text-sm text-[var(--color-text-muted)]">
+                    New temporary password for <span className="font-medium text-[var(--color-text)]">{resetPasswordUser.display_name}</span>:
                   </p>
                   <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 text-sm font-mono bg-[hsl(var(--accent))] px-2 py-1 rounded break-all">
+                      <code className="flex-1 text-sm font-mono bg-[var(--color-surface-2)] px-2 py-1 rounded break-all">
                         {resetPasswordResult}
                       </code>
                       <button
                         onClick={handleCopyResetPassword}
-                        className="p-1.5 rounded hover:bg-[hsl(var(--accent))]"
+                        className="p-1.5 rounded hover:bg-[var(--color-surface-2)]"
                         title="Copy password"
                       >
                         {resetCopied ? (
@@ -485,7 +485,7 @@ export function AdminUsersPage() {
                 </div>
                 <button
                   onClick={handleCloseResetModal}
-                  className="mt-4 w-full px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90"
+                  className="mt-4 w-full px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm hover:opacity-90"
                 >
                   Done
                 </button>
@@ -493,24 +493,24 @@ export function AdminUsersPage() {
             ) : (
               <>
                 <h2 className="text-lg font-semibold mb-4">Reset Password</h2>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
-                  Are you sure you want to reset the password for <span className="font-medium text-[hsl(var(--foreground))]">{resetPasswordUser.display_name}</span> (@{resetPasswordUser.username})?
+                <p className="text-sm text-[var(--color-text-muted)] mb-4">
+                  Are you sure you want to reset the password for <span className="font-medium text-[var(--color-text)]">{resetPasswordUser.display_name}</span> (@{resetPasswordUser.username})?
                 </p>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                <p className="text-sm text-[var(--color-text-muted)] mb-4">
                   A new temporary password will be generated. The user will be required to change it on next login.
                 </p>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={handleCloseResetModal}
-                    className="flex-1 px-4 py-2 border border-[hsl(var(--border))] rounded-md text-sm"
+                    className="flex-1 px-4 py-2 border border-[var(--color-border)] rounded-md text-sm"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirmResetPassword}
                     disabled={resetPassword.isPending}
-                    className="flex-1 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm hover:opacity-90 disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm hover:opacity-90 disabled:opacity-50"
                   >
                     {resetPassword.isPending ? "Resetting..." : "Reset Password"}
                   </button>
@@ -524,7 +524,7 @@ export function AdminUsersPage() {
       {/* Assign Role Modal */}
       {showRoleModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[hsl(var(--background))] rounded-lg p-6 w-full max-w-sm border border-[hsl(var(--border))]">
+          <div className="bg-[var(--color-bg)] rounded-lg p-6 w-full max-w-sm border border-[var(--color-border)]">
             <h2 className="text-lg font-semibold mb-4">
               Assign Role to {selectedUser.display_name}
             </h2>
@@ -536,17 +536,17 @@ export function AdminUsersPage() {
                     key={role.id}
                     onClick={() => handleAssignRole(selectedUser.id, role.id)}
                     disabled={alreadyAssigned}
-                    className="w-full text-left px-3 py-2 border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full text-left px-3 py-2 border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium">{role.display_name}</p>
                         {role.description && (
-                          <p className="text-xs text-[hsl(var(--muted-foreground))]">{role.description}</p>
+                          <p className="text-xs text-[var(--color-text-muted)]">{role.description}</p>
                         )}
                       </div>
                       {alreadyAssigned && (
-                        <span className="text-xs text-[hsl(var(--muted-foreground))]">Assigned</span>
+                        <span className="text-xs text-[var(--color-text-muted)]">Assigned</span>
                       )}
                     </div>
                   </button>
@@ -555,7 +555,7 @@ export function AdminUsersPage() {
             </div>
             <button
               onClick={() => setShowRoleModal(false)}
-              className="mt-4 w-full px-4 py-2 border border-[hsl(var(--border))] rounded-md text-sm"
+              className="mt-4 w-full px-4 py-2 border border-[var(--color-border)] rounded-md text-sm"
             >
               Close
             </button>

@@ -132,65 +132,6 @@
 }
 
 /* ============================================================
- * Legacy HSL variables — kept for backwards compatibility with
- * existing pages that use bg-[hsl(var(--background))] etc.
- * These are mapped to the new token values. Once all pages are
- * swept to use the new tokens, this block can be deleted.
- * ============================================================ */
-:root {
-  --background: 220 33% 97%;          /* #f4f6fa */
-  --foreground: 217 30% 15%;          /* #1b2433 */
-  --card: 0 0% 100%;                  /* #ffffff */
-  --card-foreground: 217 30% 15%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 217 30% 15%;
-  --primary: 212 90% 42%;             /* #0b63ce */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 220 19% 96%;
-  --secondary-foreground: 217 30% 15%;
-  --muted: 220 19% 96%;
-  --muted-foreground: 217 10% 47%;    /* #6b7687 */
-  --accent: 220 19% 96%;
-  --accent-foreground: 217 30% 15%;
-  --destructive: 351 67% 52%;         /* #d6324a */
-  --destructive-foreground: 0 0% 100%;
-  --border: 220 24% 91%;              /* #e2e6ee */
-  --input: 220 24% 91%;
-  --ring: 212 90% 42%;
-  --radius: 0.375rem;
-
-  --severity-critical: 0 84% 60%;
-  --severity-high: 25 95% 53%;
-  --severity-medium: 45 93% 47%;
-  --severity-low: 217 91% 60%;
-  --severity-info: 220 9% 46%;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: 218 53% 8%;         /* #0a1220 */
-    --foreground: 219 27% 92%;        /* #e7ecf3 */
-    --card: 220 35% 13%;              /* #131c2e */
-    --card-foreground: 219 27% 92%;
-    --popover: 220 35% 13%;
-    --popover-foreground: 219 27% 92%;
-    --primary: 215 100% 65%;          /* #4d9bff */
-    --primary-foreground: 220 35% 13%;
-    --secondary: 222 28% 16%;
-    --secondary-foreground: 219 27% 92%;
-    --muted: 222 28% 16%;
-    --muted-foreground: 221 16% 60%;  /* #8a96ad */
-    --accent: 222 28% 16%;
-    --accent-foreground: 219 27% 92%;
-    --destructive: 351 100% 68%;      /* #ff5b70 */
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 36% 23%;            /* #243150 */
-    --input: 220 36% 23%;
-    --ring: 215 100% 65%;
-  }
-}
-
-/* ============================================================
  * Base typography
  * ============================================================ */
 html,

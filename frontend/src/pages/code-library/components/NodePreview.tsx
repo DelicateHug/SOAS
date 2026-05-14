@@ -45,7 +45,7 @@ export function NodePreview({ name, inputPorts, outputPorts }: NodePreviewProps)
 
   return (
     <div>
-      <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
+      <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
         Preview
       </label>
       <div className="flex justify-center py-2">

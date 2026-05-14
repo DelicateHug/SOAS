@@ -122,23 +122,23 @@ export function CodeBlockPermissionsDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[560px] max-h-[70vh] flex flex-col">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-xl w-[560px] max-h-[70vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
             <h2 className="text-sm font-semibold">Block Permissions</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-[hsl(var(--accent))] rounded"
+            className="p-1 hover:bg-[var(--color-surface-2)] rounded"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Description */}
-        <div className="px-4 py-2 text-xs text-[hsl(var(--muted-foreground))] border-b border-[hsl(var(--border))]">
+        <div className="px-4 py-2 text-xs text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
           Control which roles can read, edit, or use &ldquo;{blockName}&rdquo;
           in their graphs.
         </div>
@@ -147,12 +147,12 @@ export function CodeBlockPermissionsDialog({
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {isLoadingPerms ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
+              <Loader2 className="w-5 h-5 animate-spin text-[var(--color-text-muted)]" />
             </div>
           ) : (
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-[hsl(var(--muted-foreground))]">
+                <tr className="text-left text-[var(--color-text-muted)]">
                   <th className="pb-2 font-medium">Role</th>
                   <th className="pb-2 font-medium text-center w-16">Read</th>
                   <th className="pb-2 font-medium text-center w-16">Edit</th>
@@ -169,14 +169,14 @@ export function CodeBlockPermissionsDialog({
                   return (
                     <tr
                       key={role.id}
-                      className="border-t border-[hsl(var(--border))]"
+                      className="border-t border-[var(--color-border)]"
                     >
                       <td className="py-2">
                         <div>
                           <span className="font-medium">
                             {role.display_name}
                           </span>
-                          <span className="text-[hsl(var(--muted-foreground))] ml-1.5">
+                          <span className="text-[var(--color-text-muted)] ml-1.5">
                             ({role.name})
                           </span>
                         </div>
@@ -188,7 +188,7 @@ export function CodeBlockPermissionsDialog({
                           onChange={() =>
                             togglePermission(role.id, "can_read")
                           }
-                          className="rounded border-[hsl(var(--input))]"
+                          className="rounded border-[var(--color-border)]"
                         />
                       </td>
                       <td className="py-2 text-center">
@@ -198,7 +198,7 @@ export function CodeBlockPermissionsDialog({
                           onChange={() =>
                             togglePermission(role.id, "can_edit")
                           }
-                          className="rounded border-[hsl(var(--input))]"
+                          className="rounded border-[var(--color-border)]"
                         />
                       </td>
                       <td className="py-2 text-center">
@@ -208,7 +208,7 @@ export function CodeBlockPermissionsDialog({
                           onChange={() =>
                             togglePermission(role.id, "can_use")
                           }
-                          className="rounded border-[hsl(var(--input))]"
+                          className="rounded border-[var(--color-border)]"
                         />
                       </td>
                     </tr>
@@ -220,17 +220,17 @@ export function CodeBlockPermissionsDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[hsl(var(--border))]">
+        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--color-border)]">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-xs rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+            className="px-3 py-1.5 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
           >
             Cancel
           </button>
           <button
             onClick={() => saveMutation.mutate()}
             disabled={!isDirty || saveMutation.isPending}
-            className="px-3 py-1.5 text-xs rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+            className="px-3 py-1.5 text-xs rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
           >
             {saveMutation.isPending ? (
               <Loader2 className="w-3 h-3 animate-spin inline mr-1" />

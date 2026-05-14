@@ -84,12 +84,12 @@ export function DebugGraph({ graphData, nodeTrace }: DebugGraphProps) {
     : null;
 
   if (!catalog) {
-    return <div className="text-sm text-[hsl(var(--muted-foreground))] py-4">Loading graph...</div>;
+    return <div className="text-sm text-[var(--color-text-muted)] py-4">Loading graph...</div>;
   }
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-[hsl(var(--border))] flex items-center justify-between">
+    <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+      <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
         <h2 className="font-semibold text-sm">Debug Graph</h2>
         <div className="flex items-center gap-3 text-[10px]">
           <span className="flex items-center gap-1">
@@ -166,12 +166,12 @@ function NodeInspector({
   const status = exec?.status === "completed" ? "completed" : "error";
 
   return (
-    <div className="border-t border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-      <div className="px-4 py-2 border-b border-[hsl(var(--border))] flex items-center justify-between">
+    <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="px-4 py-2 border-b border-[var(--color-border)] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div>
             <p className="text-xs font-semibold">{label}</p>
-            <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
+            <p className="text-[10px] text-[var(--color-text-muted)]">
               {nodeType} &middot; {nodeId.slice(0, 8)}
             </p>
           </div>
@@ -187,7 +187,7 @@ function NodeInspector({
             </span>
           )}
           {exec?.duration_ms != null && (
-            <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+            <span className="text-[10px] text-[var(--color-text-muted)]">
               {exec.duration_ms < 1
                 ? `${(exec.duration_ms * 1000).toFixed(0)}us`
                 : exec.duration_ms < 1000
@@ -198,13 +198,13 @@ function NodeInspector({
           {/* Execution selector for loop nodes */}
           {execCount > 1 && (
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+              <span className="text-[10px] text-[var(--color-text-muted)]">
                 Iteration:
               </span>
               <select
                 value={selectedExec}
                 onChange={(e) => setSelectedExec(Number(e.target.value))}
-                className="text-xs bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded px-1 py-0.5"
+                className="text-xs bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-1 py-0.5"
               >
                 {Array.from({ length: execCount }).map((_, i) => (
                   <option key={i} value={i}>
@@ -218,7 +218,7 @@ function NodeInspector({
         </div>
         <button
           onClick={onClose}
-          className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] px-2 py-1"
+          className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] px-2 py-1"
         >
           Close
         </button>
@@ -240,7 +240,7 @@ function NodeInspector({
           <div className="grid grid-cols-2 gap-4">
             {/* Inputs */}
             <div>
-              <p className="text-[10px] font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+              <p className="text-[10px] font-medium text-[var(--color-text-muted)] mb-1.5">
                 Inputs
               </p>
               {Object.keys(exec.inputs).length > 0 ? (
@@ -248,17 +248,17 @@ function NodeInspector({
                   {Object.entries(exec.inputs).map(([port, value]) => (
                     <div
                       key={port}
-                      className="bg-[hsl(var(--background))] rounded p-1.5 border border-[hsl(var(--border))]"
+                      className="bg-[var(--color-bg)] rounded p-1.5 border border-[var(--color-border)]"
                     >
                       <p className="text-[10px] font-medium text-blue-400">{port}</p>
-                      <pre className="text-[10px] text-[hsl(var(--foreground))] whitespace-pre-wrap break-all font-mono mt-0.5">
+                      <pre className="text-[10px] text-[var(--color-text)] whitespace-pre-wrap break-all font-mono mt-0.5">
                         {value}
                       </pre>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-[10px] text-[hsl(var(--muted-foreground))] italic">
+                <p className="text-[10px] text-[var(--color-text-muted)] italic">
                   No inputs
                 </p>
               )}
@@ -266,7 +266,7 @@ function NodeInspector({
 
             {/* Outputs */}
             <div>
-              <p className="text-[10px] font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+              <p className="text-[10px] font-medium text-[var(--color-text-muted)] mb-1.5">
                 Outputs
               </p>
               {Object.keys(exec.outputs).length > 0 ? (
@@ -274,17 +274,17 @@ function NodeInspector({
                   {Object.entries(exec.outputs).map(([port, value]) => (
                     <div
                       key={port}
-                      className="bg-[hsl(var(--background))] rounded p-1.5 border border-[hsl(var(--border))]"
+                      className="bg-[var(--color-bg)] rounded p-1.5 border border-[var(--color-border)]"
                     >
                       <p className="text-[10px] font-medium text-green-400">{port}</p>
-                      <pre className="text-[10px] text-[hsl(var(--foreground))] whitespace-pre-wrap break-all font-mono mt-0.5">
+                      <pre className="text-[10px] text-[var(--color-text)] whitespace-pre-wrap break-all font-mono mt-0.5">
                         {value}
                       </pre>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-[10px] text-[hsl(var(--muted-foreground))] italic">
+                <p className="text-[10px] text-[var(--color-text-muted)] italic">
                   No outputs
                 </p>
               )}
@@ -293,7 +293,7 @@ function NodeInspector({
         </div>
       ) : (
         <div className="px-4 py-3 text-center">
-          <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
+          <p className="text-[10px] text-[var(--color-text-muted)]">
             Node was not reached during execution
           </p>
         </div>

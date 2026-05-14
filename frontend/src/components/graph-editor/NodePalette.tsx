@@ -160,10 +160,10 @@ export function NodePalette({ onCollapse }: NodePaletteProps) {
       draggable
       onDragStart={(e) => handleDragStart(e, item.entry)}
       onClick={() => handleClickAdd(item.entry)}
-      className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-grab active:cursor-grabbing hover:bg-[hsl(var(--accent))] transition-colors group"
+      className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-grab active:cursor-grabbing hover:bg-[var(--color-surface-2)] transition-colors group"
       title={item.isLibrary ? `${item.entry.description}\nby ${item.creatorName}` : item.entry.description}
     >
-      <GripVertical className="w-3 h-3 text-[hsl(var(--muted-foreground))] opacity-0 group-hover:opacity-100 transition-opacity" />
+      <GripVertical className="w-3 h-3 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
       <div
         className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
         style={{ backgroundColor: item.entry.color }}
@@ -184,7 +184,7 @@ export function NodePalette({ onCollapse }: NodePaletteProps) {
         >
           <Star
             className={`w-3 h-3 ${
-              item.isFavorited ? "fill-yellow-400 text-yellow-400" : "text-[hsl(var(--muted-foreground))]"
+              item.isFavorited ? "fill-yellow-400 text-yellow-400" : "text-[var(--color-text-muted)]"
             }`}
           />
         </button>
@@ -204,29 +204,29 @@ export function NodePalette({ onCollapse }: NodePaletteProps) {
   }, [grouped]);
 
   return (
-    <div className="w-48 border-r border-[hsl(var(--border))] bg-[hsl(var(--background))] flex flex-col h-full overflow-hidden">
+    <div className="w-48 border-r border-[var(--color-border)] bg-[var(--color-bg)] flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="p-2 border-b border-[hsl(var(--border))]">
+      <div className="p-2 border-b border-[var(--color-border)]">
         <div className="flex items-center justify-between mb-1.5">
           <h2 className="text-xs font-semibold">Nodes</h2>
           {onCollapse && (
             <button
               onClick={onCollapse}
-              className="p-0.5 hover:bg-[hsl(var(--accent))] rounded"
+              className="p-0.5 hover:bg-[var(--color-surface-2)] rounded"
               title="Collapse panel"
             >
-              <PanelLeftClose className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+              <PanelLeftClose className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
             </button>
           )}
         </div>
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search nodes..."
-            className="w-full pl-7 pr-2 py-1.5 text-xs border border-[hsl(var(--input))] rounded-md bg-transparent"
+            className="w-full pl-7 pr-2 py-1.5 text-xs border border-[var(--color-border)] rounded-md bg-transparent"
           />
         </div>
       </div>
@@ -234,11 +234,11 @@ export function NodePalette({ onCollapse }: NodePaletteProps) {
       {/* Node list */}
       <div className="flex-1 overflow-y-auto p-2">
         {isLoading ? (
-          <div className="text-center py-4 text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="text-center py-4 text-xs text-[var(--color-text-muted)]">
             Loading catalog...
           </div>
         ) : Object.keys(grouped).length === 0 ? (
-          <div className="text-center py-4 text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="text-center py-4 text-xs text-[var(--color-text-muted)]">
             {searchQuery ? "No matching nodes" : "No nodes available"}
           </div>
         ) : (
@@ -274,10 +274,10 @@ export function NodePalette({ onCollapse }: NodePaletteProps) {
               <div key={category} className="mb-2">
                 <button
                   onClick={() => toggleCategory(category)}
-                  className={`flex items-center gap-1 w-full text-left px-1 py-1 text-xs font-semibold uppercase tracking-wider hover:text-[hsl(var(--foreground))] ${
+                  className={`flex items-center gap-1 w-full text-left px-1 py-1 text-xs font-semibold uppercase tracking-wider hover:text-[var(--color-text)] ${
                     category === "Custom" || category.startsWith("Custom >")
                       ? "text-green-500"
-                      : "text-[hsl(var(--muted-foreground))]"
+                      : "text-[var(--color-text-muted)]"
                   }`}
                 >
                   {collapsedCategories.has(category) ? (

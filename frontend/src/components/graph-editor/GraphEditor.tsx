@@ -580,10 +580,10 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
           ) : (
             <button
               onClick={() => setIsLeftPanelOpen(true)}
-              className="w-8 border-r border-[hsl(var(--border))] bg-[hsl(var(--background))] flex items-center justify-center hover:bg-[hsl(var(--accent))] transition-colors"
+              className="w-8 border-r border-[var(--color-border)] bg-[var(--color-bg)] flex items-center justify-center hover:bg-[var(--color-surface-2)] transition-colors"
               title="Show node palette"
             >
-              <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+              <ChevronRight className="w-4 h-4 text-[var(--color-text-muted)]" />
             </button>
           )
         )}
@@ -720,7 +720,7 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
                   />
                 ) : bottomTab === "errors" ? (
                   <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
                       <span className="text-xs font-semibold">
                         Validation Errors ({validationErrors.length})
                       </span>
@@ -756,15 +756,15 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
 
         {/* Right: Property / Issues Panel */}
         {isRightPanelOpen ? (
-          <div className="w-56 border-l border-[hsl(var(--border))] bg-[hsl(var(--background))] flex flex-col h-full overflow-hidden">
+          <div className="w-56 border-l border-[var(--color-border)] bg-[var(--color-bg)] flex flex-col h-full overflow-hidden">
             {/* Tab bar */}
-            <div className="flex border-b border-[hsl(var(--border))] shrink-0">
+            <div className="flex border-b border-[var(--color-border)] shrink-0">
               <button
                 onClick={() => setRightTab("properties")}
                 className={`flex-1 flex items-center justify-center gap-1 px-1 py-1.5 text-[10px] font-medium border-b-2 transition-colors ${
                   rightTab === "properties"
-                    ? "border-blue-500 text-[hsl(var(--foreground))]"
-                    : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                    ? "border-blue-500 text-[var(--color-text)]"
+                    : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                 }`}
               >
                 <Settings2 className="w-3 h-3" />
@@ -774,8 +774,8 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
                 onClick={() => setRightTab("issues")}
                 className={`flex-1 flex items-center justify-center gap-1 px-1 py-1.5 text-[10px] font-medium border-b-2 transition-colors ${
                   rightTab === "issues"
-                    ? "border-amber-500 text-[hsl(var(--foreground))]"
-                    : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                    ? "border-amber-500 text-[var(--color-text)]"
+                    : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                 }`}
               >
                 <CircleDot className="w-3 h-3" />
@@ -805,10 +805,10 @@ export function GraphEditor({ automationId, automationVersion = 1, onCreateAutom
         ) : (
           <button
             onClick={() => setIsRightPanelOpen(true)}
-            className="w-8 border-l border-[hsl(var(--border))] bg-[hsl(var(--background))] flex items-center justify-center hover:bg-[hsl(var(--accent))] transition-colors"
+            className="w-8 border-l border-[var(--color-border)] bg-[var(--color-bg)] flex items-center justify-center hover:bg-[var(--color-surface-2)] transition-colors"
             title="Show properties"
           >
-            <ChevronLeft className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+            <ChevronLeft className="w-4 h-4 text-[var(--color-text-muted)]" />
           </button>
         )}
       </div>

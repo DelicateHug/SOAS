@@ -82,7 +82,7 @@ function DiffView({ diff_summary }: { diff_summary: Record<string, { old: unknow
   };
 
   return (
-    <div className="rounded-md border border-[hsl(var(--border))] overflow-hidden font-mono text-xs">
+    <div className="rounded-md border border-[var(--color-border)] overflow-hidden font-mono text-xs">
       {Object.entries(diff_summary).map(([field, diff]) => {
         const isCollapsed = collapsedFields.has(field);
         const oldStr = String(diff.old ?? "");
@@ -90,9 +90,9 @@ function DiffView({ diff_summary }: { diff_summary: Record<string, { old: unknow
         const isLong = oldStr.length > 200 || newStr.length > 200;
 
         return (
-          <div key={field} className="border-b border-[hsl(var(--border))] last:border-b-0">
+          <div key={field} className="border-b border-[var(--color-border)] last:border-b-0">
             <div
-              className="px-3 py-1.5 bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] font-semibold font-sans text-xs flex items-center gap-1.5 cursor-pointer select-none"
+              className="px-3 py-1.5 bg-[var(--color-surface-2)] text-[var(--color-text-muted)] font-semibold font-sans text-xs flex items-center gap-1.5 cursor-pointer select-none"
               onClick={() => isLong && toggleField(field)}
             >
               {isLong && (
@@ -108,7 +108,7 @@ function DiffView({ diff_summary }: { diff_summary: Record<string, { old: unknow
               )}
             </div>
             {!isCollapsed && (
-              <div className="divide-y divide-[hsl(var(--border))]">
+              <div className="divide-y divide-[var(--color-border)]">
                 {diff.old != null && (
                   <div className="px-3 py-1.5 bg-red-500/5 text-red-400 whitespace-pre-wrap break-all">
                     <span className="select-none mr-2 opacity-60">-</span>
@@ -157,26 +157,26 @@ function ReviewCard({
   const creatorName = cr.creator?.display_name ?? "Unknown";
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+    <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
       {/* Header row */}
       <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-[hsl(var(--accent))]/30 transition-colors"
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-[var(--color-surface-2)]/30 transition-colors"
         onClick={onToggle}
       >
         {isExpanded ? (
-          <ChevronDown className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+          <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+          <ChevronRight className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
         )}
 
-        <Icon className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+        <Icon className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
 
         <div className="flex-1 min-w-0 flex items-center gap-2">
           <span className="font-medium truncate">{cr.title}</span>
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${action.bg} ${action.color}`}>
             {action.label}
           </span>
-          <span className="text-xs text-[hsl(var(--muted-foreground))]">
+          <span className="text-xs text-[var(--color-text-muted)]">
             {ENTITY_LABELS[cr.entity_type] ?? cr.entity_type}
           </span>
         </div>
@@ -184,9 +184,9 @@ function ReviewCard({
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-1.5" title={creatorName}>
             <UserAvatar displayName={creatorName} size="sm" />
-            <span className="text-xs text-[hsl(var(--muted-foreground))]">{creatorName}</span>
+            <span className="text-xs text-[var(--color-text-muted)]">{creatorName}</span>
           </div>
-          <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
+          <span className="text-xs text-[var(--color-text-muted)] tabular-nums">
             {new Date(cr.created_at).toLocaleDateString()}
           </span>
         </div>
@@ -194,11 +194,11 @@ function ReviewCard({
 
       {/* Expanded review panel */}
       {isExpanded && (
-        <div className="border-t border-[hsl(var(--border))] bg-[hsl(var(--card))]/50">
+        <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50">
           {/* Details */}
           <div className="px-4 py-3 space-y-3">
             {/* Meta */}
-            <div className="flex items-center gap-4 text-xs text-[hsl(var(--muted-foreground))]">
+            <div className="flex items-center gap-4 text-xs text-[var(--color-text-muted)]">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 Created {new Date(cr.created_at).toLocaleString()}
@@ -215,7 +215,7 @@ function ReviewCard({
                   href={cr.git_pr_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[hsl(var(--primary))] hover:underline font-medium"
+                  className="text-[var(--color-primary)] hover:underline font-medium"
                 >
                   View PR
                 </a>
@@ -230,7 +230,7 @@ function ReviewCard({
                   <span className="text-xs font-medium text-blue-400">
                     {creatorName}'s note:
                   </span>
-                  <p className="mt-0.5 text-[hsl(var(--foreground))]">{cr.submit_comment}</p>
+                  <p className="mt-0.5 text-[var(--color-text)]">{cr.submit_comment}</p>
                 </div>
               </div>
             )}
@@ -238,7 +238,7 @@ function ReviewCard({
             {/* Diff */}
             {cr.diff_summary && Object.keys(cr.diff_summary).length > 0 && (
               <div>
-                <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5 block">
+                <label className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 block">
                   Changes ({Object.keys(cr.diff_summary).length} field{Object.keys(cr.diff_summary).length !== 1 ? "s" : ""})
                 </label>
                 <DiffView diff_summary={cr.diff_summary} />
@@ -248,13 +248,13 @@ function ReviewCard({
 
           {/* Review actions */}
           {cr.status === "submitted" && (
-            <div className="border-t border-[hsl(var(--border))] px-4 py-3 space-y-2">
+            <div className="border-t border-[var(--color-border)] px-4 py-3 space-y-2">
               <textarea
                 placeholder="Add a review comment (optional)..."
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 text-sm rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] resize-none focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
+                className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] resize-none focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
               />
               <div className="flex items-center gap-2">
                 <button
@@ -278,12 +278,12 @@ function ReviewCard({
           )}
 
           {cr.status === "approved" && (
-            <div className="border-t border-[hsl(var(--border))] px-4 py-3">
+            <div className="border-t border-[var(--color-border)] px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-green-400 font-medium flex items-center gap-1">
                   <CheckCircle2 className="w-4 h-4" />
                   Approved
-                  {cr.reviewer && <span className="text-[hsl(var(--muted-foreground))] font-normal">by {cr.reviewer.display_name}</span>}
+                  {cr.reviewer && <span className="text-[var(--color-text-muted)] font-normal">by {cr.reviewer.display_name}</span>}
                 </span>
                 <button
                   onClick={() => onApply(cr.id)}
@@ -299,7 +299,7 @@ function ReviewCard({
                   <MessageSquare className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
                   <div className="text-sm">
                     <span className="text-xs font-medium text-amber-400">Review comment:</span>
-                    <p className="mt-0.5 text-[hsl(var(--foreground))]">{cr.review_comment}</p>
+                    <p className="mt-0.5 text-[var(--color-text)]">{cr.review_comment}</p>
                   </div>
                 </div>
               )}
@@ -429,18 +429,18 @@ export function ReviewChangesPage() {
     <div className="max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <GitPullRequest className="w-6 h-6 text-[hsl(var(--primary))]" />
+        <GitPullRequest className="w-6 h-6 text-[var(--color-primary)]" />
         <h1 className="text-2xl font-bold">Review Changes</h1>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-[hsl(var(--border))]">
+      <div className="flex gap-1 mb-6 border-b border-[var(--color-border)]">
         <button
           onClick={() => setActiveTab("reviews")}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === "reviews"
-              ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))]"
-              : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              ? "border-[var(--color-primary)] text-[var(--color-text)]"
+              : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
           }`}
         >
           <GitPullRequest className="w-4 h-4" />
@@ -455,8 +455,8 @@ export function ReviewChangesPage() {
           onClick={() => setActiveTab("dev-prod")}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === "dev-prod"
-              ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))]"
-              : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              ? "border-[var(--color-primary)] text-[var(--color-text)]"
+              : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
           }`}
         >
           <GitBranch className="w-4 h-4" />
@@ -475,21 +475,21 @@ export function ReviewChangesPage() {
           {/* Search + Filters */}
           <div className="flex items-center gap-2 mb-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
               <input
                 type="text"
                 placeholder="Search by title, author, or type..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
               />
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`p-2 rounded-md border transition-colors ${
                 showFilters || hasActiveFilters
-                  ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5"
-                  : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/5"
+                  : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
               }`}
               title="Toggle filters"
             >
@@ -499,17 +499,17 @@ export function ReviewChangesPage() {
 
           {/* Filter panel */}
           {showFilters && (
-            <div className="mb-4 p-3 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] space-y-3">
+            <div className="mb-4 p-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] space-y-3">
               {entityTypes.length > 1 && (
                 <div>
-                  <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5 block">Type</label>
+                  <label className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 block">Type</label>
                   <div className="flex flex-wrap gap-1.5">
                     <button
                       onClick={() => setEntityFilter("all")}
                       className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                         entityFilter === "all"
-                          ? "bg-[hsl(var(--primary))] text-white"
-                          : "bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                          ? "bg-[var(--color-primary)] text-white"
+                          : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                       }`}
                     >
                       All
@@ -520,8 +520,8 @@ export function ReviewChangesPage() {
                         onClick={() => setEntityFilter(t)}
                         className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                           entityFilter === t
-                            ? "bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] ring-1 ring-[hsl(var(--primary))]"
-                            : "bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                            ? "bg-[var(--color-primary)]/20 text-[var(--color-primary)] ring-1 ring-[var(--color-primary)]"
+                            : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                         }`}
                       >
                         {ENTITY_LABELS[t] ?? t}
@@ -533,7 +533,7 @@ export function ReviewChangesPage() {
 
               {creators.length > 1 && (
                 <div>
-                  <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5 flex items-center gap-1">
+                  <label className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1">
                     <Users className="w-3 h-3" />
                     Submitted by
                   </label>
@@ -542,8 +542,8 @@ export function ReviewChangesPage() {
                       onClick={() => setCreatorFilter("all")}
                       className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                         creatorFilter === "all"
-                          ? "bg-[hsl(var(--primary))] text-white"
-                          : "bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                          ? "bg-[var(--color-primary)] text-white"
+                          : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                       }`}
                     >
                       All
@@ -554,8 +554,8 @@ export function ReviewChangesPage() {
                         onClick={() => setCreatorFilter(id)}
                         className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1 ${
                           creatorFilter === id
-                            ? "bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] ring-1 ring-[hsl(var(--primary))]"
-                            : "bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                            ? "bg-[var(--color-primary)]/20 text-[var(--color-primary)] ring-1 ring-[var(--color-primary)]"
+                            : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                         }`}
                       >
                         {name}
@@ -568,7 +568,7 @@ export function ReviewChangesPage() {
               {hasActiveFilters && (
                 <button
                   onClick={() => { setEntityFilter("all"); setCreatorFilter("all"); setSearchQuery(""); }}
-                  className="text-xs text-[hsl(var(--primary))] hover:underline"
+                  className="text-xs text-[var(--color-primary)] hover:underline"
                 >
                   Clear all filters
                 </button>
@@ -579,13 +579,13 @@ export function ReviewChangesPage() {
           {/* Loading */}
           {isLoading && (
             <div className="flex items-center justify-center py-16">
-              <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
             </div>
           )}
 
           {/* Empty state */}
           {!isLoading && items.length === 0 && (
-            <div className="text-center py-16 text-[hsl(var(--muted-foreground))]">
+            <div className="text-center py-16 text-[var(--color-text-muted)]">
               <GitPullRequest className="w-12 h-12 mx-auto mb-3 opacity-20" />
               {allItems.length === 0 ? (
                 <>
@@ -600,7 +600,7 @@ export function ReviewChangesPage() {
                   <p className="text-sm mt-1">Try adjusting your filters.</p>
                   <button
                     onClick={() => { setEntityFilter("all"); setCreatorFilter("all"); setSearchQuery(""); }}
-                    className="mt-3 text-sm text-[hsl(var(--primary))] hover:underline"
+                    className="mt-3 text-sm text-[var(--color-primary)] hover:underline"
                   >
                     Clear all filters
                   </button>
@@ -633,32 +633,32 @@ export function ReviewChangesPage() {
       {activeTab === "dev-prod" && (
         <>
           {devChangeItems.length === 0 ? (
-            <div className="text-center py-16 text-[hsl(var(--muted-foreground))]">
+            <div className="text-center py-16 text-[var(--color-text-muted)]">
               <CheckCircle2 className="w-10 h-10 mx-auto mb-3 opacity-20" />
               <p className="font-medium">Dev and Prod are in sync</p>
               <p className="text-sm mt-1">No changes to promote.</p>
             </div>
           ) : (
             <>
-              <div className="rounded-lg border border-[hsl(var(--border))] overflow-hidden mb-4">
+              <div className="rounded-lg border border-[var(--color-border)] overflow-hidden mb-4">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--accent))]/50">
-                      <th className="text-left px-3 py-2 text-xs font-medium text-[hsl(var(--muted-foreground))]">File</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-[hsl(var(--muted-foreground))]">Type</th>
+                    <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/50">
+                      <th className="text-left px-3 py-2 text-xs font-medium text-[var(--color-text-muted)]">File</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-[var(--color-text-muted)]">Type</th>
                     </tr>
                   </thead>
                   <tbody>
                     {devChangeItems.map((item, i) => {
                       const EntIcon = ENTITY_ICONS[item.entity_type ?? ""] ?? FileText;
                       return (
-                        <tr key={i} className="border-b border-[hsl(var(--border))] last:border-b-0">
-                          <td className="px-3 py-2 font-mono text-xs text-[hsl(var(--foreground))]">
+                        <tr key={i} className="border-b border-[var(--color-border)] last:border-b-0">
+                          <td className="px-3 py-2 font-mono text-xs text-[var(--color-text)]">
                             {item.file_path}
                           </td>
                           <td className="px-3 py-2">
                             {item.entity_type && (
-                              <span className="inline-flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))]">
+                              <span className="inline-flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
                                 <EntIcon className="w-3 h-3" />
                                 {ENTITY_LABELS[item.entity_type] ?? item.entity_type}
                               </span>
@@ -683,7 +683,7 @@ export function ReviewChangesPage() {
                   <ArrowUpToLine className="w-4 h-4" />
                   {promoteMutation.isPending ? "Promoting..." : "Promote All to Prod"}
                 </button>
-                <span className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1">
+                <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   Merges dev branch into main and applies to the live database
                 </span>

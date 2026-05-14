@@ -84,10 +84,10 @@ export function ExecutionsTab() {
       {isLoading ? (
         <div className="text-center py-8">Loading...</div>
       ) : (
-        <div className="border border-[hsl(var(--border))] rounded-lg">
+        <div className="border border-[var(--color-border)] rounded-lg">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[hsl(var(--border))] text-left text-sm text-[hsl(var(--muted-foreground))]">
+              <tr className="border-b border-[var(--color-border)] text-left text-sm text-[var(--color-text-muted)]">
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Automation</th>
                 <th className="px-4 py-3 font-medium">Triggered By</th>
@@ -96,11 +96,11 @@ export function ExecutionsTab() {
                 <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[hsl(var(--border))]">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {executions?.data.map((exec) => (
                 <tr
                   key={exec.id}
-                  className="hover:bg-[hsl(var(--accent))]"
+                  className="hover:bg-[var(--color-surface-2)]"
                 >
                   <td className="px-4 py-3">
                     <span
@@ -117,15 +117,15 @@ export function ExecutionsTab() {
                   <td className="px-4 py-3 text-sm">
                     {exec.automation_name || "Unknown"}
                   </td>
-                  <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                     {exec.triggered_by.display_name}
                   </td>
-                  <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                     {exec.duration_ms != null
                       ? formatDuration(exec.duration_ms)
                       : "-"}
                   </td>
-                  <td className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {exec.started_at
@@ -136,7 +136,7 @@ export function ExecutionsTab() {
                   <td className="px-4 py-3">
                     <Link
                       to={`/executions/${exec.id}`}
-                      className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                      className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1"
                     >
                       <Terminal className="w-3 h-3" /> View
                     </Link>
@@ -147,7 +147,7 @@ export function ExecutionsTab() {
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-4 py-8 text-center text-[hsl(var(--muted-foreground))]"
+                    className="px-4 py-8 text-center text-[var(--color-text-muted)]"
                   >
                     No executions found
                   </td>
@@ -163,11 +163,11 @@ export function ExecutionsTab() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-3 py-1 text-sm border border-[hsl(var(--border))] rounded disabled:opacity-50"
+            className="px-3 py-1 text-sm border border-[var(--color-border)] rounded disabled:opacity-50"
           >
             Previous
           </button>
-          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+          <span className="text-sm text-[var(--color-text-muted)]">
             Page {page} of {executions.meta.total_pages}
           </span>
           <button
@@ -177,7 +177,7 @@ export function ExecutionsTab() {
               )
             }
             disabled={page === executions.meta.total_pages}
-            className="px-3 py-1 text-sm border border-[hsl(var(--border))] rounded disabled:opacity-50"
+            className="px-3 py-1 text-sm border border-[var(--color-border)] rounded disabled:opacity-50"
           >
             Next
           </button>

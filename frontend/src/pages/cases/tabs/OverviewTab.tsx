@@ -57,15 +57,15 @@ export function OverviewTab({ caseData, caseId }: Props) {
   return (
     <div className="space-y-6">
       {/* Linked Incidents */}
-      <div className="border border-[hsl(var(--border))] rounded-lg">
-        <div className="px-4 py-3 border-b border-[hsl(var(--border))] flex items-center justify-between">
+      <div className="border border-[var(--color-border)] rounded-lg">
+        <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
           <h2 className="font-semibold">
             Linked Incidents ({caseData.incidents.length})
           </h2>
           <div className="relative">
             <button
               onClick={() => setShowLinkPopover(!showLinkPopover)}
-              className="flex items-center gap-1 px-2 py-1 text-xs border border-[hsl(var(--border))] rounded hover:bg-[hsl(var(--accent))] transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-xs border border-[var(--color-border)] rounded hover:bg-[var(--color-surface-2)] transition-colors"
             >
               <Plus className="w-3 h-3" />
               Link Incident
@@ -83,11 +83,11 @@ export function OverviewTab({ caseData, caseId }: Props) {
         </div>
 
         {caseData.incidents.length === 0 ? (
-          <div className="px-4 py-8 text-center text-[hsl(var(--muted-foreground))]">
+          <div className="px-4 py-8 text-center text-[var(--color-text-muted)]">
             No incidents linked to this group
           </div>
         ) : (
-          <div className="divide-y divide-[hsl(var(--border))]">
+          <div className="divide-y divide-[var(--color-border)]">
             {caseData.incidents.map((incident) => (
               <IncidentCard
                 key={incident.id}
@@ -102,13 +102,13 @@ export function OverviewTab({ caseData, caseId }: Props) {
 
       {/* Metadata */}
       {caseData.tags.length > 0 && (
-        <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+        <div className="border border-[var(--color-border)] rounded-lg p-4">
           <h3 className="text-sm font-semibold mb-2">Tags</h3>
           <div className="flex gap-1 flex-wrap">
             {caseData.tags.map((tag) => (
               <span
                 key={tag}
-                className="px-1.5 py-0.5 rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] text-xs"
+                className="px-1.5 py-0.5 rounded bg-[var(--color-surface-2)] text-[var(--color-text-muted)] text-xs"
               >
                 {tag}
               </span>
@@ -118,15 +118,15 @@ export function OverviewTab({ caseData, caseId }: Props) {
       )}
 
       {/* Timestamps */}
-      <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+      <div className="border border-[var(--color-border)] rounded-lg p-4">
         <h3 className="text-sm font-semibold mb-2">Timestamps</h3>
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
-            <span className="text-[hsl(var(--muted-foreground))]">Created:</span>{" "}
+            <span className="text-[var(--color-text-muted)]">Created:</span>{" "}
             {formatDate(caseData.created_at)}
           </div>
           <div>
-            <span className="text-[hsl(var(--muted-foreground))]">Updated:</span>{" "}
+            <span className="text-[var(--color-text-muted)]">Updated:</span>{" "}
             {formatDate(caseData.updated_at)}
           </div>
         </div>
@@ -147,11 +147,11 @@ function IncidentCard({
   unlinking: boolean;
 }) {
   return (
-    <div className="px-4 py-3 flex items-center gap-3 hover:bg-[hsl(var(--accent)/0.3)] transition-colors group">
+    <div className="px-4 py-3 flex items-center gap-3 hover:bg-[var(--color-surface-2)] transition-colors group">
       <div className="flex-1 min-w-0">
         <Link
           to={`/incidents/${incident.id}`}
-          className="text-sm font-medium hover:text-[hsl(var(--primary))] transition-colors"
+          className="text-sm font-medium hover:text-[var(--color-primary)] transition-colors"
         >
           {incident.title}
         </Link>
@@ -170,7 +170,7 @@ function IncidentCard({
             {incident.status.replace("_", " ")}
           </span>
           {incident.lead && (
-            <span className="text-[10px] text-[hsl(var(--muted-foreground))] flex items-center gap-1">
+            <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-1">
               <UserAvatar
                 displayName={incident.lead.display_name}
                 size="sm"
@@ -179,7 +179,7 @@ function IncidentCard({
             </span>
           )}
           {incident.detected_at && (
-            <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+            <span className="text-[10px] text-[var(--color-text-muted)]">
               Detected {formatDate(incident.detected_at)}
             </span>
           )}
@@ -188,13 +188,13 @@ function IncidentCard({
               {incident.tags.slice(0, 3).map((tag) => (
                 <span
                   key={tag}
-                  className="px-1 py-0.5 rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] text-[10px]"
+                  className="px-1 py-0.5 rounded bg-[var(--color-surface-2)] text-[var(--color-text-muted)] text-[10px]"
                 >
                   {tag}
                 </span>
               ))}
               {incident.tags.length > 3 && (
-                <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                <span className="text-[10px] text-[var(--color-text-muted)]">
                   +{incident.tags.length - 3}
                 </span>
               )}
@@ -205,7 +205,7 @@ function IncidentCard({
       <button
         onClick={onUnlink}
         disabled={unlinking}
-        className="p-1.5 rounded text-[hsl(var(--muted-foreground))] hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
+        className="p-1.5 rounded text-[var(--color-text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
         title="Unlink incident"
       >
         <Unlink className="w-4 h-4" />
@@ -248,20 +248,20 @@ function LinkIncidentPopover({
   return (
     <div
       ref={ref}
-      className="absolute right-0 top-full mt-1 z-50 w-80 border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--popover))] shadow-lg"
+      className="absolute right-0 top-full mt-1 z-50 w-80 border border-[var(--color-border)] rounded-md bg-[var(--color-surface)] shadow-lg"
     >
-      <div className="px-3 py-2 border-b border-[hsl(var(--border))]">
-        <p className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+      <div className="px-3 py-2 border-b border-[var(--color-border)]">
+        <p className="text-xs font-medium text-[var(--color-text-muted)]">
           Link incidents
         </p>
       </div>
       <div className="max-h-64 overflow-y-auto py-1">
         {isLoading ? (
           <div className="flex items-center justify-center py-4">
-            <div className="h-4 w-4 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+            <div className="h-4 w-4 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : !incidents?.data.length ? (
-          <p className="px-3 py-2 text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="px-3 py-2 text-xs text-[var(--color-text-muted)]">
             No open incidents found
           </p>
         ) : (
@@ -274,13 +274,13 @@ function LinkIncidentPopover({
                   isLinked ? onUnlink(inc.id) : onLink(inc.id)
                 }
                 disabled={isPending}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-[hsl(var(--accent))] disabled:opacity-50 text-left"
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-[var(--color-surface-2)] disabled:opacity-50 text-left"
               >
                 <input
                   type="checkbox"
                   checked={isLinked}
                   readOnly
-                  className="rounded border-[hsl(var(--input))]"
+                  className="rounded border-[var(--color-border)]"
                 />
                 <span className="flex-1 truncate">{inc.title}</span>
                 <span

@@ -101,12 +101,12 @@ export function GraphEditorToolbar({
   const validationErrors = useGraphEditorStore((s) => s.validationErrors);
 
   return (
-    <div className="h-10 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))] flex items-center px-2 gap-1.5">
+    <div className="h-10 border-b border-[var(--color-border)] bg-[var(--color-bg)] flex items-center px-2 gap-1.5">
       {/* Panel toggles */}
       <button
         onClick={onToggleLeftPanel}
-        className={`p-1.5 rounded hover:bg-[hsl(var(--accent))] transition-colors ${
-          isLeftPanelOpen ? "text-[hsl(var(--foreground))]" : "text-[hsl(var(--muted-foreground))]"
+        className={`p-1.5 rounded hover:bg-[var(--color-surface-2)] transition-colors ${
+          isLeftPanelOpen ? "text-[var(--color-text)]" : "text-[var(--color-text-muted)]"
         }`}
         title={isLeftPanelOpen ? "Hide node palette" : "Show node palette"}
       >
@@ -119,7 +119,7 @@ export function GraphEditorToolbar({
         value={name}
         onChange={(e) => setName(e.target.value)}
         disabled={isReadOnly}
-        className="px-2 py-1 text-xs font-medium border border-transparent hover:border-[hsl(var(--input))] focus:border-[hsl(var(--input))] rounded bg-transparent w-40 truncate disabled:opacity-50"
+        className="px-2 py-1 text-xs font-medium border border-transparent hover:border-[var(--color-border)] focus:border-[var(--color-border)] rounded bg-transparent w-40 truncate disabled:opacity-50"
         placeholder="Graph name"
       />
 
@@ -129,13 +129,13 @@ export function GraphEditorToolbar({
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         disabled={isReadOnly}
-        className="px-2 py-1 text-[11px] border border-transparent hover:border-[hsl(var(--input))] focus:border-[hsl(var(--input))] rounded bg-transparent w-40 text-[hsl(var(--muted-foreground))] truncate disabled:opacity-50"
+        className="px-2 py-1 text-[11px] border border-transparent hover:border-[var(--color-border)] focus:border-[var(--color-border)] rounded bg-transparent w-40 text-[var(--color-text-muted)] truncate disabled:opacity-50"
         placeholder="Description..."
       />
 
       {/* Save status (hidden in production) */}
       {!isProduction && (
-        <div className="flex items-center gap-1 text-[11px] text-[hsl(var(--muted-foreground))] ml-1">
+        <div className="flex items-center gap-1 text-[11px] text-[var(--color-text-muted)] ml-1">
           {isSaving ? (
             <>
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -164,11 +164,11 @@ export function GraphEditorToolbar({
       {/* Collaboration: avatars + connection status */}
       {isCollabConnected && (
         <>
-          <div className="w-px h-5 bg-[hsl(var(--border))] mx-0.5" />
+          <div className="w-px h-5 bg-[var(--color-border)] mx-0.5" />
           <CollaboratorAvatars collaborators={collaborators} myUserId={myUserId} />
           <div className="flex items-center gap-1 text-[10px]">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            <span className="text-[hsl(var(--muted-foreground))]">Live</span>
+            <span className="text-[var(--color-text-muted)]">Live</span>
           </div>
         </>
       )}
@@ -186,7 +186,7 @@ export function GraphEditorToolbar({
               ? "bg-amber-600 text-white hover:bg-amber-700"
               : isLockedByOther
                 ? "text-amber-500 opacity-50 cursor-not-allowed"
-                : "hover:bg-[hsl(var(--accent))]"
+                : "hover:bg-[var(--color-surface-2)]"
           }`}
           title={
             isLockedByMe
@@ -213,7 +213,7 @@ export function GraphEditorToolbar({
           <button
             onClick={undo}
             disabled={undoStack.length === 0 || isReadOnly}
-            className="p-1.5 rounded hover:bg-[hsl(var(--accent))] disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1.5 rounded hover:bg-[var(--color-surface-2)] disabled:opacity-30 disabled:cursor-not-allowed"
             title="Undo (Ctrl+Z)"
           >
             <Undo2 className="w-3.5 h-3.5" />
@@ -221,19 +221,19 @@ export function GraphEditorToolbar({
           <button
             onClick={redo}
             disabled={redoStack.length === 0 || isReadOnly}
-            className="p-1.5 rounded hover:bg-[hsl(var(--accent))] disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1.5 rounded hover:bg-[var(--color-surface-2)] disabled:opacity-30 disabled:cursor-not-allowed"
             title="Redo (Ctrl+Y)"
           >
             <Redo2 className="w-3.5 h-3.5" />
           </button>
 
           {/* Divider */}
-          <div className="w-px h-5 bg-[hsl(var(--border))] mx-0.5" />
+          <div className="w-px h-5 bg-[var(--color-border)] mx-0.5" />
 
           {/* Permissions */}
           <button
             onClick={onPermissions}
-            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[var(--color-surface-2)] transition-colors"
             title="Manage execution permissions"
           >
             <Shield className="w-3.5 h-3.5" />
@@ -243,7 +243,7 @@ export function GraphEditorToolbar({
           {/* Inputs */}
           <button
             onClick={onInputs}
-            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[var(--color-surface-2)] transition-colors"
             title="Define automation inputs"
           >
             <ListPlus className="w-3.5 h-3.5" />
@@ -258,7 +258,7 @@ export function GraphEditorToolbar({
         className={`flex items-center gap-1 px-2 py-1.5 text-xs rounded transition-colors ${
           showIssues
             ? "bg-amber-600 text-white hover:bg-amber-700"
-            : "hover:bg-[hsl(var(--accent))]"
+            : "hover:bg-[var(--color-surface-2)]"
         }`}
         title={showIssues ? "Hide issue annotations" : "Show issue annotations"}
       >
@@ -278,7 +278,7 @@ export function GraphEditorToolbar({
           {/* Validate */}
           <button
             onClick={onValidate}
-            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[var(--color-surface-2)] transition-colors"
             title="Validate graph"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -289,7 +289,7 @@ export function GraphEditorToolbar({
           <button
             onClick={onCompile}
             disabled={isCompiling}
-            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[hsl(var(--accent))] disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded hover:bg-[var(--color-surface-2)] disabled:opacity-50 transition-colors"
             title="Preview generated code"
           >
             {isCompiling ? (
@@ -336,7 +336,7 @@ export function GraphEditorToolbar({
           <button
             onClick={onSave}
             disabled={!isDirty || isSaving || isReadOnly}
-            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50 transition-colors"
             title="Save graph (Ctrl+S)"
           >
             {isSaving ? (
@@ -352,8 +352,8 @@ export function GraphEditorToolbar({
       {/* Right panel toggle */}
       <button
         onClick={onToggleRightPanel}
-        className={`p-1.5 rounded hover:bg-[hsl(var(--accent))] transition-colors ${
-          isRightPanelOpen ? "text-[hsl(var(--foreground))]" : "text-[hsl(var(--muted-foreground))]"
+        className={`p-1.5 rounded hover:bg-[var(--color-surface-2)] transition-colors ${
+          isRightPanelOpen ? "text-[var(--color-text)]" : "text-[var(--color-text-muted)]"
         }`}
         title={isRightPanelOpen ? "Hide properties" : "Show properties"}
       >

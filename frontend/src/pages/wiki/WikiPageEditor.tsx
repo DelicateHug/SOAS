@@ -312,7 +312,7 @@ export function WikiPageEditor() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(isEdit ? `/wiki/${slug}` : "/wiki")}
-            className="p-1.5 rounded-md hover:bg-[hsl(var(--accent))]"
+            className="p-1.5 rounded-md hover:bg-[var(--color-surface-2)]"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -323,7 +323,7 @@ export function WikiPageEditor() {
           {collaboration.isConnected && (
             <div className="flex items-center gap-1.5 ml-2">
               <div className="h-2 w-2 rounded-full bg-green-500" />
-              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+              <span className="text-xs text-[var(--color-text-muted)]">
                 Live{collaboration.collaborators.length > 0 && ` (${collaboration.collaborators.length + 1} editors)`}
               </span>
             </div>
@@ -362,7 +362,7 @@ export function WikiPageEditor() {
             <button
               onClick={handleSave}
               disabled={isSaving || !title.trim()}
-              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 text-sm disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               {isSaving ? "Saving..." : "Save as Draft"}
@@ -417,7 +417,7 @@ export function WikiPageEditor() {
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
               placeholder="Page title"
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             />
           </div>
           <div className="w-20">
@@ -426,7 +426,7 @@ export function WikiPageEditor() {
               value={icon}
               onChange={(e) => handleIconChange(e.target.value)}
               placeholder="e.g. emoji"
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm text-center"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm text-center"
             />
           </div>
         </div>
@@ -438,7 +438,7 @@ export function WikiPageEditor() {
               value={pageSlug}
               onChange={(e) => setPageSlug(e.target.value)}
               placeholder="auto-generated"
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             />
           </div>
           <div>
@@ -446,7 +446,7 @@ export function WikiPageEditor() {
             <select
               value={parentId}
               onChange={(e) => handleParentChange(e.target.value)}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             >
               <option value="">None (root level)</option>
               {parentOptions.map((opt) => (
@@ -461,7 +461,7 @@ export function WikiPageEditor() {
             <select
               value={status}
               onChange={(e) => handleStatusChange(e.target.value)}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             >
               <option value="published">Published</option>
               <option value="draft">Draft</option>
@@ -484,7 +484,7 @@ export function WikiPageEditor() {
             <select
               value={linkedNodeType}
               onChange={(e) => handleLinkedNodeChange(e.target.value)}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             >
               <option value="">None</option>
               {nodeCatalog?.nodes
@@ -496,7 +496,7 @@ export function WikiPageEditor() {
                   </option>
                 ))}
             </select>
-            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">
               Links this wiki page as documentation for a graph node type
             </p>
           </div>
@@ -509,14 +509,14 @@ export function WikiPageEditor() {
               value={changeSummary}
               onChange={(e) => setChangeSummary(e.target.value)}
               placeholder="Describe what changed"
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
             />
           </div>
         )}
       </div>
 
       {/* Content editor */}
-      <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+      <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
         {collabRoomId ? (
           <CollaborativeMarkdownEditor
             collaboration={collaboration}
@@ -542,7 +542,7 @@ export function WikiPageEditor() {
 
       {/* Linked issues panel (existing pages only) */}
       {isEdit && page && (
-        <div className="mt-6 border border-[hsl(var(--border))] rounded-lg p-4">
+        <div className="mt-6 border border-[var(--color-border)] rounded-lg p-4">
           <EntityIssuesPanel
             targetType="wiki_page"
             targetId={page.id}

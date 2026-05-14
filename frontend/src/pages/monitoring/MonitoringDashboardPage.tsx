@@ -94,7 +94,7 @@ export function MonitoringDashboardPage() {
       <h1 className="text-2xl font-bold mb-6">System Monitoring</h1>
 
       {/* Tab navigation */}
-      <div className="flex gap-1 mb-6 border-b border-[hsl(var(--border))]">
+      <div className="flex gap-1 mb-6 border-b border-[var(--color-border)]">
         {tabs.map(
           (tab) =>
             (!tab.adminOnly || isAdmin) && (
@@ -103,8 +103,8 @@ export function MonitoringDashboardPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.id
-                    ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))]"
-                    : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                    ? "border-[var(--color-primary)] text-[var(--color-text)]"
+                    : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                 }`}
               >
                 {tab.label}
@@ -155,7 +155,7 @@ function OverviewPanel() {
   const quorum = overview?.quorum;
 
   if (isLoading) {
-    return <p className="text-[hsl(var(--muted-foreground))]">Loading health data...</p>;
+    return <p className="text-[var(--color-text-muted)]">Loading health data...</p>;
   }
 
   const overallStatus = health?.overall_status ?? "unknown";
@@ -182,7 +182,7 @@ function OverviewPanel() {
     <div className="space-y-6">
       {/* Timeframe selector */}
       <div className="flex items-center gap-2">
-        <span className="text-sm text-[hsl(var(--muted-foreground))]">
+        <span className="text-sm text-[var(--color-text-muted)]">
           Timeframe:
         </span>
         <div className="flex gap-1">
@@ -192,8 +192,8 @@ function OverviewPanel() {
               onClick={() => setTimeframeMinutes(opt.value)}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                 timeframeMinutes === opt.value
-                  ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-                  : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]"
+                  ? "bg-[var(--color-primary)] text-[#ffffff]"
+                  : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
               }`}
             >
               {opt.label}
@@ -214,7 +214,7 @@ function OverviewPanel() {
           label="Uptime"
           value={`${uptimeHours}h ${uptimeMinutes}m`}
           icon={Activity}
-          colorClass="text-[hsl(var(--primary))]"
+          colorClass="text-[var(--color-primary)]"
         />
         <StatCard
           label="Active Alerts"
@@ -266,7 +266,7 @@ function OverviewPanel() {
                   {Object.entries(comp.metrics).map(([key, val]) => (
                     <div
                       key={key}
-                      className="flex justify-between text-xs text-[hsl(var(--muted-foreground))]"
+                      className="flex justify-between text-xs text-[var(--color-text-muted)]"
                     >
                       <span>{key.replace(/_/g, " ")}</span>
                       <span className="font-mono">
@@ -372,8 +372,8 @@ function AlertsPanel({ isAdmin }: { isAdmin: boolean }) {
             onClick={() => setStatusFilter(s)}
             className={`px-3 py-1 text-sm rounded-md border ${
               statusFilter === s
-                ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]"
-                : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]"
+                ? "bg-[var(--color-primary)] text-[#ffffff] border-[var(--color-primary)]"
+                : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
             }`}
           >
             {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -382,9 +382,9 @@ function AlertsPanel({ isAdmin }: { isAdmin: boolean }) {
       </div>
 
       {isLoading ? (
-        <p className="text-[hsl(var(--muted-foreground))]">Loading alerts...</p>
+        <p className="text-[var(--color-text-muted)]">Loading alerts...</p>
       ) : alerts.length === 0 ? (
-        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="text-center py-12 text-[var(--color-text-muted)]">
           <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p>No {statusFilter} alerts</p>
         </div>
@@ -393,7 +393,7 @@ function AlertsPanel({ isAdmin }: { isAdmin: boolean }) {
           {alerts.map((alert) => (
             <div
               key={alert.id}
-              className="border border-[hsl(var(--border))] rounded-lg p-4"
+              className="border border-[var(--color-border)] rounded-lg p-4"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -405,15 +405,15 @@ function AlertsPanel({ isAdmin }: { isAdmin: boolean }) {
                     >
                       {alert.severity}
                     </span>
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <span className="text-xs text-[var(--color-text-muted)]">
                       {alert.component_type}/{alert.component_id}
                     </span>
                   </div>
                   <p className="font-medium text-sm truncate">{alert.title}</p>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
                     {alert.message}
                   </p>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
                     {formatDate(alert.created_at)}
                   </p>
                 </div>
@@ -488,7 +488,7 @@ function AlertRulesPanel() {
         <h2 className="text-lg font-semibold">Alert Rules</h2>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+          className="flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90"
         >
           <Plus className="w-4 h-4" />
           Create Rule
@@ -496,13 +496,13 @@ function AlertRulesPanel() {
       </div>
 
       {isLoading ? (
-        <p className="text-[hsl(var(--muted-foreground))]">Loading rules...</p>
+        <p className="text-[var(--color-text-muted)]">Loading rules...</p>
       ) : (
         <div className="space-y-2">
           {(rules ?? []).map((rule) => (
             <div
               key={rule.id}
-              className="border border-[hsl(var(--border))] rounded-lg p-4"
+              className="border border-[var(--color-border)] rounded-lg p-4"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
@@ -521,13 +521,13 @@ function AlertRulesPanel() {
                       {rule.severity}
                     </span>
                   </div>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <p className="text-xs text-[var(--color-text-muted)]">
                     {rule.component_type} / {rule.metric_key}{" "}
                     {rule.condition} {rule.threshold} (cooldown:{" "}
                     {rule.cooldown_seconds}s)
                   </p>
                   {rule.description && (
-                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
                       {rule.description}
                     </p>
                   )}
@@ -535,7 +535,7 @@ function AlertRulesPanel() {
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => toggleMut.mutate(rule)}
-                    className="p-2 rounded-md hover:bg-[hsl(var(--accent))]"
+                    className="p-2 rounded-md hover:bg-[var(--color-surface-2)]"
                     title={rule.is_enabled ? "Disable" : "Enable"}
                   >
                     <Power
@@ -546,7 +546,7 @@ function AlertRulesPanel() {
                   </button>
                   <button
                     onClick={() => deleteMut.mutate(rule.id)}
-                    className="p-2 rounded-md hover:bg-[hsl(var(--accent))]"
+                    className="p-2 rounded-md hover:bg-[var(--color-surface-2)]"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4 text-red-500" />
@@ -591,7 +591,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg p-6 w-full max-w-lg">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-6 w-full max-w-lg">
         <h3 className="text-lg font-semibold mb-4">Create Alert Rule</h3>
         <div className="space-y-3">
           <div>
@@ -599,7 +599,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+              className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
             />
           </div>
           <div>
@@ -609,7 +609,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+              className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -620,7 +620,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
                 onChange={(e) =>
                   setForm({ ...form, component_type: e.target.value })
                 }
-                className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+                className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
               >
                 <option value="api">API</option>
                 <option value="postgres">PostgreSQL</option>
@@ -638,7 +638,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
                   setForm({ ...form, metric_key: e.target.value })
                 }
                 placeholder="e.g. response_time_ms"
-                className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+                className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
               />
             </div>
           </div>
@@ -650,7 +650,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
                 onChange={(e) =>
                   setForm({ ...form, condition: e.target.value })
                 }
-                className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+                className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
               >
                 <option value="gt">&gt; (greater than)</option>
                 <option value="gte">&gt;= (greater or equal)</option>
@@ -668,7 +668,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
                 onChange={(e) =>
                   setForm({ ...form, threshold: Number(e.target.value) })
                 }
-                className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+                className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
               />
             </div>
             <div>
@@ -678,7 +678,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
                 onChange={(e) =>
                   setForm({ ...form, severity: e.target.value })
                 }
-                className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+                className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
               >
                 <option value="info">Info</option>
                 <option value="warning">Warning</option>
@@ -699,21 +699,21 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
                   cooldown_seconds: Number(e.target.value),
                 })
               }
-              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+              className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
             />
           </div>
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded-md border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]"
+            className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
           >
             Cancel
           </button>
           <button
             onClick={() => createMut.mutate(form)}
             disabled={!form.name || !form.metric_key}
-            className="px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
           >
             Create
           </button>
@@ -735,11 +735,11 @@ function QuorumPanel() {
   });
 
   if (isLoading) {
-    return <p className="text-[hsl(var(--muted-foreground))]">Loading quorum status...</p>;
+    return <p className="text-[var(--color-text-muted)]">Loading quorum status...</p>;
   }
 
   if (!quorum) {
-    return <p className="text-[hsl(var(--muted-foreground))]">No quorum data available</p>;
+    return <p className="text-[var(--color-text-muted)]">No quorum data available</p>;
   }
 
   return (
@@ -762,7 +762,7 @@ function QuorumPanel() {
             <h2 className="text-xl font-bold">
               {quorum.has_quorum ? "Quorum Established" : "QUORUM LOST"}
             </h2>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            <p className="text-sm text-[var(--color-text-muted)]">
               {quorum.active_members} of {quorum.total_members} members active
               (threshold: {quorum.quorum_threshold})
             </p>
@@ -771,10 +771,10 @@ function QuorumPanel() {
       </div>
 
       {/* Member table */}
-      <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+      <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[hsl(var(--muted))]">
+            <tr className="bg-[var(--color-surface-2)]">
               <th className="text-left px-4 py-3 font-medium">Instance ID</th>
               <th className="text-left px-4 py-3 font-medium">Hostname</th>
               <th className="text-left px-4 py-3 font-medium">Started</th>
@@ -788,16 +788,16 @@ function QuorumPanel() {
             {quorum.members.map((member) => (
               <tr
                 key={member.instance_id}
-                className="border-t border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
               >
                 <td className="px-4 py-3 font-mono text-xs">
                   {member.instance_id.slice(0, 8)}...
                 </td>
                 <td className="px-4 py-3">{member.hostname}</td>
-                <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                <td className="px-4 py-3 text-[var(--color-text-muted)]">
                   {formatDate(member.started_at)}
                 </td>
-                <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                <td className="px-4 py-3 text-[var(--color-text-muted)]">
                   {formatDate(member.last_heartbeat)}
                 </td>
                 <td className="px-4 py-3">
@@ -848,16 +848,16 @@ function AgentsPanel({ isAdmin }: { isAdmin: boolean }) {
   });
 
   if (isLoading) {
-    return <p className="text-[hsl(var(--muted-foreground))]">Loading agents...</p>;
+    return <p className="text-[var(--color-text-muted)]">Loading agents...</p>;
   }
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Monitoring Agents</h2>
-      <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+      <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[hsl(var(--muted))]">
+            <tr className="bg-[var(--color-surface-2)]">
               <th className="text-left px-4 py-3 font-medium">Agent</th>
               <th className="text-left px-4 py-3 font-medium">Monitors</th>
               <th className="text-left px-4 py-3 font-medium">Interval</th>
@@ -873,13 +873,13 @@ function AgentsPanel({ isAdmin }: { isAdmin: boolean }) {
             {(agents ?? []).map((agent) => (
               <tr
                 key={agent.id}
-                className="border-t border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
               >
                 <td className="px-4 py-3">
                   <div>
                     <span className="font-medium">{agent.name}</span>
                     {agent.description && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      <p className="text-xs text-[var(--color-text-muted)]">
                         {agent.description}
                       </p>
                     )}
@@ -890,7 +890,7 @@ function AgentsPanel({ isAdmin }: { isAdmin: boolean }) {
                     agent.component_type}
                 </td>
                 <td className="px-4 py-3">{agent.check_interval_seconds}s</td>
-                <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                <td className="px-4 py-3 text-[var(--color-text-muted)]">
                   {agent.last_check_at
                     ? formatDate(agent.last_check_at)
                     : "Never"}
@@ -927,7 +927,7 @@ function AgentsPanel({ isAdmin }: { isAdmin: boolean }) {
                       {agent.consecutive_failures}
                     </span>
                   ) : (
-                    <span className="text-[hsl(var(--muted-foreground))]">
+                    <span className="text-[var(--color-text-muted)]">
                       0
                     </span>
                   )}
@@ -936,7 +936,7 @@ function AgentsPanel({ isAdmin }: { isAdmin: boolean }) {
                   <td className="px-4 py-3">
                     <button
                       onClick={() => toggleMut.mutate(agent)}
-                      className="p-2 rounded-md hover:bg-[hsl(var(--accent))]"
+                      className="p-2 rounded-md hover:bg-[var(--color-surface-2)]"
                       title={agent.is_enabled ? "Disable" : "Enable"}
                     >
                       <Power
@@ -987,7 +987,7 @@ function GitSyncPanel({ isAdmin }: { isAdmin: boolean }) {
 
   if (isLoading) {
     return (
-      <p className="text-[hsl(var(--muted-foreground))]">
+      <p className="text-[var(--color-text-muted)]">
         Loading git sync status...
       </p>
     );
@@ -1031,7 +1031,7 @@ function GitSyncPanel({ isAdmin }: { isAdmin: boolean }) {
               : "Never"
           }
           icon={RefreshCw}
-          colorClass="text-[hsl(var(--primary))]"
+          colorClass="text-[var(--color-primary)]"
         />
         <StatCard
           label="Next Sync"
@@ -1066,14 +1066,14 @@ function GitSyncPanel({ isAdmin }: { isAdmin: boolean }) {
       </div>
 
       {/* Repo info + Sync button */}
-      <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+      <div className="border border-[var(--color-border)] rounded-lg p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Repository Details</h2>
           {isAdmin && status?.enabled && (
             <button
               onClick={() => syncMut.mutate()}
               disabled={syncMut.isPending}
-              className="flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
             >
               <RefreshCw
                 className={`w-4 h-4 ${syncMut.isPending ? "animate-spin" : ""}`}
@@ -1084,7 +1084,7 @@ function GitSyncPanel({ isAdmin }: { isAdmin: boolean }) {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
           <div>
-            <span className="text-[hsl(var(--muted-foreground))]">
+            <span className="text-[var(--color-text-muted)]">
               Remote URL:{" "}
             </span>
             <span className="font-mono">
@@ -1092,26 +1092,26 @@ function GitSyncPanel({ isAdmin }: { isAdmin: boolean }) {
             </span>
           </div>
           <div>
-            <span className="text-[hsl(var(--muted-foreground))]">
+            <span className="text-[var(--color-text-muted)]">
               Branch:{" "}
             </span>
             <span className="font-mono">{status?.branch}</span>
           </div>
           <div>
-            <span className="text-[hsl(var(--muted-foreground))]">
+            <span className="text-[var(--color-text-muted)]">
               Sync Interval:{" "}
             </span>
             <span>{status?.interval_seconds}s</span>
           </div>
           {status?.last_commit && (
             <div>
-              <span className="text-[hsl(var(--muted-foreground))]">
+              <span className="text-[var(--color-text-muted)]">
                 Last Commit:{" "}
               </span>
               <span className="font-mono text-xs">
                 {status.last_commit.sha.slice(0, 8)}
               </span>
-              <span className="text-[hsl(var(--muted-foreground))]">
+              <span className="text-[var(--color-text-muted)]">
                 {" "}
                 - {status.last_commit.message}
               </span>
@@ -1120,14 +1120,14 @@ function GitSyncPanel({ isAdmin }: { isAdmin: boolean }) {
         </div>
         {status?.entity_types && status.entity_types.length > 0 && (
           <div className="mt-3">
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">
+            <span className="text-sm text-[var(--color-text-muted)]">
               Synced entities:{" "}
             </span>
             <div className="flex flex-wrap gap-1 mt-1">
               {status.entity_types.map((et) => (
                 <span
                   key={et}
-                  className="text-xs px-2 py-0.5 rounded-full bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]"
+                  className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-surface-2)] text-[var(--color-text)]"
                 >
                   {et.replace(/_/g, " ")}
                 </span>
@@ -1141,15 +1141,15 @@ function GitSyncPanel({ isAdmin }: { isAdmin: boolean }) {
       <div>
         <h2 className="text-lg font-semibold mb-3">Sync History</h2>
         {logs.length === 0 ? (
-          <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+          <div className="text-center py-12 text-[var(--color-text-muted)]">
             <GitBranch className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p>No sync history yet</p>
           </div>
         ) : (
-          <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+          <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[hsl(var(--muted))]">
+                <tr className="bg-[var(--color-surface-2)]">
                   <th className="text-left px-4 py-3 font-medium">Time</th>
                   <th className="text-left px-4 py-3 font-medium">Type</th>
                   <th className="text-left px-4 py-3 font-medium">Status</th>
@@ -1167,9 +1167,9 @@ function GitSyncPanel({ isAdmin }: { isAdmin: boolean }) {
                 {logs.map((log) => (
                   <tr
                     key={log.id}
-                    className="border-t border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                    className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
                   >
-                    <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">
                       {formatDate(log.started_at)}
                     </td>
                     <td className="px-4 py-3">{log.sync_type}</td>
@@ -1197,10 +1197,10 @@ function GitSyncPanel({ isAdmin }: { isAdmin: boolean }) {
                     </td>
                     <td className="px-4 py-3">{log.entities_pushed}</td>
                     <td className="px-4 py-3">{log.entities_pulled}</td>
-                    <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">
                       {log.duration_ms ? `${log.duration_ms}ms` : "-"}
                     </td>
-                    <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">
                       {log.triggered_by === "scheduled"
                         ? "Scheduled"
                         : "Manual"}
@@ -1232,9 +1232,9 @@ function StatCard({
   colorClass: string;
 }) {
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+    <div className="border border-[var(--color-border)] rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-[hsl(var(--muted-foreground))]">
+        <span className="text-sm text-[var(--color-text-muted)]">
           {label}
         </span>
         <Icon className={`w-5 h-5 ${colorClass}`} />

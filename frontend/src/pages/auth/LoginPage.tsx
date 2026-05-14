@@ -55,10 +55,10 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))]">
-      <div className="w-full max-w-sm p-8 border border-[hsl(var(--border))] rounded-lg">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)]">
+      <div className="w-full max-w-sm p-8 border border-[var(--color-border)] rounded-lg">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Shield className="w-8 h-8 text-[hsl(var(--primary))]" />
+          <Shield className="w-8 h-8 text-[var(--color-primary)]" />
           <h1 className="text-2xl font-bold">SOAS</h1>
         </div>
 
@@ -70,7 +70,7 @@ export function LoginPage() {
 
         {mfaToken ? (
           <form onSubmit={handleMfa} className="space-y-4">
-            <p className="text-sm text-[hsl(var(--muted-foreground))] text-center">
+            <p className="text-sm text-[var(--color-text-muted)] text-center">
               Enter the code from your authenticator app
             </p>
             <input
@@ -79,13 +79,13 @@ export function LoginPage() {
               value={totpCode}
               onChange={(e) => setTotpCode(e.target.value)}
               maxLength={6}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-center text-lg tracking-widest"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-center text-lg tracking-widest"
               autoFocus
             />
             <button
               type="submit"
               disabled={isLoading || totpCode.length !== 6}
-              className="w-full py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50"
+              className="w-full py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50"
             >
               {isLoading ? "Verifying..." : "Verify"}
             </button>
@@ -98,7 +98,7 @@ export function LoginPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
                 required
               />
             </div>
@@ -108,21 +108,21 @@ export function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+                className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
                 required
               />
             </div>
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50"
+              className="w-full py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50"
             >
               {isLoading ? "Signing in..." : "Sign In"}
             </button>
             {registrationOpen && (
-              <p className="text-center text-sm text-[hsl(var(--muted-foreground))]">
+              <p className="text-center text-sm text-[var(--color-text-muted)]">
                 Don't have an account?{" "}
-                <Link to="/register" className="text-[hsl(var(--primary))] hover:underline">
+                <Link to="/register" className="text-[var(--color-primary)] hover:underline">
                   Register
                 </Link>
               </p>

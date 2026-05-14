@@ -33,9 +33,9 @@ interface Props {
 }
 
 const selectClass =
-  "px-3 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm bg-[hsl(var(--background))]";
+  "px-3 py-1.5 border border-[var(--color-border)] rounded-md text-sm bg-[var(--color-bg)]";
 const inputClass =
-  "px-3 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm bg-[hsl(var(--background))]";
+  "px-3 py-1.5 border border-[var(--color-border)] rounded-md text-sm bg-[var(--color-bg)]";
 
 export function ExecutionFilters({ filters, onChange }: Props) {
   const { data: automationsData } = useQuery({
@@ -56,7 +56,7 @@ export function ExecutionFilters({ filters, onChange }: Props) {
   return (
     <div className="flex flex-wrap gap-3 mb-4 items-end">
       <div>
-        <label className="block text-xs font-medium mb-1 text-[hsl(var(--muted-foreground))]">
+        <label className="block text-xs font-medium mb-1 text-[var(--color-text-muted)]">
           Status
         </label>
         <select
@@ -74,7 +74,7 @@ export function ExecutionFilters({ filters, onChange }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium mb-1 text-[hsl(var(--muted-foreground))]">
+        <label className="block text-xs font-medium mb-1 text-[var(--color-text-muted)]">
           Automation
         </label>
         <select
@@ -94,7 +94,7 @@ export function ExecutionFilters({ filters, onChange }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium mb-1 text-[hsl(var(--muted-foreground))]">
+        <label className="block text-xs font-medium mb-1 text-[var(--color-text-muted)]">
           Started After
         </label>
         <input
@@ -108,7 +108,7 @@ export function ExecutionFilters({ filters, onChange }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium mb-1 text-[hsl(var(--muted-foreground))]">
+        <label className="block text-xs font-medium mb-1 text-[var(--color-text-muted)]">
           Started Before
         </label>
         <input
@@ -124,7 +124,7 @@ export function ExecutionFilters({ filters, onChange }: Props) {
       {hasAnyFilter && (
         <button
           onClick={() => onChange(emptyExecutionFilters)}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] border border-[hsl(var(--border))] rounded-md"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] border border-[var(--color-border)] rounded-md"
         >
           <X className="w-3 h-3" /> Clear
         </button>

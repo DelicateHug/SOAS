@@ -48,14 +48,14 @@ export function RegisterPage() {
   };
 
   if (checking) {
-    return <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))]" />;
+    return <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)]" />;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))]">
-      <div className="w-full max-w-sm p-8 border border-[hsl(var(--border))] rounded-lg">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)]">
+      <div className="w-full max-w-sm p-8 border border-[var(--color-border)] rounded-lg">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Shield className="w-8 h-8 text-[hsl(var(--primary))]" />
+          <Shield className="w-8 h-8 text-[var(--color-primary)]" />
           <h1 className="text-2xl font-bold">Register</h1>
         </div>
 
@@ -70,7 +70,7 @@ export function RegisterPage() {
               type="text"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
               required
               minLength={3}
             />
@@ -81,7 +81,7 @@ export function RegisterPage() {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
               required
             />
           </div>
@@ -91,7 +91,7 @@ export function RegisterPage() {
               type="text"
               value={form.display_name}
               onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
               required
             />
           </div>
@@ -101,7 +101,7 @@ export function RegisterPage() {
               type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md"
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md"
               required
               minLength={8}
             />
@@ -109,13 +109,13 @@ export function RegisterPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 disabled:opacity-50"
+            className="w-full py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 disabled:opacity-50"
           >
             {isLoading ? "Creating account..." : "Create Account"}
           </button>
-          <p className="text-center text-sm text-[hsl(var(--muted-foreground))]">
+          <p className="text-center text-sm text-[var(--color-text-muted)]">
             Already have an account?{" "}
-            <Link to="/login" className="text-[hsl(var(--primary))] hover:underline">
+            <Link to="/login" className="text-[var(--color-primary)] hover:underline">
               Sign in
             </Link>
           </p>

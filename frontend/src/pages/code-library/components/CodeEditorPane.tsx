@@ -34,7 +34,7 @@ export const CodeEditorPane = forwardRef<CodeEditorPaneHandle, CodeEditorPanePro
     return (
       <div
         ref={containerRef}
-        className="h-full overflow-auto rounded-md border border-[hsl(var(--border))] [&_.cm-editor]:h-full [&_.cm-editor]:outline-none [&_.cm-scroller]:overflow-auto"
+        className="h-full overflow-auto rounded-md border border-[var(--color-border)] [&_.cm-editor]:h-full [&_.cm-editor]:outline-none [&_.cm-scroller]:overflow-auto"
       />
     );
   }

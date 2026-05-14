@@ -146,8 +146,8 @@ function GitSyncSection() {
 
   if (isLoading || !currentForm) {
     return (
-      <div className="border border-[hsl(var(--border))] rounded-lg p-4">
-        <p className="text-[hsl(var(--muted-foreground))]">
+      <div className="border border-[var(--color-border)] rounded-lg p-4">
+        <p className="text-[var(--color-text-muted)]">
           Loading git sync settings...
         </p>
       </div>
@@ -177,12 +177,12 @@ function GitSyncSection() {
   const isEnabled = currentForm.git_sync_enabled === "true";
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+    <div className="border border-[var(--color-border)] rounded-lg p-4">
       <div className="flex items-center gap-3 mb-4">
-        <GitBranch className="w-5 h-5 text-[hsl(var(--primary))]" />
+        <GitBranch className="w-5 h-5 text-[var(--color-primary)]" />
         <div>
           <h2 className="font-semibold">Git Sync</h2>
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="text-xs text-[var(--color-text-muted)]">
             Sync persistent data to a Git repository for backup and GitOps
             workflows
           </p>
@@ -202,8 +202,8 @@ function GitSyncSection() {
             }
             className={`relative w-11 h-6 rounded-full transition-colors ${
               isEnabled
-                ? "bg-[hsl(var(--primary))]"
-                : "bg-[hsl(var(--muted))]"
+                ? "bg-[var(--color-primary)]"
+                : "bg-[var(--color-surface-2)]"
             }`}
           >
             <span
@@ -223,7 +223,7 @@ function GitSyncSection() {
               updateField("git_sync_remote_url", e.target.value)
             }
             placeholder="https://github.com/org/soas-config.git (leave empty for local-only)"
-            className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+            className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
           />
         </div>
 
@@ -236,7 +236,7 @@ function GitSyncSection() {
               updateField("git_sync_branch", e.target.value)
             }
             placeholder="main"
-            className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+            className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
           />
         </div>
 
@@ -249,7 +249,7 @@ function GitSyncSection() {
               onChange={(e) =>
                 updateField("git_sync_auth_type", e.target.value)
               }
-              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+              className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
             >
               <option value="token">Personal Access Token</option>
               <option value="ssh_key">SSH Key</option>
@@ -264,7 +264,7 @@ function GitSyncSection() {
               onChange={(e) =>
                 updateField("git_sync_interval_seconds", e.target.value)
               }
-              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+              className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
             />
           </div>
         </div>
@@ -288,7 +288,7 @@ function GitSyncSection() {
                   ? "Token is set (leave blank to keep)"
                   : "ghp_..."
               }
-              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+              className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
             />
           </div>
         ) : (
@@ -300,7 +300,7 @@ function GitSyncSection() {
                 updateField("git_sync_ssh_key_path", e.target.value)
               }
               placeholder="/home/soas/.ssh/id_ed25519"
-              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+              className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
             />
           </div>
         )}
@@ -317,8 +317,8 @@ function GitSyncSection() {
                 onClick={() => toggleEntityType(et)}
                 className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
                   enabledTypes.includes(et)
-                    ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]"
-                    : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]"
+                    ? "bg-[var(--color-primary)] text-[#ffffff] border-[var(--color-primary)]"
+                    : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
                 }`}
               >
                 {et.replace(/_/g, " ")}
@@ -328,7 +328,7 @@ function GitSyncSection() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-[hsl(var(--border))]">
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--color-border)]">
           <button
             onClick={() => {
               const toSave: Partial<GitSyncConfig> = {};
@@ -343,7 +343,7 @@ function GitSyncSection() {
               saveMut.mutate(toSave);
             }}
             disabled={!form || saveMut.isPending}
-            className="px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
           >
             {saveMut.isPending ? "Saving..." : "Save Configuration"}
           </button>
@@ -361,7 +361,7 @@ function GitSyncSection() {
               });
             }}
             disabled={!currentForm.git_sync_remote_url || testMut.isPending}
-            className="px-4 py-2 text-sm rounded-md border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] disabled:opacity-50"
           >
             {testMut.isPending ? "Testing..." : "Test Connection"}
           </button>
@@ -386,7 +386,7 @@ function GitSyncSection() {
               initMut.mutate();
             }}
             disabled={initMut.isPending}
-            className="px-4 py-2 text-sm rounded-md border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] disabled:opacity-50"
           >
             {initMut.isPending ? "Initializing..." : "Initialize Repository"}
           </button>
@@ -456,16 +456,16 @@ function GitSyncSection() {
       {/* Destructive import confirmation modal */}
       {showImportConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[440px] p-6">
+          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-xl w-[440px] p-6">
             <h3 className="text-sm font-semibold text-red-600 mb-2">
               Destructive Import
             </h3>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3">
+            <p className="text-sm text-[var(--color-text-muted)] mb-3">
               This will <strong>permanently delete all existing data</strong>{" "}
               for the configured entity types and replace it with the contents
               of the git repository. This action cannot be undone.
             </p>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+            <p className="text-sm text-[var(--color-text-muted)] mb-4">
               Entity types that will be replaced:{" "}
               <span className="font-medium">
                 {enabledTypes.join(", ") || "none configured"}
@@ -474,7 +474,7 @@ function GitSyncSection() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowImportConfirm(false)}
-                className="px-4 py-2 text-sm rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
               >
                 Cancel
               </button>
@@ -558,8 +558,8 @@ function LoginSecuritySection() {
 
   if (loadingMax || loadingLockout) {
     return (
-      <div className="border border-[hsl(var(--border))] rounded-lg p-4">
-        <p className="text-[hsl(var(--muted-foreground))]">
+      <div className="border border-[var(--color-border)] rounded-lg p-4">
+        <p className="text-[var(--color-text-muted)]">
           Loading login security settings...
         </p>
       </div>
@@ -567,12 +567,12 @@ function LoginSecuritySection() {
   }
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+    <div className="border border-[var(--color-border)] rounded-lg p-4">
       <div className="flex items-center gap-3 mb-4">
-        <ShieldAlert className="w-5 h-5 text-[hsl(var(--primary))]" />
+        <ShieldAlert className="w-5 h-5 text-[var(--color-primary)]" />
         <div>
           <h2 className="font-semibold">Login Security</h2>
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="text-xs text-[var(--color-text-muted)]">
             Configure account lockout after failed login attempts
           </p>
         </div>
@@ -589,9 +589,9 @@ function LoginSecuritySection() {
               min={0}
               value={currentMax}
               onChange={(e) => setMaxAttemptsVal(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+              className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
             />
-            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">
               0 = no lockout
             </p>
           </div>
@@ -604,16 +604,16 @@ function LoginSecuritySection() {
               min={1}
               value={currentLockout}
               onChange={(e) => setLockoutMinVal(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm bg-transparent"
+              className="w-full mt-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
             />
           </div>
         </div>
 
-        <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))]">
+        <div className="flex gap-2 pt-2 border-t border-[var(--color-border)]">
           <button
             onClick={() => saveMut.mutate()}
             disabled={!isDirty || saveMut.isPending}
-            className="px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
           >
             {saveMut.isPending ? "Saving..." : "Save"}
           </button>
@@ -654,12 +654,12 @@ function MfaSection({ isMfaEnabled }: { isMfaEnabled: boolean }) {
   });
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+    <div className="border border-[var(--color-border)] rounded-lg p-4">
       <div className="flex items-center gap-3 mb-3">
-        <Key className="w-5 h-5 text-[hsl(var(--primary))]" />
+        <Key className="w-5 h-5 text-[var(--color-primary)]" />
         <div>
           <h2 className="font-semibold">Two-Factor Authentication (TOTP)</h2>
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="text-xs text-[var(--color-text-muted)]">
             Add an extra layer of security using an authenticator app
           </p>
         </div>
@@ -676,7 +676,7 @@ function MfaSection({ isMfaEnabled }: { isMfaEnabled: boolean }) {
             <button
               onClick={() => setupMfa.mutate()}
               disabled={setupMfa.isPending}
-              className="px-3 py-1.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm"
+              className="px-3 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm"
             >
               {setupMfa.isPending ? "Setting up..." : "Enable MFA"}
             </button>
@@ -696,8 +696,8 @@ function MfaSection({ isMfaEnabled }: { isMfaEnabled: boolean }) {
               className="w-48 h-48"
             />
           </div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            Or enter manually: <code className="px-1 bg-[hsl(var(--accent))] rounded">{secret}</code>
+          <p className="text-xs text-[var(--color-text-muted)]">
+            Or enter manually: <code className="px-1 bg-[var(--color-surface-2)] rounded">{secret}</code>
           </p>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex items-center gap-2">
@@ -707,7 +707,7 @@ function MfaSection({ isMfaEnabled }: { isMfaEnabled: boolean }) {
               onChange={(e) => { setTotpCode(e.target.value); setError(""); }}
               placeholder="Enter 6-digit code"
               maxLength={6}
-              className="px-3 py-2 border border-[hsl(var(--input))] rounded-md w-40 font-mono"
+              className="px-3 py-2 border border-[var(--color-border)] rounded-md w-40 font-mono"
             />
             <button
               onClick={() => verifySetup.mutate()}
@@ -718,7 +718,7 @@ function MfaSection({ isMfaEnabled }: { isMfaEnabled: boolean }) {
             </button>
             <button
               onClick={() => { setStep("idle"); setTotpCode(""); setError(""); }}
-              className="px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm"
+              className="px-3 py-2 border border-[var(--color-border)] rounded-md text-sm"
             >
               Cancel
             </button>
@@ -788,19 +788,19 @@ function WebAuthnSection() {
   const supportsWebAuthn = typeof window !== "undefined" && !!window.PublicKeyCredential;
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+    <div className="border border-[var(--color-border)] rounded-lg p-4">
       <div className="flex items-center gap-3 mb-3">
-        <Fingerprint className="w-5 h-5 text-[hsl(var(--primary))]" />
+        <Fingerprint className="w-5 h-5 text-[var(--color-primary)]" />
         <div>
           <h2 className="font-semibold">Windows Hello / Passkey</h2>
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="text-xs text-[var(--color-text-muted)]">
             Use biometric or PIN authentication for passwordless login
           </p>
         </div>
       </div>
 
       {!supportsWebAuthn ? (
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+        <p className="text-sm text-[var(--color-text-muted)]">
           WebAuthn is not supported in this browser.
         </p>
       ) : (
@@ -810,7 +810,7 @@ function WebAuthnSection() {
           <button
             onClick={() => registerWebAuthn.mutate()}
             disabled={registerWebAuthn.isPending}
-            className="px-3 py-1.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm"
+            className="px-3 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm"
           >
             {registerWebAuthn.isPending ? "Registering..." : "Register Passkey"}
           </button>
@@ -824,25 +824,25 @@ function AccountInfoSection({ user }: { user: { id: string; username: string; di
   if (!user) return null;
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+    <div className="border border-[var(--color-border)] rounded-lg p-4">
       <div className="flex items-center gap-3 mb-3">
-        <Shield className="w-5 h-5 text-[hsl(var(--primary))]" />
+        <Shield className="w-5 h-5 text-[var(--color-primary)]" />
         <h2 className="font-semibold">Account Info</h2>
       </div>
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
-          <p className="text-[hsl(var(--muted-foreground))] text-xs">Username</p>
+          <p className="text-[var(--color-text-muted)] text-xs">Username</p>
           <p className="font-medium">@{user.username}</p>
         </div>
         <div>
-          <p className="text-[hsl(var(--muted-foreground))] text-xs">Display Name</p>
+          <p className="text-[var(--color-text-muted)] text-xs">Display Name</p>
           <p className="font-medium">{user.display_name}</p>
         </div>
         <div>
-          <p className="text-[hsl(var(--muted-foreground))] text-xs">Roles</p>
+          <p className="text-[var(--color-text-muted)] text-xs">Roles</p>
           <div className="flex flex-wrap gap-1 mt-0.5">
             {user.roles.map((role) => (
-              <span key={role} className="px-1.5 py-0.5 bg-[hsl(var(--accent))] rounded text-xs">
+              <span key={role} className="px-1.5 py-0.5 bg-[var(--color-surface-2)] rounded text-xs">
                 {role}
               </span>
             ))}

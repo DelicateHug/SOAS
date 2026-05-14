@@ -13,7 +13,7 @@ function VariableRow({ name, value, type }: { name: string; value: string; type:
     <tr>
       <td className="px-4 py-2 font-mono text-xs text-blue-400">{name}</td>
       <td className="px-4 py-2 font-mono text-xs max-w-md truncate">{value}</td>
-      <td className="px-4 py-2 text-xs text-[hsl(var(--muted-foreground))]">{type}</td>
+      <td className="px-4 py-2 text-xs text-[var(--color-text-muted)]">{type}</td>
     </tr>
   );
 }
@@ -21,14 +21,14 @@ function VariableRow({ name, value, type }: { name: string; value: string; type:
 function VariableTableHeader() {
   return (
     <thead>
-      <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
-        <th className="text-left px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+      <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+        <th className="text-left px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
           Variable
         </th>
-        <th className="text-left px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+        <th className="text-left px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
           Value
         </th>
-        <th className="text-left px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+        <th className="text-left px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
           Type
         </th>
       </tr>
@@ -66,10 +66,10 @@ export function VariablesTab({ incidentId }: Props) {
       {/* System variables */}
       <div>
         <SectionHeader title="System Variables" />
-        <div className="rounded-lg border border-[hsl(var(--border))] overflow-hidden">
+        <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
           <table className="w-full text-sm">
             <VariableTableHeader />
-            <tbody className="divide-y divide-[hsl(var(--border))]">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {systemVars.map((v) => (
                 <VariableRow key={v.name} {...v} />
               ))}
@@ -82,15 +82,15 @@ export function VariablesTab({ incidentId }: Props) {
       <SectionHeader title="Incident Variables" />
 
       {entries.length === 0 ? (
-        <div className="py-8 text-center text-[hsl(var(--muted-foreground))]">
+        <div className="py-8 text-center text-[var(--color-text-muted)]">
           No variables set for this incident
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-lg border border-[hsl(var(--border))] overflow-hidden">
+          <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
             <table className="w-full text-sm">
               <VariableTableHeader />
-              <tbody className="divide-y divide-[hsl(var(--border))]">
+              <tbody className="divide-y divide-[var(--color-border)]">
                 {entries.map(([key, value]) => (
                   <VariableRow
                     key={key}

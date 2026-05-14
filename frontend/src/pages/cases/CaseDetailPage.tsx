@@ -109,7 +109,7 @@ export function CaseDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="h-6 w-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+        <div className="h-6 w-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -117,10 +117,10 @@ export function CaseDetailPage() {
   if (!caseData) {
     return (
       <div className="text-center py-16">
-        <p className="text-[hsl(var(--muted-foreground))]">Group not found</p>
+        <p className="text-[var(--color-text-muted)]">Group not found</p>
         <button
           onClick={() => navigate("/cases")}
-          className="mt-3 text-sm text-[hsl(var(--primary))] hover:underline"
+          className="mt-3 text-sm text-[var(--color-primary)] hover:underline"
         >
           Back to Incident Groups
         </button>
@@ -167,14 +167,14 @@ export function CaseDetailPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
-            className="p-1 rounded hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+            className="p-1 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
             aria-label="Go back"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <Link
             to="/cases"
-            className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
           >
             Incident Groups /
           </Link>
@@ -187,7 +187,7 @@ export function CaseDetailPage() {
                 key={status}
                 onClick={() => setPendingStatus(status)}
                 disabled={updateCase.isPending}
-                className="px-3 py-1.5 border border-[hsl(var(--border))] rounded-md text-xs font-medium hover:bg-[hsl(var(--accent))] transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 border border-[var(--color-border)] rounded-md text-xs font-medium hover:bg-[var(--color-surface-2)] transition-colors disabled:opacity-50"
               >
                 Move to {status}
               </button>
@@ -226,11 +226,11 @@ export function CaseDetailPage() {
               if (e.key === "Enter") saveTitle();
               if (e.key === "Escape") setEditingTitle(false);
             }}
-            className="text-xl font-semibold leading-tight mb-2 w-full bg-transparent border-b border-[hsl(var(--primary))] outline-none"
+            className="text-xl font-semibold leading-tight mb-2 w-full bg-transparent border-b border-[var(--color-primary)] outline-none"
           />
         ) : (
           <h1
-            className="text-xl font-semibold leading-tight mb-2 cursor-pointer hover:text-[hsl(var(--primary))] transition-colors"
+            className="text-xl font-semibold leading-tight mb-2 cursor-pointer hover:text-[var(--color-primary)] transition-colors"
             onClick={() => {
               setTitleDraft(caseData.title);
               setEditingTitle(true);
@@ -252,11 +252,11 @@ export function CaseDetailPage() {
               if (e.key === "Escape") setEditingDesc(false);
             }}
             rows={3}
-            className="w-full text-sm text-[hsl(var(--muted-foreground))] bg-transparent border border-[hsl(var(--border))] rounded p-2 outline-none resize-none"
+            className="w-full text-sm text-[var(--color-text-muted)] bg-transparent border border-[var(--color-border)] rounded p-2 outline-none resize-none"
           />
         ) : (
           <p
-            className="text-sm text-[hsl(var(--muted-foreground))] cursor-pointer hover:text-[hsl(var(--foreground))] transition-colors"
+            className="text-sm text-[var(--color-text-muted)] cursor-pointer hover:text-[var(--color-text)] transition-colors"
             onClick={() => {
               setDescDraft(caseData.description || "");
               setEditingDesc(true);
@@ -268,7 +268,7 @@ export function CaseDetailPage() {
         )}
 
         {/* Meta row */}
-        <div className="flex items-center gap-4 mt-3 text-xs text-[hsl(var(--muted-foreground))] flex-wrap">
+        <div className="flex items-center gap-4 mt-3 text-xs text-[var(--color-text-muted)] flex-wrap">
           <div className="flex items-center gap-1.5">
             <UserAvatar
               displayName={caseData.created_by.display_name}
@@ -283,7 +283,7 @@ export function CaseDetailPage() {
           <div className="relative">
             <button
               onClick={() => setShowLeadDropdown(!showLeadDropdown)}
-              className="flex items-center gap-1.5 hover:text-[hsl(var(--foreground))] transition-colors"
+              className="flex items-center gap-1.5 hover:text-[var(--color-text)] transition-colors"
             >
               <span>Lead:</span>
               {caseData.lead ? (
@@ -319,7 +319,7 @@ export function CaseDetailPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="border-b border-[hsl(var(--border))] mb-6">
+      <div className="border-b border-[var(--color-border)] mb-6">
         <div className="flex gap-0 -mb-px">
           {tabs.map((tab) => (
             <button
@@ -327,8 +327,8 @@ export function CaseDetailPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))]"
-                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:border-[hsl(var(--border))]"
+                  ? "border-[var(--color-primary)] text-[var(--color-text)]"
+                  : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
               }`}
             >
               {tab.label}
@@ -348,7 +348,7 @@ export function CaseDetailPage() {
       {activeTab === "forms" && <FormsTab caseId={id!} />}
       {activeTab === "automations" && <AutomationsTab caseId={id!} />}
       {activeTab === "issues" && (
-        <div className="border border-[hsl(var(--border))] rounded-lg p-4">
+        <div className="border border-[var(--color-border)] rounded-lg p-4">
           <EntityIssuesPanel
             targetType="case"
             targetId={id!}
@@ -410,12 +410,12 @@ function PriorityDropdown({
         <ChevronDown className="w-3 h-3" />
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1 z-50 w-40 border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--popover))] shadow-lg py-1">
+        <div className="absolute left-0 top-full mt-1 z-50 w-40 border border-[var(--color-border)] rounded-md bg-[var(--color-surface)] shadow-lg py-1">
           {[1, 2, 3, 4, 5].map((p) => (
             <button
               key={p}
               onClick={() => onSelect(p)}
-              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[hsl(var(--accent))] ${p === priority ? "font-bold" : ""}`}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--color-surface-2)] ${p === priority ? "font-bold" : ""}`}
             >
               {priorityLabels[p]}
             </button>
@@ -452,13 +452,13 @@ function LeadDropdown({
   return (
     <div
       ref={ref}
-      className="absolute left-0 top-full mt-1 z-50 w-56 border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--popover))] shadow-lg"
+      className="absolute left-0 top-full mt-1 z-50 w-56 border border-[var(--color-border)] rounded-md bg-[var(--color-surface)] shadow-lg"
     >
       <div className="max-h-48 overflow-y-auto py-1">
         {currentLeadId && (
           <button
             onClick={onClear}
-            className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-[hsl(var(--accent))]"
+            className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-[var(--color-surface-2)]"
           >
             Unassign lead
           </button>
@@ -467,7 +467,7 @@ function LeadDropdown({
           <button
             key={user.id}
             onClick={() => onSelect(user.id)}
-            className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[hsl(var(--accent))] ${user.id === currentLeadId ? "font-bold" : ""}`}
+            className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--color-surface-2)] ${user.id === currentLeadId ? "font-bold" : ""}`}
           >
             <UserAvatar displayName={user.display_name} size="sm" />
             {user.display_name}
@@ -497,19 +497,19 @@ function StatusTransitionDialog({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg w-96 p-6">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg w-96 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold">Confirm Status Change</h3>
           <button
             onClick={onCancel}
-            className="p-1 rounded hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))]"
+            className="p-1 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
-        <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+        <p className="text-sm text-[var(--color-text-muted)] mb-4">
           Change case status to{" "}
-          <span className="font-medium text-[hsl(var(--foreground))]">
+          <span className="font-medium text-[var(--color-text)]">
             {targetStatus}
           </span>
           ?
@@ -520,7 +520,7 @@ function StatusTransitionDialog({
               type="checkbox"
               checked={cascadeChecked}
               onChange={(e) => onCascadeChange(e.target.checked)}
-              className="rounded border-[hsl(var(--input))]"
+              className="rounded border-[var(--color-border)]"
             />
             <span className="text-sm">Also update linked incidents</span>
           </label>
@@ -528,14 +528,14 @@ function StatusTransitionDialog({
         <div className="flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="px-3 py-1.5 text-sm border border-[hsl(var(--border))] rounded-md hover:bg-[hsl(var(--accent))] transition-colors"
+            className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface-2)] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={isPending}
-            className="px-3 py-1.5 text-sm bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {isPending ? "Updating..." : "Confirm"}
           </button>

@@ -78,7 +78,7 @@ export function NotesTab({ caseId }: Props) {
           !showForm ? (
             <button
               onClick={() => setShowForm(true)}
-              className="px-3 py-1.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-xs font-medium"
+              className="px-3 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-xs font-medium"
             >
               Add Note
             </button>
@@ -87,24 +87,24 @@ export function NotesTab({ caseId }: Props) {
       />
 
       {showForm && (
-        <div className="rounded-lg border border-[hsl(var(--border))] p-4">
+        <div className="rounded-lg border border-[var(--color-border)] p-4">
           <textarea
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Write your note..."
-            className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm min-h-24 resize-y bg-transparent"
+            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm min-h-24 resize-y bg-transparent"
           />
           <div className="flex gap-2 mt-2">
             <button
               onClick={() => newNote.trim() && createNote.mutate(newNote.trim())}
               disabled={!newNote.trim() || createNote.isPending}
-              className="px-4 py-1.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm disabled:opacity-50"
+              className="px-4 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
             >
               Save
             </button>
             <button
               onClick={() => { setShowForm(false); setNewNote(""); }}
-              className="px-4 py-1.5 border border-[hsl(var(--border))] rounded-md text-sm"
+              className="px-4 py-1.5 border border-[var(--color-border)] rounded-md text-sm"
             >
               Cancel
             </button>
@@ -114,13 +114,13 @@ export function NotesTab({ caseId }: Props) {
 
       <div className="space-y-3">
         {notes?.map((note) => (
-          <div key={note.id} className="rounded-lg border border-[hsl(var(--border))] p-4">
+          <div key={note.id} className="rounded-lg border border-[var(--color-border)] p-4">
             {editingId === note.id ? (
               <div>
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm min-h-20 resize-y bg-transparent"
+                  className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm min-h-20 resize-y bg-transparent"
                 />
                 <div className="flex gap-2 mt-2">
                   <button
@@ -128,13 +128,13 @@ export function NotesTab({ caseId }: Props) {
                       editContent.trim() &&
                       updateNote.mutate({ noteId: note.id, content: editContent.trim() })
                     }
-                    className="px-3 py-1 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded text-sm"
+                    className="px-3 py-1 bg-[var(--color-primary)] text-[#ffffff] rounded text-sm"
                   >
                     Save
                   </button>
                   <button
                     onClick={() => setEditingId(null)}
-                    className="px-3 py-1 border border-[hsl(var(--border))] rounded text-sm"
+                    className="px-3 py-1 border border-[var(--color-border)] rounded text-sm"
                   >
                     Cancel
                   </button>
@@ -145,7 +145,7 @@ export function NotesTab({ caseId }: Props) {
                 <div className="flex items-center gap-2 mb-2">
                   <UserAvatar displayName={note.created_by.display_name} size="sm" />
                   <span className="text-xs font-medium">{note.created_by.display_name}</span>
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <span className="text-xs text-[var(--color-text-muted)]">
                     {formatDate(note.created_at)}
                   </span>
                   {note.is_evidence && (
@@ -159,20 +159,20 @@ export function NotesTab({ caseId }: Props) {
                       className={`text-xs px-2 py-0.5 rounded border transition-colors ${
                         note.is_evidence
                           ? "border-amber-500 text-amber-400"
-                          : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-amber-400"
+                          : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-amber-400"
                       }`}
                     >
                       {note.is_evidence ? "Unmark" : "Evidence"}
                     </button>
                     <button
                       onClick={() => { setEditingId(note.id); setEditContent(note.content); }}
-                      className="text-xs px-2 py-0.5 rounded border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                      className="text-xs px-2 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => { if (confirm("Delete this note?")) deleteNote.mutate(note.id); }}
-                      className="text-xs px-2 py-0.5 rounded border border-[hsl(var(--border))] text-red-400 hover:text-red-300"
+                      className="text-xs px-2 py-0.5 rounded border border-[var(--color-border)] text-red-400 hover:text-red-300"
                     >
                       Delete
                     </button>
@@ -184,7 +184,7 @@ export function NotesTab({ caseId }: Props) {
           </div>
         ))}
         {(!notes || notes.length === 0) && !showForm && (
-          <div className="py-8 text-center text-[hsl(var(--muted-foreground))]">
+          <div className="py-8 text-center text-[var(--color-text-muted)]">
             No notes yet
           </div>
         )}

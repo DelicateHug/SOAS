@@ -136,7 +136,7 @@ export function DocumentationViewer({ content, childPages }: DocumentationViewer
 
   if (!content || content === "<p></p>") {
     return (
-      <div className="text-center py-8 text-[hsl(var(--muted-foreground))]">
+      <div className="text-center py-8 text-[var(--color-text-muted)]">
         No documentation yet. Switch to edit mode to start writing.
       </div>
     );
@@ -156,10 +156,10 @@ export function DocumentationViewer({ content, childPages }: DocumentationViewer
         <nav className="w-48 shrink-0 sticky top-4 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
           {headings.length > 0 && (
             <>
-              <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
+              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
                 On this page
               </p>
-              <ul className="space-y-1 border-l border-[hsl(var(--border))]">
+              <ul className="space-y-1 border-l border-[var(--color-border)]">
                 {headings.map((h) => (
                   <li key={h.id}>
                     <button
@@ -168,8 +168,8 @@ export function DocumentationViewer({ content, childPages }: DocumentationViewer
                         h.level === 1 ? "pl-3" : h.level === 2 ? "pl-5" : "pl-7"
                       } ${
                         activeId === h.id
-                          ? "border-[hsl(var(--primary))] text-[hsl(var(--foreground))] font-medium"
-                          : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:border-[hsl(var(--border))]"
+                          ? "border-[var(--color-primary)] text-[var(--color-text)] font-medium"
+                          : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
                       }`}
                     >
                       {h.text}
@@ -182,15 +182,15 @@ export function DocumentationViewer({ content, childPages }: DocumentationViewer
 
           {childPages && childPages.length > 0 && (
             <div className={headings.length > 0 ? "mt-4" : ""}>
-              <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
+              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
                 Subpages
               </p>
-              <ul className="space-y-0.5 border-l border-[hsl(var(--border))]">
+              <ul className="space-y-0.5 border-l border-[var(--color-border)]">
                 {childPages.map((child) => (
                   <li key={child.slug}>
                     <Link
                       to={`/wiki/${child.slug}`}
-                      className="flex items-center gap-1.5 text-sm py-0.5 pl-3 border-l-2 -ml-px border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:border-[hsl(var(--border))] transition-colors"
+                      className="flex items-center gap-1.5 text-sm py-0.5 pl-3 border-l-2 -ml-px border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)] transition-colors"
                     >
                       <DynamicIcon name={child.icon} className="w-3.5 h-3.5 shrink-0" />
                       {child.title}

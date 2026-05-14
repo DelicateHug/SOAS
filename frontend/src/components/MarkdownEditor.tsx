@@ -63,11 +63,11 @@ function ToolbarBtn({
       title={title}
       className={cn(
         "flex items-center justify-center rounded px-1.5 py-1 text-sm leading-none transition-colors",
-        "hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]",
+        "hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]",
         "disabled:pointer-events-none disabled:opacity-40",
         active
-          ? "bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]"
-          : "text-[hsl(var(--muted-foreground))]",
+          ? "bg-[var(--color-surface-2)] text-[var(--color-text)]"
+          : "text-[var(--color-text-muted)]",
       )}
     >
       {children}
@@ -170,14 +170,14 @@ export function MarkdownEditor({
   return (
     <div
       className={cn(
-        "rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))]",
-        "focus-within:ring-1 focus-within:ring-[hsl(var(--ring))]",
+        "rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]",
+        "focus-within:ring-1 focus-within:ring-[var(--color-primary)]",
         className,
       )}
     >
       {/* ── Static Toolbar ──────────────────────────────────────────── */}
       {editable && (
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-[hsl(var(--border))] px-2 py-1">
+        <div className="flex flex-wrap items-center gap-0.5 border-b border-[var(--color-border)] px-2 py-1">
           {/* Headings */}
           <ToolbarBtn
             onClick={() =>
@@ -208,7 +208,7 @@ export function MarkdownEditor({
           </ToolbarBtn>
 
           {/* Divider */}
-          <div className="mx-1 h-4 w-px bg-[hsl(var(--border))]" />
+          <div className="mx-1 h-4 w-px bg-[var(--color-border)]" />
 
           {/* Lists */}
           <ToolbarBtn
@@ -231,7 +231,7 @@ export function MarkdownEditor({
           </ToolbarBtn>
 
           {/* Divider */}
-          <div className="mx-1 h-4 w-px bg-[hsl(var(--border))]" />
+          <div className="mx-1 h-4 w-px bg-[var(--color-border)]" />
 
           {/* Block-level */}
           <ToolbarBtn
@@ -271,7 +271,7 @@ export function MarkdownEditor({
 
       {/* ── Inline formatting toolbar ─────────────────────────────── */}
       {editable && (
-        <div className="flex items-center gap-0.5 border-b border-[hsl(var(--border))] px-2 py-1">
+        <div className="flex items-center gap-0.5 border-b border-[var(--color-border)] px-2 py-1">
           <ToolbarBtn
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive("bold")}
@@ -300,7 +300,7 @@ export function MarkdownEditor({
           >
             {"<>"}
           </ToolbarBtn>
-          <div className="mx-1 h-4 w-px bg-[hsl(var(--border))]" />
+          <div className="mx-1 h-4 w-px bg-[var(--color-border)]" />
           <ToolbarBtn
             onClick={toggleLink}
             active={editor.isActive("link")}

@@ -80,7 +80,7 @@ export function CodeLibraryPage() {
         </div>
         <button
           onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 text-sm"
         >
           <Plus className="w-4 h-4" />
           New Block
@@ -90,7 +90,7 @@ export function CodeLibraryPage() {
       {/* Filters */}
       <div className="flex gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
           <input
             type="text"
             value={search}
@@ -99,7 +99,7 @@ export function CodeLibraryPage() {
               setPage(1);
             }}
             placeholder="Search blocks..."
-            className="w-full pl-10 pr-3 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm"
+            className="w-full pl-10 pr-3 py-1.5 border border-[var(--color-border)] rounded-md text-sm"
           />
         </div>
         <select
@@ -108,7 +108,7 @@ export function CodeLibraryPage() {
             setLanguage(e.target.value);
             setPage(1);
           }}
-          className="px-3 py-1.5 border border-[hsl(var(--input))] rounded-md text-sm bg-[hsl(var(--background))]"
+          className="px-3 py-1.5 border border-[var(--color-border)] rounded-md text-sm bg-[var(--color-bg)]"
         >
           <option value="">All Languages</option>
           <option value="python">Python</option>
@@ -119,11 +119,11 @@ export function CodeLibraryPage() {
 
       {/* Block list */}
       {isLoading ? (
-        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">Loading...</div>
+        <div className="text-center py-12 text-[var(--color-text-muted)]">Loading...</div>
       ) : blocks.length === 0 ? (
         <div className="text-center py-12">
-          <Code className="w-12 h-12 mx-auto mb-3 text-[hsl(var(--muted-foreground))] opacity-40" />
-          <p className="text-[hsl(var(--muted-foreground))]">
+          <Code className="w-12 h-12 mx-auto mb-3 text-[var(--color-text-muted)] opacity-40" />
+          <p className="text-[var(--color-text-muted)]">
             {search ? "No matching blocks found" : "No code blocks yet. Create your first one!"}
           </p>
         </div>
@@ -147,7 +147,7 @@ export function CodeLibraryPage() {
             return (
             <div
               key={block.id}
-              className={`flex items-center gap-4 p-4 border border-[hsl(var(--border))] rounded-lg hover:bg-[hsl(var(--accent))] transition-colors ${branchStatus === "pending_delete" ? "opacity-50" : ""}`}
+              className={`flex items-center gap-4 p-4 border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-surface-2)] transition-colors ${branchStatus === "pending_delete" ? "opacity-50" : ""}`}
             >
               {/* Favorite star */}
               <button
@@ -159,7 +159,7 @@ export function CodeLibraryPage() {
                   className={`w-4 h-4 ${
                     block.is_favorited
                       ? "fill-yellow-400 text-yellow-400"
-                      : "text-[hsl(var(--muted-foreground))]"
+                      : "text-[var(--color-text-muted)]"
                   }`}
                 />
               </button>
@@ -179,18 +179,18 @@ export function CodeLibraryPage() {
                   {block.is_public ? (
                     <span title="Public"><Globe className="w-3 h-3 text-green-500" /></span>
                   ) : (
-                    <span title="Private"><Lock className="w-3 h-3 text-[hsl(var(--muted-foreground))]" /></span>
+                    <span title="Private"><Lock className="w-3 h-3 text-[var(--color-text-muted)]" /></span>
                   )}
-                  <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                  <span className="text-[10px] text-[var(--color-text-muted)]">
                     v{block.version}
                   </span>
                 </div>
                 {block.description && (
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">
+                  <p className="text-xs text-[var(--color-text-muted)] truncate">
                     {block.description}
                   </p>
                 )}
-                <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1">
+                <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
                   by {block.created_by.display_name}
                 </p>
               </div>
@@ -199,14 +199,14 @@ export function CodeLibraryPage() {
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button
                   onClick={() => setPermissionsBlock(block)}
-                  className="p-1.5 hover:bg-[hsl(var(--accent))] rounded"
+                  className="p-1.5 hover:bg-[var(--color-surface-2)] rounded"
                   title="Permissions"
                 >
                   <Shield className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setEditingBlock(block)}
-                  className="p-1.5 hover:bg-[hsl(var(--accent))] rounded"
+                  className="p-1.5 hover:bg-[var(--color-surface-2)] rounded"
                   title="Edit"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -239,7 +239,7 @@ export function CodeLibraryPage() {
           >
             Previous
           </button>
-          <span className="text-sm text-[hsl(var(--muted-foreground))]">
+          <span className="text-sm text-[var(--color-text-muted)]">
             Page {page} of {meta.total_pages}
           </span>
           <button

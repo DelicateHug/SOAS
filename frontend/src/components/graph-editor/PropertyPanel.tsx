@@ -54,7 +54,7 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-[hsl(var(--muted-foreground))]">
+          <div className="text-center text-[var(--color-text-muted)]">
             <Settings2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
             <p className="text-xs">Select a node to edit its properties</p>
           </div>
@@ -78,12 +78,12 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="p-2 border-b border-[hsl(var(--border))] flex items-center justify-between gap-1">
+      <div className="p-2 border-b border-[var(--color-border)] flex items-center justify-between gap-1">
         <div className="min-w-0 flex-1">
           <h2 className="text-xs font-semibold truncate">
             {(typeof data.properties.override_name === "string" && data.properties.override_name) || data.label}
           </h2>
-          <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">
+          <p className="text-[10px] text-[var(--color-text-muted)] truncate">
             {data.type}
           </p>
         </div>
@@ -93,15 +93,15 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
               href={data.catalogEntry.doc_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-0.5 hover:bg-[hsl(var(--accent))] rounded"
+              className="p-0.5 hover:bg-[var(--color-surface-2)] rounded"
               title="Open documentation"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+              <ExternalLink className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
             </a>
           )}
           <button
             onClick={() => selectNode(null)}
-            className="p-0.5 hover:bg-[hsl(var(--accent))] rounded"
+            className="p-0.5 hover:bg-[var(--color-surface-2)] rounded"
             title="Deselect"
           >
             <X className="w-3.5 h-3.5" />
@@ -112,8 +112,8 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
       {/* Scrollable content */}
       <div className={`flex-1 overflow-y-auto ${isReadOnly ? "opacity-60 pointer-events-none" : ""}`}>
         {/* Override name */}
-        <div className="p-3 border-b border-[hsl(var(--border))]">
-          <label className="block text-[10px] font-medium text-[hsl(var(--muted-foreground))] mb-1">
+        <div className="p-3 border-b border-[var(--color-border)]">
+          <label className="block text-[10px] font-medium text-[var(--color-text-muted)] mb-1">
             Display Name
           </label>
           <input
@@ -123,14 +123,14 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
               updateNodeProperty(selectedNodeId, "override_name", e.target.value)
             }
             placeholder={data.label}
-            className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-transparent placeholder:text-[hsl(var(--muted-foreground))]/50"
+            className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-transparent placeholder:text-[var(--color-text-muted)]/50"
           />
         </div>
 
         {/* Node properties */}
         {properties.length > 0 && (
-          <div className="p-3 border-b border-[hsl(var(--border))]">
-            <h3 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
+          <div className="p-3 border-b border-[var(--color-border)]">
+            <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
               Properties
             </h3>
             <div className="space-y-3">
@@ -155,7 +155,7 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
         {/* Input port inline values */}
         {data.inputs.length > 0 && (
           <div className="p-3">
-            <h3 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
               Input Defaults
             </h3>
             <div className="space-y-3">
@@ -176,8 +176,8 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
 
         {/* Output ports (read-only info) */}
         {data.outputs.length > 0 && (
-          <div className="p-3 border-t border-[hsl(var(--border))]">
-            <h3 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">
+          <div className="p-3 border-t border-[var(--color-border)]">
+            <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
               Outputs
             </h3>
             <div className="space-y-1">
@@ -194,7 +194,7 @@ export function PropertyPanel({ isReadOnly }: PropertyPanelProps) {
                   <span className="text-xs truncate">
                     {port.label || port.name}
                   </span>
-                  <span className="text-[10px] text-[hsl(var(--muted-foreground))] ml-auto">
+                  <span className="text-[10px] text-[var(--color-text-muted)] ml-auto">
                     {port.type}
                   </span>
                 </div>
@@ -221,7 +221,7 @@ function PropertyTooltip({ text }: { text: string }) {
 
   return (
     <span ref={iconRef} className="inline-flex" onMouseEnter={handleEnter} onMouseLeave={() => setPos(null)}>
-      <HelpCircle className="w-3 h-3 text-[hsl(var(--muted-foreground))] cursor-help" />
+      <HelpCircle className="w-3 h-3 text-[var(--color-text-muted)] cursor-help" />
       {pos &&
         createPortal(
           <span
@@ -262,7 +262,7 @@ function AutomationInputSelectField({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))]"
+      className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-[var(--color-bg)]"
     >
       <option value="">{parameters.length === 0 ? "No inputs defined" : "-- Select input --"}</option>
       {parameters.map((param) => (
@@ -296,7 +296,7 @@ function PropertyField({
   ) => void;
 }) {
   const inputClasses =
-    "w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))]";
+    "w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-[var(--color-bg)]";
 
   return (
     <div>
@@ -313,7 +313,7 @@ function PropertyField({
             type="checkbox"
             checked={!!value}
             onChange={(e) => onChange(e.target.checked)}
-            className="rounded border-[hsl(var(--input))]"
+            className="rounded border-[var(--color-border)]"
           />
           <span className="text-xs">{value ? "Enabled" : "Disabled"}</span>
         </label>
@@ -450,7 +450,7 @@ function InlineValueEditor({
         {port.required && (
           <span className="text-red-400 text-xs" title="Required">*</span>
         )}
-        <span className="text-[10px] text-[hsl(var(--muted-foreground))] ml-auto">
+        <span className="text-[10px] text-[var(--color-text-muted)] ml-auto">
           {port.type}
         </span>
       </div>
@@ -461,7 +461,7 @@ function InlineValueEditor({
             type="checkbox"
             checked={!!port.inline_value}
             onChange={(e) => onChange(e.target.checked)}
-            className="rounded border-[hsl(var(--input))]"
+            className="rounded border-[var(--color-border)]"
           />
           <span className="text-xs">
             {port.inline_value ? "true" : "false"}
@@ -475,7 +475,7 @@ function InlineValueEditor({
             onChange(e.target.value ? Number(e.target.value) : null)
           }
           step={port.type === "FLOAT" ? "0.01" : "1"}
-          className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))]"
+          className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-[var(--color-bg)]"
         />
       ) : (
         <input
@@ -483,7 +483,7 @@ function InlineValueEditor({
           value={port.inline_value != null ? String(port.inline_value) : ""}
           onChange={(e) => onChange(e.target.value || null)}
           placeholder={`Default ${port.type.toLowerCase()}`}
-          className="w-full px-2 py-1 text-xs border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))]"
+          className="w-full px-2 py-1 text-xs border border-[var(--color-border)] rounded-md bg-[var(--color-bg)]"
         />
       )}
     </div>

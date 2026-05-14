@@ -42,21 +42,21 @@ export function AdminUserSecretsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold">User Secrets</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+        <p className="text-sm text-[var(--color-text-muted)] mt-1">
           All user secrets across the platform. Values are never visible to admins.
         </p>
       </div>
 
       {isLoading ? (
-        <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
+        <p className="text-[var(--color-text-muted)]">Loading...</p>
       ) : secrets.length === 0 ? (
-        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="text-center py-12 text-[var(--color-text-muted)]">
           <p>No user secrets exist yet.</p>
         </div>
       ) : (
-        <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+        <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-[hsl(var(--accent))]">
+            <thead className="bg-[var(--color-surface-2)]">
               <tr>
                 <th className="text-left px-4 py-2 font-medium">User</th>
                 <th className="text-left px-4 py-2 font-medium">Secret Name</th>
@@ -66,14 +66,14 @@ export function AdminUserSecretsPage() {
                 <th className="text-right px-4 py-2 font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[hsl(var(--border))]">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {secrets.map((s) => (
-                <tr key={s.id} className="hover:bg-[hsl(var(--accent))]/50">
+                <tr key={s.id} className="hover:bg-[var(--color-surface-2)]/50">
                   <td className="px-4 py-2 font-mono text-xs">
                     {s.username || s.user_id}
                   </td>
                   <td className="px-4 py-2 font-mono text-xs">{s.name}</td>
-                  <td className="px-4 py-2 text-[hsl(var(--muted-foreground))] max-w-[200px] truncate">
+                  <td className="px-4 py-2 text-[var(--color-text-muted)] max-w-[200px] truncate">
                     {s.description || "-"}
                   </td>
                   <td className="px-4 py-2 text-xs">
@@ -82,10 +82,10 @@ export function AdminUserSecretsPage() {
                         SENSITIVE
                       </span>
                     ) : (
-                      <span className="text-[hsl(var(--muted-foreground))]">standard</span>
+                      <span className="text-[var(--color-text-muted)]">standard</span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-xs text-[hsl(var(--muted-foreground))]">
+                  <td className="px-4 py-2 text-xs text-[var(--color-text-muted)]">
                     {new Date(s.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-2 text-right">

@@ -124,7 +124,7 @@ function TransformConfigEditor({
     case "lowercase":
     case "uppercase":
       return (
-        <p className="text-xs text-[hsl(var(--muted-foreground))] italic">
+        <p className="text-xs text-[var(--color-text-muted)] italic">
           No configuration needed.
         </p>
       );
@@ -133,7 +133,7 @@ function TransformConfigEditor({
       return (
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+            <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
               Pattern
             </label>
             <input
@@ -141,11 +141,11 @@ function TransformConfigEditor({
               value={(config.pattern as string) ?? ""}
               onChange={(e) => onChange({ ...config, pattern: e.target.value })}
               placeholder="regex pattern"
-              className="w-full px-3 py-2 text-sm rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] font-mono"
+              className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] font-mono"
             />
           </div>
           <div className="w-32">
-            <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+            <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
               Capture group
             </label>
             <input
@@ -155,7 +155,7 @@ function TransformConfigEditor({
               onChange={(e) =>
                 onChange({ ...config, group: parseInt(e.target.value, 10) || 0 })
               }
-              className="w-full px-3 py-2 text-sm rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))]"
+              className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]"
             />
           </div>
         </div>
@@ -164,7 +164,7 @@ function TransformConfigEditor({
     case "template":
       return (
         <div>
-          <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+          <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
             Template
           </label>
           <input
@@ -172,9 +172,9 @@ function TransformConfigEditor({
             value={(config.template as string) ?? ""}
             onChange={(e) => onChange({ ...config, template: e.target.value })}
             placeholder="e.g. {value} - enriched"
-            className="w-full px-3 py-2 text-sm rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] font-mono"
+            className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] font-mono"
           />
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-xs text-[var(--color-text-muted)] mt-1">
             {"Use {value} as a placeholder for the source field value."}
           </p>
         </div>
@@ -183,7 +183,7 @@ function TransformConfigEditor({
     case "static":
       return (
         <div>
-          <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+          <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
             Static value
           </label>
           <input
@@ -191,7 +191,7 @@ function TransformConfigEditor({
             value={(config.value as string) ?? ""}
             onChange={(e) => onChange({ ...config, value: e.target.value })}
             placeholder="static value"
-            className="w-full px-3 py-2 text-sm rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))]"
+            className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]"
           />
         </div>
       );
@@ -242,16 +242,16 @@ function LookupConfigEditor({
 
   return (
     <div className="space-y-3">
-      <div className="border border-[hsl(var(--border))] rounded-md overflow-hidden">
+      <div className="border border-[var(--color-border)] rounded-md overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-[hsl(var(--accent))]">
+          <thead className="bg-[var(--color-surface-2)]">
             <tr>
               <th className="text-left px-3 py-1.5 text-xs font-medium">Source Value</th>
               <th className="text-left px-3 py-1.5 text-xs font-medium">Mapped Value</th>
               <th className="w-10" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-[hsl(var(--border))]">
+          <tbody className="divide-y divide-[var(--color-border)]">
             {mappings.map((m, i) => (
               <tr key={i}>
                 <td className="px-2 py-1.5">
@@ -260,7 +260,7 @@ function LookupConfigEditor({
                     value={m.source}
                     onChange={(e) => updateMapping(i, "source", e.target.value)}
                     placeholder="source"
-                    className="w-full px-2 py-1 text-xs rounded border border-[hsl(var(--input))] bg-[hsl(var(--background))]"
+                    className="w-full px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                   />
                 </td>
                 <td className="px-2 py-1.5">
@@ -269,7 +269,7 @@ function LookupConfigEditor({
                     value={m.mapped}
                     onChange={(e) => updateMapping(i, "mapped", e.target.value)}
                     placeholder="mapped"
-                    className="w-full px-2 py-1 text-xs rounded border border-[hsl(var(--input))] bg-[hsl(var(--background))]"
+                    className="w-full px-2 py-1 text-xs rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                   />
                 </td>
                 <td className="px-2 py-1.5 text-center">
@@ -284,7 +284,7 @@ function LookupConfigEditor({
             ))}
             {mappings.length === 0 && (
               <tr>
-                <td colSpan={3} className="text-center py-2 text-xs text-[hsl(var(--muted-foreground))]">
+                <td colSpan={3} className="text-center py-2 text-xs text-[var(--color-text-muted)]">
                   No mappings yet.
                 </td>
               </tr>
@@ -294,12 +294,12 @@ function LookupConfigEditor({
       </div>
       <button
         onClick={addMapping}
-        className="flex items-center gap-1 text-xs text-[hsl(var(--primary))] hover:underline"
+        className="flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline"
       >
         <Plus className="w-3 h-3" /> Add Mapping
       </button>
       <div>
-        <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+        <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
           Default (when no mapping matches)
         </label>
         <input
@@ -307,7 +307,7 @@ function LookupConfigEditor({
           value={defaultValue}
           onChange={(e) => onChange({ ...config, default: e.target.value })}
           placeholder="default value"
-          className="w-full px-3 py-2 text-sm rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))]"
+          className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]"
         />
       </div>
     </div>
@@ -336,7 +336,7 @@ function RuleRow({
   };
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--background))]">
+    <div className="border border-[var(--color-border)] rounded-md bg-[var(--color-bg)]">
       {/* Compact row */}
       <div className="flex items-center gap-2 px-3 py-2">
         <input
@@ -344,15 +344,15 @@ function RuleRow({
           value={rule.source_path}
           onChange={(e) => updateField("source_path", e.target.value)}
           placeholder="e.g. data.alert.src_ip"
-          className="flex-1 min-w-0 px-2 py-1.5 text-sm rounded border border-[hsl(var(--input))] bg-[hsl(var(--background))] font-mono"
+          className="flex-1 min-w-0 px-2 py-1.5 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] font-mono"
         />
-        <ArrowRight className="w-4 h-4 shrink-0 text-[hsl(var(--muted-foreground))]" />
+        <ArrowRight className="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
         <input
           type="text"
           value={rule.target_field}
           onChange={(e) => updateField("target_field", e.target.value)}
           placeholder="e.g. source_ip"
-          className="flex-1 min-w-0 px-2 py-1.5 text-sm rounded border border-[hsl(var(--input))] bg-[hsl(var(--background))] font-mono"
+          className="flex-1 min-w-0 px-2 py-1.5 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] font-mono"
         />
         <select
           value={rule.transform_type}
@@ -365,7 +365,7 @@ function RuleRow({
                 newType === rule.transform_type ? rule.transform_config : {},
             });
           }}
-          className="px-2 py-1.5 text-sm rounded border border-[hsl(var(--input))] bg-[hsl(var(--background))] shrink-0"
+          className="px-2 py-1.5 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] shrink-0"
         >
           {TRANSFORM_TYPES.map((t) => (
             <option key={t} value={t}>
@@ -379,8 +379,8 @@ function RuleRow({
           onClick={() => updateField("is_enabled", !rule.is_enabled)}
           className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
             rule.is_enabled
-              ? "bg-[hsl(var(--primary))]"
-              : "bg-[hsl(var(--muted))]"
+              ? "bg-[var(--color-primary)]"
+              : "bg-[var(--color-surface-2)]"
           }`}
           title={rule.is_enabled ? "Enabled" : "Disabled"}
         >
@@ -394,7 +394,7 @@ function RuleRow({
         {/* Configure / expand button */}
         <button
           onClick={onToggleExpand}
-          className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors shrink-0"
+          className="px-2 py-1 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors shrink-0"
         >
           {isExpanded ? "Close" : "Configure"}
         </button>
@@ -411,10 +411,10 @@ function RuleRow({
 
       {/* Expanded details panel */}
       {isExpanded && (
-        <div className="border-t border-[hsl(var(--border))] px-4 py-3 space-y-3 bg-[hsl(var(--muted))]/30">
+        <div className="border-t border-[var(--color-border)] px-4 py-3 space-y-3 bg-[var(--color-surface-2)]/30">
           {/* Transform config */}
           <div>
-            <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase mb-2">
+            <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase mb-2">
               Transform Configuration
             </p>
             <TransformConfigEditor
@@ -449,7 +449,7 @@ function RuleRow({
                   )
                 }
                 placeholder="fallback value if source field missing"
-                className="w-full px-3 py-2 text-sm rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))]"
+                className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]"
               />
             </div>
           </div>
@@ -497,13 +497,13 @@ function TestPanel({
   });
 
   return (
-    <div className="border border-[hsl(var(--border))] rounded-lg h-full flex flex-col bg-[hsl(var(--background))]">
+    <div className="border border-[var(--color-border)] rounded-lg h-full flex flex-col bg-[var(--color-bg)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
         <span className="text-sm font-semibold">Test Panel</span>
         <button
           onClick={onClose}
-          className="text-xs px-2 py-1 rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors"
+          className="text-xs px-2 py-1 rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors"
         >
           Close
         </button>
@@ -512,7 +512,7 @@ function TestPanel({
       {/* Payload input */}
       <div className="p-4 flex-1 flex flex-col gap-3 overflow-y-auto">
         <div>
-          <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1 block">
+          <label className="text-xs font-medium text-[var(--color-text-muted)] mb-1 block">
             Test Payload
           </label>
           <textarea
@@ -520,14 +520,14 @@ function TestPanel({
             onChange={(e) => setPayload(e.target.value)}
             rows={10}
             placeholder={SAMPLE_PAYLOAD}
-            className="w-full px-3 py-2 text-sm rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] font-mono resize-y"
+            className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] font-mono resize-y"
           />
         </div>
 
         <button
           onClick={() => testMutation.mutate()}
           disabled={testMutation.isPending}
-          className="flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50 transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50 transition-colors"
         >
           <FlaskConical className="w-4 h-4" />
           {testMutation.isPending ? "Running..." : "Run Test"}
@@ -572,10 +572,10 @@ function TestPanel({
 
             {/* Normalized output */}
             <div>
-              <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1 block">
+              <label className="text-xs font-medium text-[var(--color-text-muted)] mb-1 block">
                 Normalized Output
               </label>
-              <pre className="text-xs font-mono p-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--muted))] overflow-x-auto whitespace-pre-wrap max-h-64 overflow-y-auto">
+              <pre className="text-xs font-mono p-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)] overflow-x-auto whitespace-pre-wrap max-h-64 overflow-y-auto">
                 {JSON.stringify(result.normalized, null, 2)}
               </pre>
             </div>
@@ -583,7 +583,7 @@ function TestPanel({
         )}
 
         {!result && (
-          <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))] p-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--muted))]/50">
+          <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] p-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)]/50">
             <Info className="w-4 h-4 shrink-0" />
             <span>
               Paste a sample payload and click "Run Test" to see the
@@ -796,8 +796,8 @@ export function NormalizationEditorPage() {
             onClick={() => setShowTestPanel((v) => !v)}
             className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md border transition-colors ${
               showTestPanel
-                ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent"
-                : "border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                ? "bg-[var(--color-primary)] text-[#ffffff] border-transparent"
+                : "border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
             }`}
           >
             <FlaskConical className="w-4 h-4" />
@@ -806,7 +806,7 @@ export function NormalizationEditorPage() {
           <button
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending || !isDirty}
-            className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50 transition-colors"
           >
             <Save className="w-4 h-4" />
             {saveMutation.isPending ? "Saving..." : "Save All"}
@@ -836,7 +836,7 @@ export function NormalizationEditorPage() {
 
       {/* Main content */}
       {isLoading ? (
-        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="text-center py-12 text-[var(--color-text-muted)]">
           Loading...
         </div>
       ) : (
@@ -849,7 +849,7 @@ export function NormalizationEditorPage() {
             style={showTestPanel ? { flex: "0 0 60%" } : undefined}
           >
             {sortedGroups.length === 0 ? (
-              <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+              <div className="text-center py-12 text-[var(--color-text-muted)]">
                 <p>No normalization groups defined.</p>
                 <p className="text-sm mt-1">
                   Create normalization groups first to organize your rules.
@@ -863,47 +863,47 @@ export function NormalizationEditorPage() {
                 return (
                   <div
                     key={group.id}
-                    className="border border-[hsl(var(--border))] rounded-lg overflow-hidden"
+                    className="border border-[var(--color-border)] rounded-lg overflow-hidden"
                   >
                     {/* Group header */}
                     <button
                       onClick={() => toggleGroup(group.id)}
-                      className="w-full px-4 py-3 flex items-center justify-between bg-[hsl(var(--muted))] hover:bg-[hsl(var(--accent))] transition-colors"
+                      className="w-full px-4 py-3 flex items-center justify-between bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-2)] transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <GroupIcon
                           name={group.icon}
-                          className="w-4 h-4 text-[hsl(var(--muted-foreground))]"
+                          className="w-4 h-4 text-[var(--color-text-muted)]"
                         />
                         <div className="text-left">
                           <p className="font-medium text-sm">
                             {group.display_name}
                           </p>
                           {group.description && (
-                            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                            <p className="text-xs text-[var(--color-text-muted)]">
                               {group.description}
                             </p>
                           )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] text-xs">
+                        <span className="px-2 py-0.5 rounded-full bg-[var(--color-surface-2)] text-[var(--color-text-muted)] text-xs">
                           {groupRules.length}{" "}
                           {groupRules.length === 1 ? "rule" : "rules"}
                         </span>
                         {isExpanded ? (
-                          <ChevronUp className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                          <ChevronUp className="w-4 h-4 text-[var(--color-text-muted)]" />
                         ) : (
-                          <ChevronDown className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                          <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)]" />
                         )}
                       </div>
                     </button>
 
                     {/* Group body */}
                     {isExpanded && (
-                      <div className="border-t border-[hsl(var(--border))] p-4 space-y-2">
+                      <div className="border-t border-[var(--color-border)] p-4 space-y-2">
                         {groupRules.length === 0 ? (
-                          <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-4">
+                          <p className="text-sm text-[var(--color-text-muted)] text-center py-4">
                             No rules in this group. Add one below.
                           </p>
                         ) : (
@@ -926,7 +926,7 @@ export function NormalizationEditorPage() {
                         {/* Add rule button */}
                         <button
                           onClick={() => addRule(group.id)}
-                          className="flex items-center gap-1.5 text-sm text-[hsl(var(--primary))] hover:underline mt-2"
+                          className="flex items-center gap-1.5 text-sm text-[var(--color-primary)] hover:underline mt-2"
                         >
                           <Plus className="w-3.5 h-3.5" /> Add Rule
                         </button>

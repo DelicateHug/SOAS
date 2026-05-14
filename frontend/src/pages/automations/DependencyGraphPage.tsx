@@ -155,13 +155,13 @@ function buildFlowElements(
         padding: "12px 16px",
         borderRadius: "8px",
         border: isFocused
-          ? "2px solid hsl(var(--primary))"
-          : "1px solid hsl(var(--border))",
+          ? "2px solid var(--color-primary)"
+          : "1px solid var(--color-border)",
         boxShadow: isFocused
           ? "0 0 0 3px hsla(var(--primary) / 0.25)"
           : "0 1px 3px hsla(0 0% 0% / 0.15)",
-        background: "hsl(var(--card, var(--background)))",
-        color: "hsl(var(--foreground))",
+        background: "var(--color-surface)",
+        color: "var(--color-text)",
         fontSize: "12px",
         display: "flex",
         flexDirection: "column" as const,
@@ -177,7 +177,7 @@ function buildFlowElements(
     type: "smoothstep",
     animated: true,
     style: {
-      stroke: "hsl(var(--primary))",
+      stroke: "var(--color-primary)",
       strokeWidth: 2,
       opacity: 0.6,
     },
@@ -209,7 +209,7 @@ function DependencyNode({ data }: { data: DepNodeData }) {
     <>
       <Handle type="target" position={Position.Left} />
       <div className="flex flex-col gap-1.5">
-        <div className="font-semibold text-sm truncate text-[hsl(var(--foreground))]" title={data.label}>
+        <div className="font-semibold text-sm truncate text-[var(--color-text)]" title={data.label}>
           {data.label}
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -217,12 +217,12 @@ function DependencyNode({ data }: { data: DepNodeData }) {
             {isAutomation ? "automation" : "code block"}
           </span>
           {data.status && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] font-medium">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-2)] text-[var(--color-text-muted)] font-medium">
               {data.status}
             </span>
           )}
           {data.version != null && (
-            <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+            <span className="text-[10px] text-[var(--color-text-muted)]">
               v{data.version}
             </span>
           )}
@@ -293,22 +293,22 @@ export function DependencyGraphPage() {
   return (
     <div className="flex flex-col -m-6" style={{ height: "100vh", width: "calc(100% + 3rem)" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
         <Link
           to={backTo}
-          className="flex items-center gap-1.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+          className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
         </Link>
-        <div className="w-px h-5 bg-[hsl(var(--border))]" />
+        <div className="w-px h-5 bg-[var(--color-border)]" />
         <h1 className="text-lg font-semibold">Dependency Graph</h1>
       </div>
 
       {/* Canvas */}
       <div className="flex-1 relative">
         {isLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center text-[hsl(var(--muted-foreground))]">
+          <div className="absolute inset-0 flex items-center justify-center text-[var(--color-text-muted)]">
             Loading dependency graph...
           </div>
         ) : error ? (
@@ -316,7 +316,7 @@ export function DependencyGraphPage() {
             Failed to load dependency graph. Please try again.
           </div>
         ) : nodes.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center text-[hsl(var(--muted-foreground))]">
+          <div className="absolute inset-0 flex items-center justify-center text-[var(--color-text-muted)]">
             No dependencies found.
           </div>
         ) : (
@@ -334,24 +334,24 @@ export function DependencyGraphPage() {
             proOptions={{ hideAttribution: true }}
           >
             <Background
-              color="hsl(var(--muted))"
+              color="var(--color-surface-2)"
               gap={20}
               size={1}
             />
             <Controls
-              className="[&>button]:bg-[hsl(var(--background))] [&>button]:border-[hsl(var(--border))] [&>button]:text-[hsl(var(--foreground))] [&>button:hover]:bg-[hsl(var(--accent))]"
+              className="[&>button]:bg-[var(--color-bg)] [&>button]:border-[var(--color-border)] [&>button]:text-[var(--color-text)] [&>button:hover]:bg-[var(--color-surface-2)]"
             />
             <MiniMap
               nodeColor={(node) => {
                 const nodeType = node.data?.nodeType;
                 if (nodeType === "automation") return "hsl(210 80% 70%)";
                 if (nodeType === "code_block") return "hsl(140 70% 65%)";
-                return "hsl(var(--muted))";
+                return "var(--color-surface-2)";
               }}
-              maskColor="hsla(var(--background) / 0.7)"
+              maskColor="rgba(15, 23, 36, 0.7)"
               style={{
-                background: "hsl(var(--card, var(--background)))",
-                border: "1px solid hsl(var(--border))",
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
                 borderRadius: "6px",
               }}
             />

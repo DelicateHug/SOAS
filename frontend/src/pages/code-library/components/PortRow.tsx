@@ -18,10 +18,10 @@ interface PortRowProps {
 export function PortRow({ port, onUpdate, onRemove, isLocked, direction }: PortRowProps) {
   if (isLocked) {
     return (
-      <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-[hsl(var(--muted))] opacity-60">
+      <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-[var(--color-surface-2)] opacity-60">
         <Lock className="w-3 h-3 shrink-0" />
         <span className="text-xs font-mono flex-1">{port.name}</span>
-        <span className="text-[10px] text-[hsl(var(--muted-foreground))]">{port.type}</span>
+        <span className="text-[10px] text-[var(--color-text-muted)]">{port.type}</span>
       </div>
     );
   }
@@ -33,12 +33,12 @@ export function PortRow({ port, onUpdate, onRemove, isLocked, direction }: PortR
         value={port.name}
         onChange={(e) => onUpdate({ ...port, name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "") })}
         placeholder="port_name"
-        className="flex-1 min-w-0 px-2 py-1 text-xs font-mono border border-[hsl(var(--input))] rounded bg-transparent"
+        className="flex-1 min-w-0 px-2 py-1 text-xs font-mono border border-[var(--color-border)] rounded bg-transparent"
       />
       <select
         value={port.type}
         onChange={(e) => onUpdate({ ...port, type: e.target.value })}
-        className="w-20 px-1 py-1 text-xs border border-[hsl(var(--input))] rounded bg-[hsl(var(--background))]"
+        className="w-20 px-1 py-1 text-xs border border-[var(--color-border)] rounded bg-[var(--color-bg)]"
       >
         {PORT_TYPES.map((t) => (
           <option key={t} value={t}>{t}</option>
@@ -50,7 +50,7 @@ export function PortRow({ port, onUpdate, onRemove, isLocked, direction }: PortR
             type="checkbox"
             checked={port.required}
             onChange={(e) => onUpdate({ ...port, required: e.target.checked })}
-            className="rounded border-[hsl(var(--input))] w-3 h-3"
+            className="rounded border-[var(--color-border)] w-3 h-3"
           />
           Req
         </label>
@@ -58,7 +58,7 @@ export function PortRow({ port, onUpdate, onRemove, isLocked, direction }: PortR
       <button
         type="button"
         onClick={onRemove}
-        className="p-1 text-[hsl(var(--muted-foreground))] hover:text-red-400 transition-colors"
+        className="p-1 text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
         title="Remove port"
       >
         <Trash2 className="w-3 h-3" />

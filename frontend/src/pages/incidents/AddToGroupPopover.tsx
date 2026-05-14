@@ -74,20 +74,20 @@ export function AddToGroupPopover({
   return (
     <div
       ref={ref}
-      className="absolute right-0 top-full mt-1 z-50 w-64 border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--popover))] shadow-lg"
+      className="absolute right-0 top-full mt-1 z-50 w-64 border border-[var(--color-border)] rounded-md bg-[var(--color-surface)] shadow-lg"
     >
-      <div className="px-3 py-2 border-b border-[hsl(var(--border))]">
-        <p className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+      <div className="px-3 py-2 border-b border-[var(--color-border)]">
+        <p className="text-xs font-medium text-[var(--color-text-muted)]">
           Add to groups
         </p>
       </div>
       <div className="max-h-48 overflow-y-auto py-1">
         {isLoading ? (
           <div className="flex items-center justify-center py-4">
-            <Loader2 className="w-4 h-4 animate-spin text-[hsl(var(--muted-foreground))]" />
+            <Loader2 className="w-4 h-4 animate-spin text-[var(--color-text-muted)]" />
           </div>
         ) : !groups?.data.length ? (
-          <p className="px-3 py-2 text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="px-3 py-2 text-xs text-[var(--color-text-muted)]">
             No groups exist yet
           </p>
         ) : (
@@ -98,16 +98,16 @@ export function AddToGroupPopover({
                 key={group.id}
                 onClick={() => toggleGroup(group.id)}
                 disabled={link.isPending || unlink.isPending}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-[hsl(var(--accent))] disabled:opacity-50 text-left"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--color-surface-2)] disabled:opacity-50 text-left"
               >
                 <input
                   type="checkbox"
                   checked={isLinked}
                   readOnly
-                  className="rounded border-[hsl(var(--input))]"
+                  className="rounded border-[var(--color-border)]"
                 />
                 <span className="flex-1 truncate">{group.title}</span>
-                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                <span className="text-xs text-[var(--color-text-muted)]">
                   {group.status}
                 </span>
               </button>

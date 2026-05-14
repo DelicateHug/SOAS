@@ -95,13 +95,13 @@ export function AutomationsTab({ incidentId }: Props) {
   return (
     <div className="space-y-6">
       {/* Manual run */}
-      <div className="rounded-lg border border-[hsl(var(--border))] p-4">
+      <div className="rounded-lg border border-[var(--color-border)] p-4">
         <SectionHeader title="Run Automation" />
         <div className="flex gap-2">
           <select
             value={selectedAutomation}
             onChange={(e) => setSelectedAutomation(e.target.value)}
-            className="flex-1 px-3 py-2 border border-[hsl(var(--input))] rounded-md text-sm bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
+            className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-[var(--color-bg)] text-[var(--color-text)]"
           >
             <option value="">Select an automation...</option>
             {activeAutomations.map((a) => (
@@ -113,7 +113,7 @@ export function AutomationsTab({ incidentId }: Props) {
           <button
             onClick={() => selectedAutomation && runAutomation.mutate(selectedAutomation)}
             disabled={!selectedAutomation || runAutomation.isPending}
-            className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md text-sm disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
           >
             {runAutomation.isPending ? "Running..." : "Run"}
           </button>
@@ -135,7 +135,7 @@ export function AutomationsTab({ incidentId }: Props) {
             <div
               key={ex.id}
               onClick={() => navigate(`/executions/${ex.id}`)}
-              className="rounded-lg border border-[hsl(var(--border))] px-4 py-3 cursor-pointer hover:bg-[hsl(var(--accent))] transition-colors"
+              className="rounded-lg border border-[var(--color-border)] px-4 py-3 cursor-pointer hover:bg-[var(--color-surface-2)] transition-colors"
             >
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">{ex.automation_name}</span>
@@ -155,7 +155,7 @@ export function AutomationsTab({ incidentId }: Props) {
                   </span>
                 )}
                 {ex.duration_ms != null && (
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <span className="text-xs text-[var(--color-text-muted)]">
                     {formatDuration(ex.duration_ms)}
                   </span>
                 )}
@@ -168,19 +168,19 @@ export function AutomationsTab({ incidentId }: Props) {
                   className={`ml-auto p-1 rounded text-xs transition-colors ${
                     ex.is_evidence
                       ? "text-amber-400 hover:bg-amber-500/20"
-                      : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]"
+                      : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
                   }`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={ex.is_evidence ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                   </svg>
                 </button>
-                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                <span className="text-xs text-[var(--color-text-muted)]">
                   {ex.created_at ? formatDate(ex.created_at) : ""}
                 </span>
               </div>
               {ex.parameters && Object.keys(ex.parameters).length > 0 && (
-                <div className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                <div className="mt-1 text-xs text-[var(--color-text-muted)]">
                   {ex.parameters.manual_run
                     ? "Manual run"
                     : ex.parameters.trigger_tags
@@ -193,7 +193,7 @@ export function AutomationsTab({ incidentId }: Props) {
             </div>
           ))}
           {(!executions || executions.length === 0) && (
-            <div className="py-8 text-center text-[hsl(var(--muted-foreground))]">
+            <div className="py-8 text-center text-[var(--color-text-muted)]">
               No automations have run on this incident
             </div>
           )}

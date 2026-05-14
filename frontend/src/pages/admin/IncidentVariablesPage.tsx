@@ -116,7 +116,7 @@ export function IncidentVariablesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Incident Variables</h1>
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Define variable names for incident context. These appear as
             dropdowns on Get/Set Incident Var nodes. No values stored — just
             keys.
@@ -128,7 +128,7 @@ export function IncidentVariablesPage() {
               resetForm();
               setShowCreateModal(true);
             }}
-            className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 transition-colors"
           >
             <Plus className="w-4 h-4" /> Create Variable
           </button>
@@ -136,18 +136,18 @@ export function IncidentVariablesPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-[hsl(var(--muted-foreground))]">Loading...</p>
+        <p className="text-[var(--color-text-muted)]">Loading...</p>
       ) : branchItems.length === 0 && pendingCreates.length === 0 ? (
-        <div className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="text-center py-12 text-[var(--color-text-muted)]">
           <p>No incident variables defined yet.</p>
           <p className="text-sm mt-1">
             Create one to enable dropdowns on incident variable nodes.
           </p>
         </div>
       ) : (
-        <div className="border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+        <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-[hsl(var(--accent))]">
+            <thead className="bg-[var(--color-surface-2)]">
               <tr>
                 <th className="text-left px-4 py-2 font-medium">Name</th>
                 <th className="text-left px-4 py-2 font-medium">
@@ -162,7 +162,7 @@ export function IncidentVariablesPage() {
                 <th className="text-right px-4 py-2 font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[hsl(var(--border))]">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {pendingCreates.map((cr) => (
                 <tr key={cr.id} className="bg-green-500/5">
                   <td className="px-4 py-2 font-mono text-xs">
@@ -171,21 +171,21 @@ export function IncidentVariablesPage() {
                       <PendingCreateBadge changeRequest={cr} />
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-[hsl(var(--muted-foreground))]">-</td>
+                  <td className="px-4 py-2 text-[var(--color-text-muted)]">-</td>
                   <td className="px-4 py-2 text-center">-</td>
                   <td className="px-4 py-2 text-center">-</td>
-                  <td className="px-4 py-2 text-right text-xs text-[hsl(var(--muted-foreground))] italic">pending</td>
+                  <td className="px-4 py-2 text-right text-xs text-[var(--color-text-muted)] italic">pending</td>
                 </tr>
               ))}
               {branchItems.map(({ item: v, branchStatus, changeRequest }) => (
-                <tr key={v.id} className={`hover:bg-[hsl(var(--accent))]/50 ${branchStatus === "pending_delete" ? "opacity-50 line-through" : ""}`}>
+                <tr key={v.id} className={`hover:bg-[var(--color-surface-2)]/50 ${branchStatus === "pending_delete" ? "opacity-50 line-through" : ""}`}>
                   <td className="px-4 py-2 font-mono text-xs">
                     <span className="flex items-center gap-1.5">
                       {v.name}
                       <BranchStatusBadge branchStatus={branchStatus} changeRequest={changeRequest} />
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-[hsl(var(--muted-foreground))] max-w-[300px] truncate">
+                  <td className="px-4 py-2 text-[var(--color-text-muted)] max-w-[300px] truncate">
                     {v.description || "-"}
                   </td>
                   <td className="px-4 py-2 text-center">
@@ -194,7 +194,7 @@ export function IncidentVariablesPage() {
                         v.default_enabled ? (
                           <ToggleRight className="w-5 h-5 text-green-500 inline" />
                         ) : (
-                          <ToggleLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))] inline" />
+                          <ToggleLeft className="w-5 h-5 text-[var(--color-text-muted)] inline" />
                         )
                       }
                     >
@@ -210,7 +210,7 @@ export function IncidentVariablesPage() {
                         {v.default_enabled ? (
                           <ToggleRight className="w-5 h-5 text-green-500" />
                         ) : (
-                          <ToggleLeft className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+                          <ToggleLeft className="w-5 h-5 text-[var(--color-text-muted)]" />
                         )}
                       </button>
                     </ProductionGuard>
@@ -221,7 +221,7 @@ export function IncidentVariablesPage() {
                         SENSITIVE
                       </span>
                     ) : (
-                      <span className="text-[hsl(var(--muted-foreground))] text-xs">-</span>
+                      <span className="text-[var(--color-text-muted)] text-xs">-</span>
                     )}
                   </td>
                   <td className="px-4 py-2 text-right">
@@ -229,7 +229,7 @@ export function IncidentVariablesPage() {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openEdit(v)}
-                          className="p-1 rounded hover:bg-[hsl(var(--accent))] transition-colors"
+                          className="p-1 rounded hover:bg-[var(--color-surface-2)] transition-colors"
                           title="Edit"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -258,8 +258,8 @@ export function IncidentVariablesPage() {
       {/* Create/Edit Modal */}
       {(showCreateModal || editingVar) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[450px]">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl w-[450px]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
               <h3 className="font-semibold text-sm">
                 {editingVar ? "Edit Variable" : "Create Variable"}
               </h3>
@@ -269,14 +269,14 @@ export function IncidentVariablesPage() {
                   setEditingVar(null);
                   resetForm();
                 }}
-                className="p-1 rounded hover:bg-[hsl(var(--accent))]"
+                className="p-1 rounded hover:bg-[var(--color-surface-2)]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Name
                 </label>
                 <input
@@ -285,11 +285,11 @@ export function IncidentVariablesPage() {
                   onChange={(e) => setFormName(e.target.value)}
                   disabled={!!editingVar}
                   placeholder="e.g. source_ip, affected_user"
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)] disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">
+                <label className="text-xs text-[var(--color-text-muted)] mb-1 block">
                   Description
                 </label>
                 <input
@@ -297,7 +297,7 @@ export function IncidentVariablesPage() {
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="What this variable represents"
-                  className="w-full px-3 py-2 text-sm rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]"
+                  className="w-full px-3 py-2 text-sm rounded border border-[var(--color-border)] bg-[var(--color-bg)]"
                 />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -324,14 +324,14 @@ export function IncidentVariablesPage() {
                 </span>
               </label>
             </div>
-            <div className="flex justify-end gap-2 px-4 py-3 border-t border-[hsl(var(--border))]">
+            <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--color-border)]">
               <button
                 onClick={() => {
                   setShowCreateModal(false);
                   setEditingVar(null);
                   resetForm();
                 }}
-                className="px-3 py-1.5 text-sm rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))]"
+                className="px-3 py-1.5 text-sm rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
               >
                 Cancel
               </button>
@@ -344,7 +344,7 @@ export function IncidentVariablesPage() {
                   createVar.isPending ||
                   updateVar.isPending
                 }
-                className="px-3 py-1.5 text-sm rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
+                className="px-3 py-1.5 text-sm rounded bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50"
               >
                 {editingVar ? "Update" : "Create"}
               </button>

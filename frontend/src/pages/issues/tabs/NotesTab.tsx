@@ -84,12 +84,12 @@ export function NotesTab({ issueId, issueCreatorId }: Props) {
           onChange={(e) => setNewNote(e.target.value)}
           placeholder="Add a note... (evidence = progress made, general = chat)"
           rows={2}
-          className="flex-1 px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm resize-y"
+          className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm resize-y"
         />
         <button
           onClick={() => createNote.mutate()}
           disabled={!newNote.trim() || createNote.isPending}
-          className="px-3 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md disabled:opacity-50 self-end"
+          className="px-3 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md disabled:opacity-50 self-end"
           title="Submit note"
         >
           <Send className="w-4 h-4" />
@@ -100,7 +100,7 @@ export function NotesTab({ issueId, issueCreatorId }: Props) {
       {isLoading ? (
         <div className="text-center py-4 text-sm">Loading notes...</div>
       ) : notes?.length === 0 ? (
-        <p className="text-sm text-[hsl(var(--muted-foreground))] italic text-center py-4">
+        <p className="text-sm text-[var(--color-text-muted)] italic text-center py-4">
           No notes yet.
         </p>
       ) : (
@@ -111,12 +111,12 @@ export function NotesTab({ issueId, issueCreatorId }: Props) {
               className={`border rounded-lg p-3 ${
                 note.is_evidence
                   ? "border-green-500/30 bg-green-500/5"
-                  : "border-[hsl(var(--border))]"
+                  : "border-[var(--color-border)]"
               }`}
             >
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
-                  <span className="font-medium text-[hsl(var(--foreground))]">
+                <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                  <span className="font-medium text-[var(--color-text)]">
                     {note.created_by.display_name}
                   </span>
                   <span>{formatDate(note.created_at)}</span>
@@ -138,7 +138,7 @@ export function NotesTab({ issueId, issueCreatorId }: Props) {
                       className={`p-1 text-xs rounded ${
                         note.is_evidence
                           ? "text-green-400 hover:text-green-300"
-                          : "text-[hsl(var(--muted-foreground))] hover:text-green-400"
+                          : "text-[var(--color-text-muted)] hover:text-green-400"
                       }`}
                       title={note.is_evidence ? "Remove evidence mark" : "Mark as evidence"}
                     >
@@ -151,7 +151,7 @@ export function NotesTab({ issueId, issueCreatorId }: Props) {
                         setEditingId(note.id);
                         setEditContent(note.content);
                       }}
-                      className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                      className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                       title="Edit"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -160,7 +160,7 @@ export function NotesTab({ issueId, issueCreatorId }: Props) {
                   {canDeleteNote(note) && (
                     <button
                       onClick={() => deleteNote.mutate(note.id)}
-                      className="p-1 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                      className="p-1 text-[var(--color-text-muted)] hover:text-red-400"
                       title="Delete"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -175,7 +175,7 @@ export function NotesTab({ issueId, issueCreatorId }: Props) {
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     rows={2}
-                    className="flex-1 px-2 py-1.5 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+                    className="flex-1 px-2 py-1.5 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
                   />
                   <div className="flex flex-col gap-1">
                     <button
@@ -186,7 +186,7 @@ export function NotesTab({ issueId, issueCreatorId }: Props) {
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
-                      className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                      className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                     >
                       <X className="w-4 h-4" />
                     </button>

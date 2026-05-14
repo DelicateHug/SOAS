@@ -34,7 +34,7 @@ export function IssueListPage() {
         {hasPermission("issue:create") && (
           <Link
             to="/issues/new"
-            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:opacity-90 text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md hover:opacity-90 text-sm"
           >
             <Plus className="w-4 h-4" />
             New Issue
@@ -47,7 +47,7 @@ export function IssueListPage() {
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          className="px-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+          className="px-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
         >
           <option value="">All statuses</option>
           {STATUSES.map((s) => (
@@ -55,12 +55,12 @@ export function IssueListPage() {
           ))}
         </select>
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search issues..."
-            className="w-full pl-9 pr-3 py-2 border border-[hsl(var(--input))] rounded-md bg-[hsl(var(--background))] text-sm"
+            className="w-full pl-9 pr-3 py-2 border border-[var(--color-border)] rounded-md bg-[var(--color-bg)] text-sm"
           />
         </div>
       </div>
@@ -68,7 +68,7 @@ export function IssueListPage() {
       {isLoading ? (
         <div className="text-center py-8">Loading...</div>
       ) : data?.data.length === 0 ? (
-        <div className="flex flex-col items-center py-12 text-[hsl(var(--muted-foreground))]">
+        <div className="flex flex-col items-center py-12 text-[var(--color-text-muted)]">
           <CircleDot className="w-12 h-12 mb-3" />
           <p>No issues found</p>
         </div>
@@ -79,7 +79,7 @@ export function IssueListPage() {
               <Link
                 key={issue.id}
                 to={`/issues/${issue.id}`}
-                className="border border-[hsl(var(--border))] rounded-lg p-4 hover:bg-[hsl(var(--accent))] transition-colors"
+                className="border border-[var(--color-border)] rounded-lg p-4 hover:bg-[var(--color-surface-2)] transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium">{issue.title}</h3>
@@ -87,7 +87,7 @@ export function IssueListPage() {
                     {issueStatusLabels[issue.status] ?? issue.status}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-4 mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+                <div className="flex flex-wrap gap-4 mt-2 text-sm text-[var(--color-text-muted)]">
                   {issue.assigned_to && (
                     <span>Assigned: {issue.assigned_to.display_name}</span>
                   )}
@@ -113,17 +113,17 @@ export function IssueListPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="px-3 py-1 text-sm border border-[hsl(var(--border))] rounded-md disabled:opacity-50"
+                className="px-3 py-1 text-sm border border-[var(--color-border)] rounded-md disabled:opacity-50"
               >
                 Previous
               </button>
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">
+              <span className="text-sm text-[var(--color-text-muted)]">
                 Page {page} of {data.meta.total_pages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(data.meta.total_pages, p + 1))}
                 disabled={page >= data.meta.total_pages}
-                className="px-3 py-1 text-sm border border-[hsl(var(--border))] rounded-md disabled:opacity-50"
+                className="px-3 py-1 text-sm border border-[var(--color-border)] rounded-md disabled:opacity-50"
               >
                 Next
               </button>

@@ -157,16 +157,16 @@ export function AutomationInputsDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-xl w-[560px] max-h-[80vh] flex flex-col">
+      <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-xl w-[560px] max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2.5">
-            <ListPlus className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+            <ListPlus className="w-5 h-5 text-[var(--color-text-muted)]" />
             <h2 className="text-base font-semibold">Automation Inputs</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-[hsl(var(--accent))] rounded"
+            className="p-1.5 hover:bg-[var(--color-surface-2)] rounded"
           >
             <X className="w-4 h-4" />
           </button>
@@ -176,12 +176,12 @@ export function AutomationInputsDialog({
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
+              <Loader2 className="w-5 h-5 animate-spin text-[var(--color-text-muted)]" />
             </div>
           ) : (
             <div className="space-y-2">
               {inputs.length === 0 && (
-                <p className="text-sm text-[hsl(var(--muted-foreground))] text-center py-8">
+                <p className="text-sm text-[var(--color-text-muted)] text-center py-8">
                   No inputs defined yet.
                 </p>
               )}
@@ -190,10 +190,10 @@ export function AutomationInputsDialog({
               {inputs.length > 0 && (
                 <div className="flex items-center gap-3 px-1 pb-1">
                   <div className="w-6" />
-                  <span className="flex-1 text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                  <span className="flex-1 text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
                     Name
                   </span>
-                  <span className="w-32 text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                  <span className="w-32 text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
                     Type
                   </span>
                   <div className="w-20" />
@@ -203,14 +203,14 @@ export function AutomationInputsDialog({
               {inputs.map((input, index) => (
                 <div
                   key={index}
-                  className="border border-[hsl(var(--border))] rounded-lg overflow-hidden"
+                  className="border border-[var(--color-border)] rounded-lg overflow-hidden"
                 >
                   {/* Main row */}
                   <div className="flex items-center gap-3 px-3 py-2.5">
                     {/* Drag / reorder handle */}
                     <button
                       onClick={() => moveInput(index, index === 0 ? 1 : -1)}
-                      className="p-0.5 hover:bg-[hsl(var(--accent))] rounded text-[hsl(var(--muted-foreground))] cursor-grab"
+                      className="p-0.5 hover:bg-[var(--color-surface-2)] rounded text-[var(--color-text-muted)] cursor-grab"
                       title="Reorder"
                     >
                       <GripVertical className="w-4 h-4" />
@@ -224,7 +224,7 @@ export function AutomationInputsDialog({
                         updateInput(index, "name", e.target.value)
                       }
                       placeholder="parameter_name"
-                      className="flex-1 h-9 px-3 text-sm border border-[hsl(var(--input))] rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] placeholder:text-[hsl(var(--muted-foreground))/50]"
+                      className="flex-1 h-9 px-3 text-sm border border-[var(--color-border)] rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] placeholder:text-[var(--color-text-muted)/50]"
                       autoFocus={
                         expandedIndex === index && input.name === ""
                       }
@@ -236,7 +236,7 @@ export function AutomationInputsDialog({
                       onChange={(e) =>
                         updateInput(index, "type", e.target.value)
                       }
-                      className="w-32 h-9 px-2 text-sm border border-[hsl(var(--input))] rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                      className="w-32 h-9 px-2 text-sm border border-[var(--color-border)] rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                     >
                       {INPUT_TYPES.map((t) => (
                         <option key={t} value={t}>
@@ -252,7 +252,7 @@ export function AutomationInputsDialog({
                           expandedIndex === index ? null : index
                         )
                       }
-                      className="p-1.5 hover:bg-[hsl(var(--accent))] rounded text-[hsl(var(--muted-foreground))]"
+                      className="p-1.5 hover:bg-[var(--color-surface-2)] rounded text-[var(--color-text-muted)]"
                       title="Options"
                     >
                       {expandedIndex === index ? (
@@ -265,7 +265,7 @@ export function AutomationInputsDialog({
                     {/* Delete */}
                     <button
                       onClick={() => removeInput(index)}
-                      className="p-1.5 hover:bg-red-500/20 rounded text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                      className="p-1.5 hover:bg-red-500/20 rounded text-[var(--color-text-muted)] hover:text-red-400"
                       title="Remove"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -274,7 +274,7 @@ export function AutomationInputsDialog({
 
                   {/* Expanded options */}
                   {expandedIndex === index && (
-                    <div className="px-3 pb-3 pt-1 border-t border-[hsl(var(--border))] bg-[hsl(var(--accent))/30] space-y-3">
+                    <div className="px-3 pb-3 pt-1 border-t border-[var(--color-border)] bg-[var(--color-surface-2)/30] space-y-3">
                       <div className="flex items-center gap-3 pl-7">
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -287,13 +287,13 @@ export function AutomationInputsDialog({
                                 e.target.checked
                               )
                             }
-                            className="w-4 h-4 rounded border-[hsl(var(--input))] accent-[hsl(var(--primary))]"
+                            className="w-4 h-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
                           />
                           <span className="text-sm">Required</span>
                         </label>
                       </div>
                       <div className="pl-7">
-                        <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                        <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
                           Default value
                         </label>
                         <input
@@ -311,11 +311,11 @@ export function AutomationInputsDialog({
                             )
                           }
                           placeholder="None"
-                          className="w-full h-9 px-3 text-sm border border-[hsl(var(--input))] rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] placeholder:text-[hsl(var(--muted-foreground))/50]"
+                          className="w-full h-9 px-3 text-sm border border-[var(--color-border)] rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] placeholder:text-[var(--color-text-muted)/50]"
                         />
                       </div>
                       <div className="pl-7">
-                        <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                        <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">
                           Description
                         </label>
                         <input
@@ -329,7 +329,7 @@ export function AutomationInputsDialog({
                             )
                           }
                           placeholder="What this input is for"
-                          className="w-full h-9 px-3 text-sm border border-[hsl(var(--input))] rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] placeholder:text-[hsl(var(--muted-foreground))/50]"
+                          className="w-full h-9 px-3 text-sm border border-[var(--color-border)] rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] placeholder:text-[var(--color-text-muted)/50]"
                         />
                       </div>
                     </div>
@@ -340,7 +340,7 @@ export function AutomationInputsDialog({
               {/* Add Input button */}
               <button
                 onClick={addInput}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm rounded-lg border border-dashed border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] hover:border-[hsl(var(--muted-foreground))] w-full justify-center transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm rounded-lg border border-dashed border-[var(--color-border)] hover:bg-[var(--color-surface-2)] hover:border-[var(--color-text-muted)] w-full justify-center transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add Input
@@ -351,7 +351,7 @@ export function AutomationInputsDialog({
 
         {/* Validation errors */}
         {validationErrors.length > 0 && (
-          <div className="px-5 py-2.5 border-t border-[hsl(var(--border))]">
+          <div className="px-5 py-2.5 border-t border-[var(--color-border)]">
             {validationErrors.map((err, i) => (
               <p key={i} className="text-sm text-red-400">
                 {err}
@@ -361,10 +361,10 @@ export function AutomationInputsDialog({
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-[hsl(var(--border))]">
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-[var(--color-border)]">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors"
+            className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors"
           >
             Cancel
           </button>
@@ -375,7 +375,7 @@ export function AutomationInputsDialog({
               saveMutation.isPending ||
               validationErrors.length > 0
             }
-            className="px-4 py-2 text-sm rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 text-sm rounded-md bg-[var(--color-primary)] text-[#ffffff] hover:opacity-90 disabled:opacity-50 transition-colors"
           >
             {saveMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin inline mr-1.5" />

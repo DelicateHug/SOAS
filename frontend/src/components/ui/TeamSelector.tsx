@@ -33,10 +33,10 @@ export function TeamSelector({ collapsed }: { collapsed: boolean }) {
   if (collapsed) {
     return (
       <div
-        className="flex justify-center px-3 py-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--primary))]/5"
+        className="flex justify-center px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-primary)]/5"
         title={activeTeam ? `Team: ${activeTeam.name}` : "Select team"}
       >
-        <div className="w-7 h-7 rounded flex items-center justify-center bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]">
+        <div className="w-7 h-7 rounded flex items-center justify-center bg-[var(--color-primary)]/15 text-[var(--color-primary)]">
           <Users className="w-3.5 h-3.5" />
         </div>
       </div>
@@ -44,15 +44,15 @@ export function TeamSelector({ collapsed }: { collapsed: boolean }) {
   }
 
   return (
-    <div className="px-3 py-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--primary))]/5">
-      <label className="block text-[10px] font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-1">
+    <div className="px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-primary)]/5">
+      <label className="block text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1">
         Team
       </label>
       <div className="relative">
         <select
           value={activeTeamId || ""}
           onChange={(e) => setActiveTeam(e.target.value)}
-          className="w-full appearance-none text-xs font-medium rounded px-2.5 py-1.5 pr-7 border focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))] cursor-pointer bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] border-[hsl(var(--primary))]/30"
+          className="w-full appearance-none text-xs font-medium rounded px-2.5 py-1.5 pr-7 border focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] cursor-pointer bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/30"
         >
           {teams.map((t) => (
             <option key={t.id} value={t.id}>
@@ -60,7 +60,7 @@ export function TeamSelector({ collapsed }: { collapsed: boolean }) {
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none text-[hsl(var(--primary))]" />
+        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none text-[var(--color-primary)]" />
       </div>
     </div>
   );
