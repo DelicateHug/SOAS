@@ -46,6 +46,7 @@ from soas_backend.models.alert_category import AlertCategory, AlertCategoryRule,
 from soas_backend.models.saved_query import SavedQuery, SavedQueryFavorite
 from soas_backend.models.sla import SLADefinition, SLASnapshot
 from soas_backend.models.asset import Asset, UserRunOptin
+from soas_backend.models.job_tick import JobTick
 
 __all__ = [
     "AppSetting",
@@ -123,4 +124,5 @@ __all__ = [
     "SLASnapshot",
     "Asset",
     "UserRunOptin",
+    "JobTick",
 ]

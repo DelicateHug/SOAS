@@ -203,6 +203,7 @@ async def disable_job(
 @router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_job(
     job_id: UUID,
+    current_user: User = Depends(get_current_user),
     _: dict = Depends(require_permission("job", "delete")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -210,6 +211,79 @@ async def delete_job(
     deleted = await svc.delete(job_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Scheduled job not found")
+    # Phase 7: audit trail
+    try:
+        from soas_backend.services.job_tick_service import JobTickService
+        await JobTickService(db).record(
+            job_id=job_id, decision="deleted", actor_id=current_user.id
+        )
+    except Exception:
+        pass
+
+
+# ------------------------------------------------------------------
+# Phase 7: job ticks audit + run-now
+# ------------------------------------------------------------------
+
+
+@router.get("/{job_id}/ticks")
+async def list_job_ticks(
+    job_id: UUID,
+    limit: int = Query(100, ge=1, le=500),
+    _: dict = Depends(require_permission("job", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the most recent scheduler decisions for this job (job_ticks)."""
+    from soas_backend.services.job_tick_service import JobTickService
+    rows = await JobTickService(db).recent(job_id, limit=limit)
+    return [
+        {
+            "id": str(r.id),
+            "decision": r.decision,
+            "reason": r.reason,
+            "execution_id": str(r.execution_id) if r.execution_id else None,
+            "actor_id": str(r.actor_id) if r.actor_id else None,
+            "extra": r.extra,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in rows
+    ]
+
+
+@router.post("/{job_id}/run-now")
+async def run_job_now(
+    job_id: UUID,
+    current_user: User = Depends(get_current_user),
+    _: dict = Depends(require_permission("job", "update")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Trigger an off-schedule execution of the job's automation immediately."""
+    svc = ScheduledJobService(db)
+    job = await svc.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Scheduled job not found")
+    # Audit
+    try:
+        from soas_backend.services.job_tick_service import JobTickService
+        await JobTickService(db).record(
+            job_id=job_id,
+            decision="run_now",
+            reason=f"Triggered by {current_user.username}",
+            actor_id=current_user.id,
+        )
+    except Exception:
+        pass
+    # Bump next_run_at to now so the scheduled-jobs beat task picks it up
+    # on the next tick (within 60s). Conservative — keeps the firing path
+    # identical to normal schedule firing, including ExecutionLog creation.
+    from datetime import datetime, timezone
+    job.next_run_at = datetime.now(timezone.utc)
+    await db.flush()
+    return {
+        "job_id": str(job_id),
+        "next_run_at": job.next_run_at.isoformat(),
+        "note": "Will fire on the next scheduler tick (≤60s).",
+    }
 
 
 def _version_read(v) -> VersionRead:

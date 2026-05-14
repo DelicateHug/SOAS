@@ -254,6 +254,19 @@ def run_automation(self, execution_id: str, automation_id: str, parameters: dict
     env["SOAS_API_URL"] = config.SOAS_API_URL
     env["SOAS_API_TOKEN"] = api_token or config.SOAS_API_TOKEN
     call_depth = int(env.get("SOAS_CALL_DEPTH", "0"))
+    # Phase 7: sub-automation recursion depth cap. Matches case-managment.
+    MAX_CALL_DEPTH = int(os.environ.get("SOAS_MAX_CALL_DEPTH", "5"))
+    if call_depth >= MAX_CALL_DEPTH:
+        update_execution_complete(
+            execution_id,
+            "failed",
+            error_message=(
+                f"Sub-automation recursion limit reached "
+                f"(SOAS_CALL_DEPTH={call_depth} >= {MAX_CALL_DEPTH}). "
+                "Increase SOAS_MAX_CALL_DEPTH if intentional."
+            ),
+        )
+        return {"success": False, "error": "Sub-automation recursion limit reached"}
     env["SOAS_CALL_DEPTH"] = str(call_depth + 1)
     # Make soas_runtime importable from the subprocess
     # Docker: VP2 is at /opt/vp2/visualpython2/; local dev: relative path from source
