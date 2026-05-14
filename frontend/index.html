@@ -10,6 +10,20 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
+    <script>
+      // Apply persisted theme pre-paint to avoid FOUC. Default = light
+      // (matches case-managment, which is light-only). Toggle via the
+      // button in the sidebar; theme is stored under "soasTheme".
+      (function () {
+        try {
+          var t = localStorage.getItem("soasTheme") || "light";
+          if (t !== "light" && t !== "dark") t = "light";
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

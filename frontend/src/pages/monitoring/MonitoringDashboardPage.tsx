@@ -23,6 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { MetricsChart } from "./MetricsChart";
+import { ClusterPanel } from "@/pages/admin/AdminClusterPage";
 import type {
   SystemHealthOverview,
   AlertItem,
@@ -73,7 +74,7 @@ const COMPONENT_LABELS: Record<string, string> = {
   websocket: "WebSockets",
 };
 
-type Tab = "overview" | "alerts" | "rules" | "quorum" | "agents" | "git_sync";
+type Tab = "overview" | "alerts" | "rules" | "quorum" | "agents" | "git_sync" | "cluster";
 
 export function MonitoringDashboardPage() {
   const { hasPermission } = useAuthStore();
@@ -87,6 +88,7 @@ export function MonitoringDashboardPage() {
     { id: "quorum", label: "Quorum" },
     { id: "agents", label: "Agents" },
     { id: "git_sync", label: "Git Sync" },
+    { id: "cluster", label: "Cluster" },
   ];
 
   return (
@@ -119,6 +121,7 @@ export function MonitoringDashboardPage() {
       {activeTab === "quorum" && <QuorumPanel />}
       {activeTab === "agents" && <AgentsPanel isAdmin={isAdmin} />}
       {activeTab === "git_sync" && <GitSyncPanel isAdmin={isAdmin} />}
+      {activeTab === "cluster" && <ClusterPanel />}
     </div>
   );
 }

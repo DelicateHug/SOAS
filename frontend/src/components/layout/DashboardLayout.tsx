@@ -4,6 +4,7 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { useAuthStore } from "@/stores/authStore";
 import { useTokenExpiration, type UrgencyLevel } from "@/hooks/useTokenExpiration";
 import { useDeploymentMode } from "@/hooks/useDeploymentMode";
+import { useTheme } from "@/hooks/useTheme";
 import { TeamSelector } from "@/components/ui/TeamSelector";
 import { cn } from "@/lib/utils";
 import {
@@ -42,7 +43,8 @@ import {
   Activity,
   Server,
   AlertOctagon,
-  Network,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 import "./sidebar.css";
@@ -103,7 +105,6 @@ const adminItems: NavItem[] = [
   { to: "/admin/slas", label: "SLAs", icon: Activity },
   { to: "/admin/assets", label: "Assets", icon: Server },
   { to: "/admin/danger-zone", label: "Danger Zone", icon: AlertOctagon },
-  { to: "/admin/cluster", label: "Cluster", icon: Network },
   { to: "/admin/user-secrets", label: "User Secrets", icon: KeyRound },
   { to: "/admin/review-changes", label: "Review Changes", icon: GitPullRequest },
   { to: "/monitoring", label: "Monitoring", icon: Heart },
@@ -114,6 +115,7 @@ export function DashboardLayout() {
   const { user, logout, hasPermission, refreshSession, isRefreshing } = useAuthStore();
   const { remainingText, urgency } = useTokenExpiration();
   const { isDevMode, isProduction, canToggle, toggleDevMode } = useDeploymentMode();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   // Width state: read from localStorage once on mount.
@@ -319,6 +321,14 @@ export function DashboardLayout() {
                 </div>
               </div>
               <div className="xs-user-actions inline-flex items-center gap-1">
+                <button
+                  onClick={toggleTheme}
+                  className="p-1 text-[var(--color-sidebar-fg-muted)] hover:text-white"
+                  title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                  aria-label="Toggle theme"
+                >
+                  {theme === "dark" ? <Sun size={12} /> : <Moon size={12} />}
+                </button>
                 <button
                   onClick={refreshSession}
                   disabled={isRefreshing}

@@ -44,7 +44,19 @@ function fmtUptime(s: number | null): string {
   return `${m}m`;
 }
 
+/**
+ * Cluster panel — also exported as a panel for embedding inside the Monitoring page.
+ * The standalone page is kept as a thin wrapper so existing /admin/cluster URLs still resolve.
+ */
+export function ClusterPanel() {
+  return <AdminClusterPageBody />;
+}
+
 export function AdminClusterPage() {
+  return <AdminClusterPageBody />;
+}
+
+function AdminClusterPageBody() {
   const { data: samples = [] } = useQuery({
     queryKey: ["cluster-samples"],
     queryFn: () => api.get<Sample[]>("/observability/cluster?since_minutes=15"),

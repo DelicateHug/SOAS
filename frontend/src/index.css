@@ -85,50 +85,51 @@
 }
 
 /* ============================================================
- * Dark mode — inspired by sidebar palette.
- * Override the @theme-generated CSS variables at :root.
- * Tailwind v4 utilities resolve via these CSS variables, so
- * overriding them here propagates through every utility class.
- * Sidebar tokens are intentionally not overridden — sidebar
- * stays dark in both modes.
+ * Dark mode — applied only when <html data-theme="dark"> is set.
+ *
+ * Default theme is light (case-managment palette). The user toggles
+ * via a button in the sidebar; choice is persisted in localStorage
+ * under "soasTheme" and applied pre-paint by a script in index.html
+ * so there's no flash of unstyled content.
+ *
+ * Sidebar tokens are intentionally NOT overridden — the sidebar
+ * stays dark in both modes (matches case-managment).
  * ============================================================ */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #0a1220;
-    --color-surface: #131c2e;
-    --color-surface-2: #1a2438;
-    --color-surface-subtle: #16203a;
+html[data-theme="dark"] {
+  --color-bg: #0a1220;
+  --color-surface: #131c2e;
+  --color-surface-2: #1a2438;
+  --color-surface-subtle: #16203a;
 
-    --color-text: #e7ecf3;
-    --color-text-muted: #8a96ad;
+  --color-text: #e7ecf3;
+  --color-text-muted: #8a96ad;
 
-    --color-border: #243150;
-    --color-border-strong: #2e3c5e;
+  --color-border: #243150;
+  --color-border-strong: #2e3c5e;
 
-    --color-primary: #4d9bff;
-    --color-primary-hover: #3a8aef;
-    --color-success: #00c389;
-    --color-warning: #ffa726;
-    --color-danger: #ff5b70;
-    --color-info: #4d9bff;
+  --color-primary: #4d9bff;
+  --color-primary-hover: #3a8aef;
+  --color-success: #00c389;
+  --color-warning: #ffa726;
+  --color-danger: #ff5b70;
+  --color-info: #4d9bff;
 
-    --color-status-open-bg: #0f3a26;
-    --color-status-open-fg: #4ddc99;
-    --color-status-investigating-bg: #0f2848;
-    --color-status-investigating-fg: #6fb0ff;
-    --color-status-waiting-bg: #3a2e0a;
-    --color-status-waiting-fg: #ffd166;
-    --color-status-closed-bg: #1e2a40;
-    --color-status-closed-fg: #aab5c8;
+  --color-status-open-bg: #0f3a26;
+  --color-status-open-fg: #4ddc99;
+  --color-status-investigating-bg: #0f2848;
+  --color-status-investigating-fg: #6fb0ff;
+  --color-status-waiting-bg: #3a2e0a;
+  --color-status-waiting-fg: #ffd166;
+  --color-status-closed-bg: #1e2a40;
+  --color-status-closed-fg: #aab5c8;
 
-    --color-priority-low-bg: #1e2a40;
-    --color-priority-low-fg: #aab5c8;
-    --color-priority-medium-bg: #3a2410;
-    --color-priority-medium-fg: #ffb377;
-    --color-priority-high-bg: #3a0f14;
-    --color-priority-high-fg: #ff8a9b;
-    /* CRITICAL: already dark — keep as-is */
-  }
+  --color-priority-low-bg: #1e2a40;
+  --color-priority-low-fg: #aab5c8;
+  --color-priority-medium-bg: #3a2410;
+  --color-priority-medium-fg: #ffb377;
+  --color-priority-high-bg: #3a0f14;
+  --color-priority-high-fg: #ff8a9b;
+  /* CRITICAL: already dark — keep as-is */
 }
 
 /* ============================================================
@@ -207,10 +208,8 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(11, 99, 206, 0.15);
 }
 
-@media (prefers-color-scheme: dark) {
-  input:focus,
-  select:focus,
-  textarea:focus {
-    box-shadow: 0 0 0 3px rgba(77, 155, 255, 0.25);
-  }
+html[data-theme="dark"] input:focus,
+html[data-theme="dark"] select:focus,
+html[data-theme="dark"] textarea:focus {
+  box-shadow: 0 0 0 3px rgba(77, 155, 255, 0.25);
 }
