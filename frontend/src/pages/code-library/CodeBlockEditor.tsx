@@ -184,6 +184,14 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
               kind="code"
               initialTarget="code_python"
               onApply={(c) => setCode(c)}
+              getContext={() => ({
+                code,
+                language,
+                name,
+                description,
+                input_ports: inputPorts,
+                output_ports: outputPorts,
+              })}
             />
           </div>
         )}

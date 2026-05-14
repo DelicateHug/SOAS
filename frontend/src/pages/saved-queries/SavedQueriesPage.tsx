@@ -254,6 +254,11 @@ function NewQueryForm({ onSubmit, onCancel }: { onSubmit: (b: Partial<SavedQuery
               kind="query"
               initialTarget={queryType}
               onApply={(q) => setQueryText(q)}
+              getContext={() => ({
+                query_text: queryText,
+                query_type: queryType,
+                name,
+              })}
             />
           </div>
         )}

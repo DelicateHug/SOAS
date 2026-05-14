@@ -335,6 +335,12 @@ class DraftChatRequest(BaseModel):
     target_type: str
     messages: list[ChatTurn] = Field(min_length=1, max_length=20)
     model: str | None = "sonnet"
+    # Optional editor/page state. For kind=code: keys like "code", "language",
+    # "name", "description", "input_ports", "output_ports". For kind=query:
+    # "query_text", "query_type", "name". The whole dict is rendered into the
+    # system prompt verbatim so the model can read the analyst's current draft
+    # before producing edits.
+    context: dict[str, Any] | None = None
 
 
 # Each dialect supplies (fence_tag, system_dialect_prose). The orchestrator uses
@@ -395,21 +401,81 @@ _DRAFT_DIALECTS: dict[str, tuple[str, str]] = {
 
 
 def _output_contract(fence_tag: str) -> str:
-    """Mandatory output-contract preamble: prose followed by one ``` <tag> block."""
+    """Mandatory output-contract preamble: prose followed by one ``` <tag> block,
+    OR a targeted patch envelope when only part of the existing draft needs to change.
+    """
     return (
         "OUTPUT CONTRACT — MANDATORY ON EVERY REPLY:\n"
         "1. First, write your prose response in plain markdown (use bold, lists, etc.).\n"
-        f"2. Then, ALWAYS end with a fenced code block tagged `{fence_tag}` containing "
-        "your current best draft. If you don't have enough detail for a real result yet, "
-        "emit a templated stub with `<PLACEHOLDER>` tokens so the analyst can see the shape.\n"
-        f"3. The fenced block looks EXACTLY like this (no language other than `{fence_tag}`):\n"
+        "2. Then end with EITHER:\n"
+        f"   (a) A fenced block tagged `{fence_tag}` containing your full current draft. "
+        "Use this for new drafts, full rewrites, or when the user asks for the whole "
+        "thing. If you don't have enough detail yet, emit a templated stub with "
+        "`<PLACEHOLDER>` tokens so the analyst can see the shape.\n"
+        f"   (b) A fenced block tagged `{fence_tag}-patch` containing one or more targeted "
+        "edits to the EXISTING draft (shown in the CURRENT DRAFT section of the system "
+        "prompt). Use this when the user asks to fix, refactor, comment out, add error "
+        "handling, or otherwise change part of the existing draft. The patch format is "
+        "JSON: a list of operations of the form\n"
+        '       [{"op":"replace","find":"<exact substring of CURRENT DRAFT>","with":"<new text>"},\n'
+        '        {"op":"insert_after","find":"<exact substring>","with":"<text to insert>"},\n'
+        '        {"op":"insert_before","find":"<exact substring>","with":"<text to insert>"},\n'
+        '        {"op":"delete","find":"<exact substring to remove>"}]\n'
+        "       Every `find` MUST be a verbatim substring of the CURRENT DRAFT — case "
+        "sensitive, whitespace-exact. The UI previews the diff and applies it.\n"
+        "3. Pick exactly ONE of (a) or (b) per reply. Use (b) when there is an existing "
+        "draft and the change is small; use (a) when there isn't an existing draft yet, "
+        "the user asks for a rewrite, or the changes are pervasive.\n"
+        f"4. ALWAYS end with one of these fenced blocks — even when asking a clarifying "
+        "question (emit a stub or a no-op patch with the current draft unchanged).\n"
+        "5. Fence examples (NO language other than the exact tags):\n"
         f"```{fence_tag}\n"
-        "... your draft here ...\n"
+        "... full draft ...\n"
         "```\n"
-        f"4. The UI parses this fenced block and populates a 'Suggested {fence_tag}' field "
-        "with a copy button, so it MUST appear at the end of every assistant turn — even "
-        "when you're asking a clarifying question."
+        f"```{fence_tag}-patch\n"
+        '[{"op":"replace","find":"foo","with":"bar"}]\n'
+        "```"
     )
+
+
+def _format_context_for_prompt(context: dict[str, Any] | None, fence_tag: str) -> str:
+    """Render the analyst's current draft + page state into the system prompt so
+    the model can see what's already there before suggesting edits. Returns an
+    empty string when no context is provided.
+    """
+    if not context:
+        return ""
+
+    # Pull the most important field (the draft itself) out for emphasis.
+    draft_key = next(
+        (k for k in ("code", "query_text", "draft", "content") if k in context),
+        None,
+    )
+    parts: list[str] = ["CURRENT EDITOR STATE:"]
+    if draft_key:
+        draft_val = context.get(draft_key) or ""
+        if str(draft_val).strip():
+            parts.append(
+                f"--- CURRENT DRAFT ({draft_key}) ---\n"
+                f"```{fence_tag}\n{draft_val}\n```\n"
+                f"--- END CURRENT DRAFT ---"
+            )
+        else:
+            parts.append(f"({draft_key} is empty — no existing draft yet)")
+
+    # Render the rest of the context as a flat key: value list so the model
+    # can see ports, names, language, etc.
+    other = {k: v for k, v in context.items() if k != draft_key}
+    if other:
+        rendered = []
+        for k, v in other.items():
+            try:
+                rendered.append(f"  {k}: {json.dumps(v, default=str)}")
+            except (TypeError, ValueError):
+                rendered.append(f"  {k}: {v!r}")
+        parts.append("OTHER STATE:\n" + "\n".join(rendered))
+
+    return "\n\n".join(parts)
 
 
 async def _run_draft_chat(
@@ -420,6 +486,7 @@ async def _run_draft_chat(
     messages: list[ChatTurn],
     model: str | None,
     caller: str,
+    context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if target_type not in _DRAFT_DIALECTS:
         raise HTTPException(
@@ -428,12 +495,14 @@ async def _run_draft_chat(
         )
     fence_tag, dialect = _DRAFT_DIALECTS[target_type]
 
+    context_block = _format_context_for_prompt(context, fence_tag)
     system = (
         f"You are an expert helping an analyst draft a {fence_tag}. You will have a "
         "multi-turn conversation: ask clarifying questions when intent is ambiguous, "
         "then refine the draft as the user provides more detail.\n\n"
         f"{dialect}\n\n"
-        f"{_output_contract(fence_tag)}"
+        + (context_block + "\n\n" if context_block else "")
+        + _output_contract(fence_tag)
     )
 
     transcript = "\n\n".join(
@@ -457,15 +526,35 @@ async def _run_draft_chat(
         raise HTTPException(status_code=502, detail=str(e))
 
     content = result["content"]
+
+    # Extract a patch block first (more specific tag) so the full-replace pattern
+    # doesn't swallow it. Patches are JSON arrays of operations.
+    patch_pattern = rf"```{re.escape(fence_tag)}-patch\s*\n(.*?)```"
+    patch_raw: str | None = None
+    for m in re.finditer(patch_pattern, content, re.DOTALL):
+        patch_raw = m.group(1).strip()
+    patch_ops: list[dict[str, Any]] | None = None
+    if patch_raw:
+        try:
+            parsed = json.loads(patch_raw)
+            if isinstance(parsed, list) and all(isinstance(o, dict) for o in parsed):
+                patch_ops = parsed
+        except json.JSONDecodeError:
+            patch_ops = None
+
+    # Strip patch blocks before extracting the full-replace block so we don't double-render.
+    content_for_full = re.sub(patch_pattern, "", content, flags=re.DOTALL)
+    # Match the full-replace block, but NOT the patch variant (negative lookahead).
+    full_pattern = rf"```{re.escape(fence_tag)}(?!-patch)\s*\n(.*?)```"
     suggested: str | None = None
-    pattern = rf"```{re.escape(fence_tag)}\s*\n(.*?)```"
-    for m in re.finditer(pattern, content, re.DOTALL):
+    for m in re.finditer(full_pattern, content_for_full, re.DOTALL):
         suggested = m.group(1).strip()
-    prose = re.sub(pattern, "", content, flags=re.DOTALL).strip()
+    prose = re.sub(full_pattern, "", content_for_full, flags=re.DOTALL).strip()
 
     return {
         "content": prose,
         "suggested": suggested,
+        "patch": patch_ops,
         "fence_tag": fence_tag,
         "usage": result["usage"],
         "model": result["model"],
@@ -490,6 +579,7 @@ async def draft_chat(
         messages=body.messages,
         model=body.model,
         caller="draft_chat",
+        context=body.context,
     )
 
 
@@ -508,6 +598,7 @@ async def query_chat(
         messages=body.messages,
         model=body.model,
         caller="query_chat",
+        context=body.context,
     )
     return {
         "content": result["content"],
