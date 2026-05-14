@@ -23,7 +23,7 @@ from soas_backend.database import async_session
 from soas_backend.models.agent_log import AgentLog
 
 BATCH_SIZE = 100
-FLUSH_INTERVAL_S = 5.0
+FLUSH_INTERVAL_S = 10.0
 MAX_QUEUE = 5000
 
 

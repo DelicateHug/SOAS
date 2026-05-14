@@ -3,7 +3,7 @@
 import asyncio
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -105,7 +105,11 @@ async def register(body: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=LoginResponse | MFARequiredResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(
+    body: LoginRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
     app_svc = AppSettingService(db)
     max_attempts_str = await app_svc.get_value("max_failed_login_attempts")
     lockout_min_str = await app_svc.get_value("failed_login_lockout_minutes")
@@ -127,16 +131,53 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
             lockout_minutes=lockout_minutes,
         )
     except AccountLockedException:
+        try:
+            from soas_backend.services.security_event_service import SecurityEventService
+            await SecurityEventService(db).record(
+                event_type="auth.account_locked",
+                severity="warn",
+                actor_label=body.username,
+                ip_address=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+            )
+        except Exception:
+            pass
         raise HTTPException(
             status_code=status.HTTP_423_LOCKED,
             detail="Account temporarily locked due to too many failed attempts. Try again later.",
         )
 
     if user is None:
+        try:
+            from soas_backend.services.security_event_service import SecurityEventService
+            await SecurityEventService(db).record(
+                event_type="auth.login_failure",
+                severity="warn",
+                actor_label=body.username,
+                ip_address=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                message="Invalid username or password",
+            )
+        except Exception:
+            pass
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
         )
+
+    # Record success
+    try:
+        from soas_backend.services.security_event_service import SecurityEventService
+        await SecurityEventService(db).record(
+            event_type="auth.login_success",
+            severity="info",
+            actor_id=user.id,
+            actor_label=user.username,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except Exception:
+        pass
 
     # Cache the user's DEK (or initialize it for pre-migration users)
     await _cache_user_dek(user, body.password, db)

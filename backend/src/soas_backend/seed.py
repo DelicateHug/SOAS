@@ -27,7 +27,7 @@ from soas_backend.services.wiki_service import WikiService
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SEED_VERSION = "3"
+CURRENT_SEED_VERSION = "4"
 
 
 # ---------------------------------------------------------------------------
@@ -79,6 +79,13 @@ async def seed_defaults() -> None:
             await _seed_user_secrets(db, uid)
             await _seed_automations(db, uid)
             await _seed_login_security_settings(db)
+
+            # Phase 11.4: default Operations dashboard
+            try:
+                from soas_backend.seed_dashboards import seed_default_dashboard
+                await seed_default_dashboard(db)
+            except Exception:
+                logger.exception("seed: default dashboard seed failed (non-fatal)")
 
             # Mark seed version
             if setting:

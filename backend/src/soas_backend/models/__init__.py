@@ -55,6 +55,10 @@ from soas_backend.models.observability import (
 )
 from soas_backend.models.registered_agent import RegisteredAgent
 from soas_backend.models.agent_log import AgentLog
+from soas_backend.models.work_session import WorkSession
+from soas_backend.models.evidence_snapshot import EvidenceSnapshot
+from soas_backend.models.chat_mention import ChatMention, ChatReadReceipt
+from soas_backend.models.security_event import SecurityEvent
 from soas_backend.models.reporting import Report
 from soas_backend.models.wiki_link import WikiPageLink
 
@@ -144,4 +148,9 @@ __all__ = [
     "WikiPageLink",
     "RegisteredAgent",
     "AgentLog",
+    "WorkSession",
+    "EvidenceSnapshot",
+    "ChatMention",
+    "ChatReadReceipt",
+    "SecurityEvent",
 ]

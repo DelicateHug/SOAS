@@ -7,6 +7,7 @@ import { useDeploymentMode } from "@/hooks/useDeploymentMode";
 import { useTheme } from "@/hooks/useTheme";
 import { useAgentHeartbeat } from "@/hooks/useAgentHeartbeat";
 import { TeamSelector } from "@/components/ui/TeamSelector";
+import { SidebarWorkWidget } from "@/components/work/SidebarWorkWidget";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -218,6 +219,9 @@ export function DashboardLayout() {
             <span className="s">Security Ops Platform</span>
           </span>
         </a>
+
+        {/* Active work-session widget — only renders when the user has one */}
+        <SidebarWorkWidget collapsed={collapsed} />
 
         {/* Team selector — only render expanded; collapsed it's a no-op visually */}
         <div style={{ padding: collapsed ? "8px 0" : "10px 14px 0" }}>

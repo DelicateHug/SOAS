@@ -4,6 +4,7 @@ import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { severityColors, statusColors, statusDotColors, formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { StartWorkButton } from "@/components/work/StartWorkButton";
 import type { Incident } from "@/types/api";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { TimelineTab } from "./tabs/TimelineTab";
@@ -150,6 +151,9 @@ export function IncidentDetailPage() {
                 </span>
               )}
             </div>
+          </div>
+          <div className="shrink-0">
+            <StartWorkButton incidentId={incident.id} />
           </div>
         </div>
 

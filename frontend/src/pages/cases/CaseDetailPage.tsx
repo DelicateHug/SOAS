@@ -10,6 +10,7 @@ import {
 import { ArrowLeft, ChevronDown, X } from "lucide-react";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
+import { StartWorkButton } from "@/components/work/StartWorkButton";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { TimelineTab } from "./tabs/TimelineTab";
 import { ChatTab } from "./tabs/ChatTab";
@@ -213,6 +214,9 @@ export function CaseDetailPage() {
               setShowPriorityDropdown(false);
             }}
           />
+          <div className="ml-auto">
+            <StartWorkButton caseId={caseData.id} size="sm" />
+          </div>
         </div>
 
         {/* Editable title */}
