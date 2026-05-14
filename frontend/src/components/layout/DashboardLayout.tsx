@@ -40,6 +40,8 @@ import {
   Tag,
   Search,
   Activity,
+  Server,
+  AlertOctagon,
 } from "lucide-react";
 
 import "./sidebar.css";
@@ -97,6 +99,8 @@ const adminItems: NavItem[] = [
   { to: "/admin/normalization", label: "Normalization", icon: SlidersHorizontal },
   { to: "/admin/alert-categories", label: "Alert Categories", icon: Tag },
   { to: "/admin/slas", label: "SLAs", icon: Activity },
+  { to: "/admin/assets", label: "Assets", icon: Server },
+  { to: "/admin/danger-zone", label: "Danger Zone", icon: AlertOctagon },
   { to: "/admin/user-secrets", label: "User Secrets", icon: KeyRound },
   { to: "/admin/review-changes", label: "Review Changes", icon: GitPullRequest },
   { to: "/monitoring", label: "Monitoring", icon: Heart },

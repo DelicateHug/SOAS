@@ -45,6 +45,7 @@ from soas_backend.models.dashboard import Dashboard, DashboardWidget
 from soas_backend.models.alert_category import AlertCategory, AlertCategoryRule, IncidentTemplate
 from soas_backend.models.saved_query import SavedQuery, SavedQueryFavorite
 from soas_backend.models.sla import SLADefinition, SLASnapshot
+from soas_backend.models.asset import Asset, UserRunOptin
 
 __all__ = [
     "AppSetting",
@@ -120,4 +121,6 @@ __all__ = [
     "SavedQueryFavorite",
     "SLADefinition",
     "SLASnapshot",
+    "Asset",
+    "UserRunOptin",
 ]

@@ -16,6 +16,8 @@ const DashboardEditPage = lazy(() => import("@/pages/dashboards/DashboardEditPag
 const AdminAlertCategoriesPage = lazy(() => import("@/pages/admin/AdminAlertCategoriesPage").then((m) => ({ default: m.AdminAlertCategoriesPage })));
 const SavedQueriesPage = lazy(() => import("@/pages/saved-queries/SavedQueriesPage").then((m) => ({ default: m.SavedQueriesPage })));
 const AdminSLAPage = lazy(() => import("@/pages/admin/AdminSLAPage").then((m) => ({ default: m.AdminSLAPage })));
+const AdminAssetsPage = lazy(() => import("@/pages/admin/AdminAssetsPage").then((m) => ({ default: m.AdminAssetsPage })));
+const AdminDangerZonePage = lazy(() => import("@/pages/admin/AdminDangerZonePage").then((m) => ({ default: m.AdminDangerZonePage })));
 const IncidentListPage = lazy(() => import("@/pages/incidents/IncidentListPage").then((m) => ({ default: m.IncidentListPage })));
 const IncidentDetailPage = lazy(() => import("@/pages/incidents/IncidentDetailPage").then((m) => ({ default: m.IncidentDetailPage })));
 const CreateIncidentPage = lazy(() => import("@/pages/incidents/CreateIncidentPage").then((m) => ({ default: m.CreateIncidentPage })));
@@ -162,6 +164,8 @@ export default function App() {
           <Route path="admin/roles" element={<AdminRolesPage />} />
           <Route path="admin/alert-categories" element={<AdminAlertCategoriesPage />} />
           <Route path="admin/slas" element={<AdminSLAPage />} />
+          <Route path="admin/assets" element={<AdminAssetsPage />} />
+          <Route path="admin/danger-zone" element={<AdminDangerZonePage />} />
           <Route path="admin/soas-variables" element={<SOASVariablesPage />} />
           <Route path="admin/incident-variables" element={<IncidentVariablesPage />} />
           <Route path="admin/form-definitions" element={<FormDefinitionsPage />} />
