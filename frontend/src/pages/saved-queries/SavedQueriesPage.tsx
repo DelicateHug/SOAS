@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Star, Trash2, Play, Globe, Lock } from "lucide-react";
+import { Plus, Star, Trash2, Play, Globe, Lock, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
-import { AIActionsBar } from "@/components/ai/AIActionsBar";
+import { AIQueryChat } from "@/components/ai/AIQueryChat";
 
 interface SavedQuery {
   id: string;
@@ -89,8 +89,6 @@ export function SavedQueriesPage() {
           New query
         </button>
       </div>
-
-      <AIActionsBar pageKey="saved_queries" context={{}} />
 
       {showNew && <NewQueryForm onSubmit={(b) => create.mutate(b)} onCancel={() => setShowNew(false)} />}
 
@@ -208,6 +206,7 @@ function NewQueryForm({ onSubmit, onCancel }: { onSubmit: (b: Partial<SavedQuery
   const [queryType, setQueryType] = useState("incidents_sql");
   const [queryText, setQueryText] = useState("SELECT id, title, severity FROM incidents WHERE created_at >= NOW() - INTERVAL '7 days' LIMIT 50");
   const [isPublic, setIsPublic] = useState(false);
+  const [showAI, setShowAI] = useState(false);
 
   return (
     <Card>
@@ -230,12 +229,34 @@ function NewQueryForm({ onSubmit, onCancel }: { onSubmit: (b: Partial<SavedQuery
             ))}
           </select>
         </div>
+
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-xs text-[var(--color-text-muted)]">Query</label>
+          <button
+            onClick={() => setShowAI((v) => !v)}
+            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] text-[var(--color-primary)]"
+            title="Open AI assistant"
+          >
+            <Sparkles className="w-3 h-3" />
+            {showAI ? "Hide AI" : "Build with AI"}
+          </button>
+        </div>
         <textarea
           value={queryText}
           onChange={(e) => setQueryText(e.target.value)}
           rows={6}
           className="w-full font-mono text-xs px-2 py-1.5 border border-[var(--color-border)] rounded bg-[var(--color-surface)]"
         />
+
+        {showAI && (
+          <div className="mt-3">
+            <AIQueryChat
+              initialTarget={queryType}
+              onApply={(q) => setQueryText(q)}
+            />
+          </div>
+        )}
+
         <div className="flex items-center justify-between mt-2">
           <label className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
             <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
