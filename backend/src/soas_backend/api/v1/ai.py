@@ -28,6 +28,7 @@ from soas_backend.database import get_db
 from soas_backend.models.ai import AIAction, CaseAIChat
 from soas_backend.models.user import User
 from soas_backend.services.ai_subprocess import ClaudeCLIError, ClaudeCLIRunner
+from soas_backend.services.audit import audit
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -82,6 +83,12 @@ async def list_chats(
 
 
 @router.post("/chats", response_model=ChatRead, status_code=201)
+@audit(
+    "ai.chat_created",
+    target_kind="case_ai_chat",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "name", None),
+)
 async def create_chat(
     body: ChatCreate,
     current_user: User = Depends(get_current_user),

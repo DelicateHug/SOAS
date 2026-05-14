@@ -138,6 +138,12 @@ async def list_incidents(
 
 
 @router.post("", response_model=IncidentRead, status_code=status.HTTP_201_CREATED)
+@audit(
+    "incident.created",
+    target_kind="incident",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "title", None),
+)
 async def create_incident(
     body: IncidentCreate,
     current_user: User = Depends(get_current_user),
@@ -230,6 +236,12 @@ async def get_incident(
 
 
 @router.patch("/{incident_id}", response_model=IncidentRead)
+@audit(
+    "incident.updated",
+    target_kind="incident",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "title", None),
+)
 async def update_incident(
     incident_id: UUID,
     body: IncidentUpdate,
@@ -296,6 +308,12 @@ async def update_incident(
 
 
 @router.post("/{incident_id}/transition", response_model=IncidentRead)
+@audit(
+    "incident.transitioned",
+    target_kind="incident",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "title", None),
+)
 async def transition_incident(
     incident_id: UUID,
     body: IncidentTransition,

@@ -14,6 +14,7 @@ from soas_backend.auth.password import hash_password
 from soas_backend.database import get_db
 from soas_backend.models.role import UserRole
 from soas_backend.models.user import User
+from soas_backend.services.audit import audit
 from soas_shared.schemas.common import PaginatedResponse, PaginationMeta
 from soas_shared.schemas.user import AdminPasswordResetResponse, AdminUserCreate, AdminUserCreateResponse, UserRead, UserUpdate
 
@@ -38,6 +39,12 @@ router = APIRouter(prefix="/admin/users", tags=["admin"])
 
 
 @router.post("", response_model=AdminUserCreateResponse, status_code=status.HTTP_201_CREATED)
+@audit(
+    "user.created",
+    target_kind="user",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "username", None),
+)
 async def create_user(
     body: AdminUserCreate,
     _: dict = Depends(require_permission("user", "create")),

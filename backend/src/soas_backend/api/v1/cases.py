@@ -9,6 +9,7 @@ from soas_backend.api.deps import get_current_user, get_user_teams, require_perm
 from soas_backend.database import get_db
 from soas_backend.models.user import User
 from soas_backend.services.case_service import CaseService
+from soas_backend.services.audit import audit
 from soas_shared.schemas.case import (
     CaseCreate,
     CaseGroupedItem,
@@ -132,6 +133,12 @@ async def list_cases_grouped(
 
 
 @router.post("", response_model=CaseRead, status_code=status.HTTP_201_CREATED)
+@audit(
+    "case.created",
+    target_kind="case",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "title", None),
+)
 async def create_case(
     body: CaseCreate,
     current_user: User = Depends(get_current_user),
@@ -219,6 +226,12 @@ async def get_case(
 
 
 @router.patch("/{case_id}", response_model=CaseRead)
+@audit(
+    "case.updated",
+    target_kind="case",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "title", None),
+)
 async def update_case(
     case_id: UUID,
     body: CaseUpdate,

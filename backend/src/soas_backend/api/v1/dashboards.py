@@ -23,6 +23,7 @@ from soas_backend.api.deps import (
 )
 from soas_backend.database import get_db
 from soas_backend.models.user import User
+from soas_backend.services.audit import audit
 from soas_backend.services.dashboard_service import DashboardService
 from soas_backend.services.widget_engine import WidgetEngine
 
@@ -140,6 +141,12 @@ async def get_dashboard(
 
 
 @router.post("", response_model=DashboardRead, status_code=201)
+@audit(
+    "dashboard.created",
+    target_kind="dashboard",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "name", None),
+)
 async def create_dashboard(
     body: DashboardCreate,
     current_user: User = Depends(get_current_user),

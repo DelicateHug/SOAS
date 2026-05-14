@@ -13,6 +13,7 @@ from soas_backend.models.role import Role
 from soas_backend.models.user import User
 from soas_backend.services.change_request_service import ChangeRequestService
 from soas_backend.services.rbac_service import RBACService
+from soas_backend.services.audit import audit
 from soas_shared.schemas.change_request import ChangeRequestDetail, UserBrief
 from soas_shared.schemas.role import (
     PermissionRead,
@@ -74,6 +75,12 @@ async def list_permissions(
 
 
 @router.post("", response_model=RoleRead, status_code=status.HTTP_201_CREATED)
+@audit(
+    "role.created",
+    target_kind="role",
+    extract_target=lambda r: getattr(r, "id", None),
+    extract_label=lambda r: getattr(r, "name", None),
+)
 async def create_role(
     body: RoleCreate,
     _: dict = Depends(require_permission("role", "create")),
