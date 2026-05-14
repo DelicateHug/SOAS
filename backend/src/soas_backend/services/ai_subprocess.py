@@ -117,9 +117,18 @@ class ClaudeCLIRunner:
 
         if proc.returncode != 0:
             err = stderr_bytes.decode("utf-8", errors="replace").strip()
-            raise ClaudeCLIError(
-                f"Claude CLI exited {proc.returncode}: {err[:1000]}"
-            )
+            out = stdout_bytes.decode("utf-8", errors="replace").strip()
+            # The CLI sometimes writes its actionable error ("Not logged in...") to stdout
+            # and exits non-zero with empty stderr. Surface whichever channel has content.
+            detail = err or out or "(no output)"
+            lower = detail.lower()
+            if "not logged in" in lower or "/login" in lower or "no credentials" in lower:
+                raise ClaudeCLIError(
+                    "Claude CLI is not authenticated. Either set ANTHROPIC_API_KEY in .env "
+                    "(API key, pay-as-you-go) or run `docker compose exec backend claude` "
+                    "and complete the OAuth login (subscription)."
+                )
+            raise ClaudeCLIError(f"Claude CLI exited {proc.returncode}: {detail[:1000]}")
 
         raw = stdout_bytes.decode("utf-8", errors="replace").strip()
         try:
@@ -129,6 +138,22 @@ class ClaudeCLIRunner:
 
         # CLI envelope shape (current): { "type": "result", "result": "...", "usage": {...},
         # "total_cost_usd": 0.0123, "session_id": "..." }.
+        #
+        # When the CLI couldn't authenticate it still returns exit 0 with an envelope of
+        # shape { "is_error": true, "result": "Not logged in · Please run /login" }.
+        # Treat that as an auth error so the user sees an actionable message instead of
+        # the literal CLI hint stored as a success result.
+        if envelope.get("is_error"):
+            err_msg = envelope.get("result") or envelope.get("error") or "unknown CLI error"
+            lower = str(err_msg).lower()
+            if "not logged in" in lower or "/login" in lower or "401" in lower:
+                raise ClaudeCLIError(
+                    "Claude CLI is not authenticated. Either set ANTHROPIC_API_KEY in .env "
+                    "(API key, pay-as-you-go) or run `docker compose exec backend claude` "
+                    "and complete the OAuth login (subscription)."
+                )
+            raise ClaudeCLIError(f"Claude CLI error: {err_msg}")
+
         content = envelope.get("result") or envelope.get("content") or ""
         usage = envelope.get("usage") or {}
         cost_usd = envelope.get("total_cost_usd")

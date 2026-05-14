@@ -3,6 +3,7 @@ import { AlertTriangle, ShieldCheck, ShieldOff } from "lucide-react";
 import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
 import { AdminAuthSettingsPanel } from "./AdminAuthSettingsPanel";
+import { AdminAIStatusPanel } from "./AdminAIStatusPanel";
 
 interface Optin {
   user_id: string;
@@ -97,6 +98,8 @@ export function AdminDangerZonePage() {
       </Card>
 
       <AdminAuthSettingsPanel />
+
+      <AdminAIStatusPanel />
     </div>
   );
 }

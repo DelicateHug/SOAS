@@ -439,3 +439,110 @@ async def delete_action(
     if not a:
         raise HTTPException(status_code=404, detail="Action not found")
     await db.delete(a)
+
+
+# ----------------------- AI provider status -----------------------
+
+
+@router.get("/status")
+async def ai_status(_: dict = Depends(require_role("admin", "soc_manager"))) -> dict[str, Any]:
+    """Report which AI auth path is currently usable.
+
+    The backend prefers the local `claude` CLI by default (which itself prefers
+    OAuth/subscription when both an OAuth session and ANTHROPIC_API_KEY are present).
+    This endpoint probes both to tell the admin which one is wired up.
+    """
+    import asyncio
+    import os
+
+    cli_binary = os.environ.get("CLAUDE_CLI_BINARY", "claude")
+    api_key_set = bool(os.environ.get("ANTHROPIC_API_KEY"))
+
+    # 1. Does the CLI exist?
+    cli_present = False
+    cli_version: str | None = None
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            cli_binary,
+            "--version",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        out, _ = await asyncio.wait_for(proc.communicate(), timeout=5)
+        if proc.returncode == 0:
+            cli_present = True
+            cli_version = out.decode("utf-8", errors="replace").strip()
+    except (FileNotFoundError, asyncio.TimeoutError):
+        cli_present = False
+
+    # 2. If the CLI is there, probe auth. Send an empty prompt with --print and parse
+    # the JSON envelope. is_error + "not logged in" means OAuth isn't set up AND we
+    # don't have ANTHROPIC_API_KEY plumbed through.
+    oauth_logged_in = False
+    cli_auth_error: str | None = None
+    if cli_present:
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                cli_binary,
+                "--print",
+                "--output-format",
+                "json",
+                "--max-budget-usd",
+                "0.001",
+                "hi",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            out, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
+            raw = out.decode("utf-8", errors="replace").strip()
+            try:
+                env = json.loads(raw)
+                if env.get("is_error"):
+                    msg = str(env.get("result") or "").lower()
+                    if "not logged in" in msg or "/login" in msg:
+                        cli_auth_error = "OAuth not configured (run `claude` to log in)"
+                    else:
+                        cli_auth_error = env.get("result") or "unknown error"
+                else:
+                    oauth_logged_in = True
+            except json.JSONDecodeError:
+                cli_auth_error = raw[:200] or "non-JSON CLI response"
+        except asyncio.TimeoutError:
+            cli_auth_error = "CLI probe timed out"
+
+    # Effective auth path the subprocess wrapper will use.
+    # The CLI itself prefers OAuth when both are present.
+    if cli_present and oauth_logged_in:
+        active = "cli_oauth"
+        message = "Using local Claude CLI with OAuth (subscription)."
+    elif cli_present and api_key_set:
+        active = "cli_api_key"
+        message = "Using local Claude CLI with ANTHROPIC_API_KEY (pay-as-you-go)."
+    elif api_key_set:
+        active = "sdk_api_key"
+        message = "CLI unavailable; falling back to Anthropic SDK with ANTHROPIC_API_KEY."
+    else:
+        active = "none"
+        message = (
+            "AI is not configured. Run `docker compose exec backend claude` to log in "
+            "with a subscription, OR add ANTHROPIC_API_KEY=sk-... to .env and restart."
+        )
+
+    return {
+        "active": active,
+        "message": message,
+        "cli": {
+            "present": cli_present,
+            "version": cli_version,
+            "oauth_logged_in": oauth_logged_in,
+            "auth_error": cli_auth_error,
+        },
+        "api_key": {
+            "set": api_key_set,
+        },
+        # Hints for the UI.
+        "hints": {
+            "subscription": "docker compose exec backend claude",
+            "api_key_env_var": "ANTHROPIC_API_KEY",
+        },
+    }
