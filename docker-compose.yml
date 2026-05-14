@@ -57,6 +57,9 @@ services:
       # must `docker compose exec backend claude` once to log in via OAuth — the
       # session persists in the claude-config named volume.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # The CLI refuses to run as root unless IS_SANDBOX=1 explicitly tells it the
+      # process is in a contained environment. The backend container is exactly that.
+      IS_SANDBOX: "1"
     ports:
       - "8000:8000"
     depends_on:

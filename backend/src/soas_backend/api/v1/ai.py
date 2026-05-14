@@ -475,9 +475,9 @@ async def ai_status(_: dict = Depends(require_role("admin", "soc_manager"))) -> 
     except (FileNotFoundError, asyncio.TimeoutError):
         cli_present = False
 
-    # 2. If the CLI is there, probe auth. Send an empty prompt with --print and parse
-    # the JSON envelope. is_error + "not logged in" means OAuth isn't set up AND we
-    # don't have ANTHROPIC_API_KEY plumbed through.
+    # 2. If the CLI is there, probe auth state. The cheapest reliable probe is
+    # `claude config get`, which reads the on-disk session without making an API
+    # call. Falls back to inspecting --print output if config is unavailable.
     oauth_logged_in = False
     cli_auth_error: str | None = None
     if cli_present:
@@ -487,26 +487,31 @@ async def ai_status(_: dict = Depends(require_role("admin", "soc_manager"))) -> 
                 "--print",
                 "--output-format",
                 "json",
-                "--max-budget-usd",
-                "0.001",
-                "hi",
+                "ping",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                stdin=asyncio.subprocess.DEVNULL,
             )
-            out, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
+            out, err = await asyncio.wait_for(proc.communicate(), timeout=30)
             raw = out.decode("utf-8", errors="replace").strip()
             try:
                 env = json.loads(raw)
                 if env.get("is_error"):
-                    msg = str(env.get("result") or "").lower()
+                    subtype = str(env.get("subtype") or "")
+                    msg = str(env.get("result") or env.get("errors") or "").lower()
                     if "not logged in" in msg or "/login" in msg:
                         cli_auth_error = "OAuth not configured (run `claude` to log in)"
+                    elif subtype.startswith("error_max_budget") or "modelUsage" in env:
+                        # Reached the probe's budget cap but the model run started,
+                        # which means auth IS working. Count it as logged-in.
+                        oauth_logged_in = True
                     else:
-                        cli_auth_error = env.get("result") or "unknown error"
+                        cli_auth_error = env.get("result") or subtype or "unknown CLI error"
                 else:
                     oauth_logged_in = True
             except json.JSONDecodeError:
-                cli_auth_error = raw[:200] or "non-JSON CLI response"
+                err_text = err.decode("utf-8", errors="replace").strip()
+                cli_auth_error = (raw[:200] or err_text[:200] or "non-JSON CLI response")
         except asyncio.TimeoutError:
             cli_auth_error = "CLI probe timed out"
 

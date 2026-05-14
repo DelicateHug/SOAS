@@ -8,6 +8,13 @@ services:
       - ./VisualPython2/src:/opt/vp2
       - ./wiki:/app/wiki:ro
       - automations:/app/automations
+      # Dev convenience: bind the host's Claude Code OAuth session into the
+      # container so the backend's `claude` subprocess uses the analyst's
+      # subscription login. Override the prod claude_config named-volume
+      # with a bind mount. Read-only because the container has no reason to
+      # mutate host credentials; the CLI still resolves auth from the keys
+      # in this directory.
+      - ${HOME:-${USERPROFILE}}/.claude:/root/.claude:ro
     command: sh -c "alembic upgrade head && uvicorn soas_backend.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src --reload-dir /app/shared-src"
     environment:
       DEBUG: "true"
