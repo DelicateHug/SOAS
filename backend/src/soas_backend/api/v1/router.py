@@ -40,6 +40,8 @@ from soas_backend.api.v1.change_requests import router as change_requests_router
 from soas_backend.api.v1.branch_versions import router as branch_versions_router
 from soas_backend.api.v1.teams import router as teams_router
 from soas_backend.api.v1.team_variables import router as team_variables_router
+from soas_backend.api.v1.rag import router as rag_router
+from soas_backend.api.v1.service_tokens import router as service_tokens_router
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth_router)
@@ -80,3 +82,5 @@ v1_router.include_router(change_requests_router)
 v1_router.include_router(branch_versions_router)
 v1_router.include_router(teams_router)
 v1_router.include_router(team_variables_router)
+v1_router.include_router(rag_router)
+v1_router.include_router(service_tokens_router)

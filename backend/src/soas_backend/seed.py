@@ -27,7 +27,7 @@ from soas_backend.services.wiki_service import WikiService
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SEED_VERSION = "2"
+CURRENT_SEED_VERSION = "3"
 
 
 # ---------------------------------------------------------------------------
@@ -35,8 +35,23 @@ CURRENT_SEED_VERSION = "2"
 # ---------------------------------------------------------------------------
 
 async def seed_defaults() -> None:
-    """Run all seed functions if not already seeded."""
+    """Run all seed functions if not already seeded.
+
+    The MCP bot + service token seeder always runs regardless of seed_version, because
+    rotating the token (e.g. operator deletes the secret file) shouldn't require bumping
+    the version. It's idempotent and cheap.
+    """
     async with async_session() as db:
+        # Always-on: ensure the MCP bot exists and a token is available on disk for the
+        # MCP container. Runs in its own try/except so a one-off failure never blocks
+        # other seeding.
+        try:
+            await _seed_mcp_bot_safe(db)
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            logger.warning("MCP bot seeding failed (non-fatal)", exc_info=True)
+
         try:
             result = await db.execute(
                 select(AppSetting).where(AppSetting.key == "seed_version")
@@ -80,6 +95,25 @@ async def seed_defaults() -> None:
         except Exception:
             await db.rollback()
             logger.exception("Failed to apply seed data")
+
+
+# ---------------------------------------------------------------------------
+# MCP bot + service token (always-on, idempotent)
+# ---------------------------------------------------------------------------
+
+async def _seed_mcp_bot_safe(db: AsyncSession) -> None:
+    """Wrap the MCP bot seeder. Imported here to avoid a hard dependency on the seed_mcp
+    module at import time of seed.py — if the MCP module is removed in some deployment,
+    seeding still works."""
+    try:
+        from soas_backend.seed_mcp import seed_mcp_bot
+    except ImportError:
+        logger.info("seed_mcp module unavailable; skipping MCP bot seed.")
+        return
+    raw = await seed_mcp_bot(db)
+    if raw:
+        # Operators see the token in container logs — safe in dev, redact in prod logs.
+        logger.info("MCP service token issued. First chars: %s…", raw[:12])
 
 
 # ---------------------------------------------------------------------------

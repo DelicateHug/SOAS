@@ -11,6 +11,8 @@ from soas_backend.auth.jwt import decode_access_token
 from soas_backend.database import get_db
 from soas_backend.models.user import User
 from soas_backend.services.wiki_service import WikiService
+from soas_backend.services.wiki_rag_service import schedule_delete as _rag_schedule_delete
+from soas_backend.services.wiki_rag_service import schedule_index as _rag_schedule_index
 from soas_shared.schemas.common import PaginatedResponse, PaginationMeta
 from soas_shared.schemas.wiki import (
     WikiPageBreadcrumb,
@@ -217,6 +219,7 @@ async def create_wiki_page(
         linked_node_type=body.linked_node_type,
         team_id=body.team_id,
     )
+    await _rag_schedule_index(page.id)
     return await _page_to_read(page, svc)
 
 
@@ -286,6 +289,10 @@ async def update_wiki_page(
     fields = body.model_dump(exclude_unset=True)
     change_summary = fields.pop("change_summary", None)
     page = await svc.update(page_id, updated_by=current_user.id, change_summary=change_summary, **fields)
+    # Re-index only when content or title changed; everything else is metadata that
+    # doesn't affect retrieval.
+    if "content" in fields or "title" in fields:
+        await _rag_schedule_index(page.id)
     return await _page_to_read(page, svc)
 
 
@@ -309,6 +316,7 @@ async def delete_wiki_page(
             )
 
     await svc.delete(page_id)
+    await _rag_schedule_delete(page_id)
     return None
 
 

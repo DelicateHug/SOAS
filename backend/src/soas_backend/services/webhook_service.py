@@ -29,6 +29,7 @@ class WebhookService:
         created_by: UUID,
         description: str | None = None,
         source_type: str = "custom",
+        source_id: UUID | None = None,
         default_severity: str = "medium",
         default_tags: list[str] | None = None,
         rate_limit_per_minute: int = 60,
@@ -40,6 +41,7 @@ class WebhookService:
             description=description,
             secret_token=secret_token,
             source_type=source_type,
+            source_id=source_id,
             default_severity=default_severity,
             default_tags=default_tags or [],
             rate_limit_per_minute=rate_limit_per_minute,
@@ -100,15 +102,20 @@ class WebhookService:
             "name",
             "description",
             "source_type",
+            "source_id",
             "is_enabled",
             "default_severity",
             "default_tags",
             "rate_limit_per_minute",
         }
 
+        # source_id is the only nullable updatable field — None clears the link.
         for field, value in kwargs.items():
-            if field in allowed_fields and value is not None:
-                setattr(webhook, field, value)
+            if field not in allowed_fields:
+                continue
+            if value is None and field != "source_id":
+                continue
+            setattr(webhook, field, value)
 
         await self.db.flush()
         return webhook
