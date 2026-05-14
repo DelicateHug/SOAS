@@ -141,6 +141,10 @@ services:
     environment:
       SENTENCE_MODEL: ${SENTENCE_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
       EMBEDDING_MAX_BATCH: "128"
+      SOAS_API_URL: http://backend:8000/api/v1
+      SOAS_AGENT_ID: embeddings_001
+      SOAS_AGENT_ROLE: embeddings
+      SOAS_VERSION: "0.1.0"
     healthcheck:
       # Python is guaranteed to be present (slim base); wget isn't.
       test:

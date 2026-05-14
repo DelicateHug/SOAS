@@ -19,7 +19,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Plus, Trash2, Search } from "lucide-react";
+import { Trash2, Search, Info } from "lucide-react";
 import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
 import { DataTable, Th, Tr, Td } from "@/components/ui/DataTable";
@@ -90,10 +90,41 @@ function fmtUptime(s: number | null): string {
 // Agents — registered roster of live instances
 // ============================================================
 
+const ROLE_DESCRIPTIONS: { role: string; description: string }[] = [
+  {
+    role: "backend",
+    description:
+      "FastAPI server. Handles HTTP/WebSocket traffic, RBAC, persistence, and the bulk of business logic.",
+  },
+  {
+    role: "worker",
+    description:
+      "Celery worker that runs automations, compiles graphs, and executes scheduled jobs.",
+  },
+  {
+    role: "beat",
+    description:
+      "Celery beat scheduler. Fires periodic tasks (heartbeats, monitoring checks, SLA snapshots).",
+  },
+  {
+    role: "mcp",
+    description:
+      "Node MCP server exposing SOAS resources as MCP tools for Claude Code and other IDEs.",
+  },
+  {
+    role: "embeddings",
+    description:
+      "Local sentence-transformers service powering the wiki RAG search. CPU-only; internal network.",
+  },
+  {
+    role: "frontend",
+    description:
+      "Browser-side React SPA. One agent slot per signed-in tab (persisted via localStorage).",
+  },
+];
+
 export function RegisteredAgentsPanel({ isAdmin }: { isAdmin: boolean }) {
   const qc = useQueryClient();
-  const [showAdd, setShowAdd] = useState(false);
-  const [draft, setDraft] = useState({ agenttype_id: "", role: "worker", label: "" });
 
   const { data: agents = [], isLoading } = useQuery({
     queryKey: ["registered-agents"],
@@ -101,14 +132,6 @@ export function RegisteredAgentsPanel({ isAdmin }: { isAdmin: boolean }) {
     refetchInterval: 15000,
   });
 
-  const create = useMutation({
-    mutationFn: (body: typeof draft) => api.post<Agent>("/agents", body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["registered-agents"] });
-      setShowAdd(false);
-      setDraft({ agenttype_id: "", role: "worker", label: "" });
-    },
-  });
   const remove = useMutation({
     mutationFn: (id: string) => api.delete(`/agents/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["registered-agents"] }),
@@ -122,22 +145,16 @@ export function RegisteredAgentsPanel({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
+      <div>
+        <div className="flex items-center gap-1.5">
           <h2 className="text-lg font-semibold">Agents</h2>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-            Every running SOAS instance keyed by stable <code className="font-mono">agenttype_id</code>.
-            Restarts re-use the same id so logs correlate across deploys.
-          </p>
+          <RoleTooltip />
         </div>
-        {isAdmin && (
-          <button
-            onClick={() => setShowAdd((s) => !s)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]"
-          >
-            <Plus size={14} /> Register agent
-          </button>
-        )}
+        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+          Every running SOAS instance keyed by stable <code className="font-mono">agenttype_id</code>.
+          Restarts re-use the same id so logs correlate across deploys. Agents register themselves
+          at launch; this list is read-only.
+        </p>
       </div>
 
       <div className="flex gap-2 text-xs">
@@ -146,61 +163,6 @@ export function RegisteredAgentsPanel({ isAdmin }: { isAdmin: boolean }) {
         <Badge label="Missing" count={counts.missing} dotClass="bg-[var(--color-danger)]" />
         <Badge label="Total" count={counts.total} dotClass="bg-[var(--color-text-muted)]" />
       </div>
-
-      {showAdd && (
-        <Card>
-          <CardBody>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
-              <Field label="agenttype_id">
-                <input
-                  value={draft.agenttype_id}
-                  onChange={(e) => setDraft({ ...draft, agenttype_id: e.target.value.toLowerCase() })}
-                  placeholder="worker_002"
-                  className="w-full px-2 py-1 text-sm border border-[var(--color-border)] rounded bg-[var(--color-surface)] font-mono"
-                />
-              </Field>
-              <Field label="Role">
-                <select
-                  value={draft.role}
-                  onChange={(e) => setDraft({ ...draft, role: e.target.value })}
-                  className="w-full px-2 py-1 text-sm border border-[var(--color-border)] rounded bg-[var(--color-surface)]"
-                >
-                  {["worker", "backend", "frontend", "manager", "mcp", "beat", "other"].map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Label (optional)">
-                <input
-                  value={draft.label}
-                  onChange={(e) => setDraft({ ...draft, label: e.target.value })}
-                  className="w-full px-2 py-1 text-sm border border-[var(--color-border)] rounded bg-[var(--color-surface)]"
-                />
-              </Field>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => draft.agenttype_id && create.mutate(draft)}
-                  disabled={create.isPending || !draft.agenttype_id}
-                  className="px-3 py-1 text-sm rounded bg-[var(--color-primary)] text-white disabled:opacity-50"
-                >
-                  Register
-                </button>
-                <button
-                  onClick={() => setShowAdd(false)}
-                  className="px-3 py-1 text-sm rounded border border-[var(--color-border)]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-            {create.error && (
-              <p className="text-xs text-[var(--color-danger)] mt-2 font-mono">
-                {(create.error as Error).message}
-              </p>
-            )}
-          </CardBody>
-        </Card>
-      )}
 
       <Card>
         <CardBody>
@@ -526,23 +488,45 @@ export function LookupPanel() {
 // Local helpers
 // ============================================================
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-1">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
 function Badge({ label, count, dotClass }: { label: string; count: number; dotClass: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-[var(--color-surface-2)]">
       <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
       <span className="text-[var(--color-text-muted)]">{label}:</span>
       <span className="font-mono font-semibold">{count}</span>
+    </span>
+  );
+}
+
+function RoleTooltip() {
+  return (
+    <span className="relative inline-block group align-middle">
+      <Info
+        size={13}
+        className="text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-help inline-block"
+      />
+      <span
+        className="
+          absolute left-0 top-full mt-1.5 z-50 hidden group-hover:block
+          w-[360px] max-w-[80vw]
+          bg-[var(--color-surface)] border border-[var(--color-border)]
+          rounded-md shadow-lg p-3 text-xs text-[var(--color-text)]
+          font-normal normal-case tracking-normal
+        "
+        role="tooltip"
+      >
+        <div className="font-semibold mb-1.5 uppercase tracking-wide text-[10px] text-[var(--color-text-muted)]">
+          Agent roles
+        </div>
+        <ul className="space-y-1.5">
+          {ROLE_DESCRIPTIONS.map((r) => (
+            <li key={r.role} className="leading-snug">
+              <span className="font-mono text-[11px] text-[var(--color-primary)]">{r.role}</span>{" "}
+              <span className="text-[var(--color-text-muted)]">— {r.description}</span>
+            </li>
+          ))}
+        </ul>
+      </span>
     </span>
   );
 }

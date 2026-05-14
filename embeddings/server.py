@@ -33,6 +33,61 @@ MAX_TEXT_CHARS = int(os.environ.get("EMBEDDING_MAX_TEXT_CHARS", "8000"))
 _state: dict[str, Any] = {"model": None, "dim": 0}
 
 
+def _start_heartbeat():
+    """Background heartbeat thread that posts to the backend's
+    /agents/heartbeat so the embeddings service appears in the Agents
+    registry. Best-effort — never crashes the service if the backend
+    is slow or down."""
+    import re
+    import socket
+    import threading
+    import time
+
+    import httpx
+
+    role = os.environ.get("SOAS_AGENT_ROLE", "embeddings")
+    candidate = os.environ.get("SOAS_AGENT_ID", "").strip()
+    if not (candidate and re.fullmatch(r"[a-z][a-z0-9_]*_[0-9]{1,6}", candidate)):
+        host = socket.gethostname().split(".", 1)[0]
+        short = re.sub(r"^soas[-_]", "", host)
+        m = re.match(r"^(\w+?)[-_]?(\d+)?$", short)
+        if m and m.group(1):
+            candidate = f"{m.group(1).lower()}_{(m.group(2) or '001').zfill(3)}"
+        else:
+            candidate = f"{role}_001"
+
+    api_url = os.environ.get("SOAS_API_URL", "http://backend:8000/api/v1")
+    version = os.environ.get("SOAS_VERSION", "0.1.0")
+    boot_ts = time.time()
+
+    def loop():
+        while True:
+            try:
+                body = {
+                    "agenttype_id": candidate,
+                    "role": role,
+                    "version": version,
+                    "uptime_seconds": int(time.time() - boot_ts),
+                    "instance_id": socket.gethostname(),
+                }
+                try:
+                    import psutil
+
+                    proc = psutil.Process(os.getpid())
+                    body["cpu_pct"] = float(psutil.cpu_percent(interval=None))
+                    body["mem_pct"] = float(psutil.virtual_memory().percent)
+                    body["mem_rss_bytes"] = int(proc.memory_info().rss)
+                except Exception:
+                    pass
+                with httpx.Client(timeout=5.0) as c:
+                    c.post(f"{api_url}/agents/heartbeat", json=body)
+            except Exception:
+                pass
+            time.sleep(30)
+
+    threading.Thread(target=loop, name="embeddings-heartbeat", daemon=True).start()
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     logger.info("Loading sentence-transformers model: %s", MODEL_NAME)
@@ -42,6 +97,7 @@ async def lifespan(_app: FastAPI):
     _state["model"] = model
     _state["dim"] = dim
     logger.info("Model loaded in %.2fs (dim=%d)", perf_counter() - t0, dim)
+    _start_heartbeat()
     yield
     _state["model"] = None
 
