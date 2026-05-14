@@ -1,0 +1,343 @@
+/* ============================================================
+ * Sidebar — case-managment dark theme with green accent.
+ * Always dark, in both light and dark modes.
+ * ============================================================ */
+
+.xs-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.xs-sidebar {
+  width: var(--sidebar-width, 228px);
+  min-height: 100vh;
+  background: var(--color-sidebar-bg);
+  color: var(--color-sidebar-fg);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  border-right: 1px solid #0a1220;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  transition: width 180ms ease;
+}
+
+.xs-sidebar-collapsed .xs-sidebar {
+  --sidebar-width: var(--sidebar-width-collapsed, 64px);
+}
+
+.xs-sidebar-dragging .xs-sidebar {
+  transition: none;
+  user-select: none;
+}
+
+.xs-sidebar::-webkit-scrollbar { width: 8px; }
+.xs-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 46px;
+  margin-bottom: 8px;
+}
+.xs-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+.xs-sidebar:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Brand block */
+.xs-brand {
+  padding: 18px 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: inherit;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.xs-brand:hover { text-decoration: none; }
+.xs-brand:hover .xs-brand-text .t { color: var(--color-sidebar-accent); }
+.xs-brand-mark {
+  width: 34px;
+  height: 30px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--color-sidebar-accent), #00a977);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a1220;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.xs-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+  overflow: hidden;
+}
+.xs-brand-text .t {
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.xs-brand-text .s {
+  color: var(--color-sidebar-fg-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.xs-sidebar-collapsed .xs-brand-text { display: none; }
+.xs-sidebar-collapsed .xs-brand { padding: 18px 0 16px; justify-content: center; }
+
+/* Section headers */
+.xs-nav-section {
+  padding: 18px 14px 8px;
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-sidebar-fg-muted);
+  font-weight: 600;
+}
+.xs-sidebar .xs-nav-section:first-of-type {
+  margin-top: 0;
+  border-top: none;
+}
+.xs-sidebar-collapsed .xs-nav-section {
+  visibility: hidden;
+  height: 8px;
+  padding: 4px 0 0;
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Nav list */
+.xs-nav {
+  list-style: none;
+  padding: 0 8px 12px;
+  margin: 0;
+}
+.xs-nav li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  color: var(--color-sidebar-fg);
+  text-decoration: none;
+  border-radius: var(--radius-sm, 4px);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 120ms, color 120ms;
+}
+.xs-nav li a:hover {
+  background: var(--color-sidebar-active);
+  color: #fff;
+  text-decoration: none;
+}
+.xs-nav li a.active {
+  background: var(--color-sidebar-active);
+  color: #fff;
+  box-shadow: inset 3px 0 0 var(--color-sidebar-accent);
+}
+.xs-nav li a .xs-nav-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-sidebar-fg-muted);
+  flex-shrink: 0;
+  transition: color 120ms;
+}
+.xs-nav li a.active .xs-nav-icon,
+.xs-nav li a:hover .xs-nav-icon {
+  color: var(--color-sidebar-accent);
+}
+.xs-nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.xs-sidebar-collapsed .xs-nav li a {
+  justify-content: center;
+  padding: 8px 0;
+}
+.xs-sidebar-collapsed .xs-nav-label { display: none; }
+
+/* User block + footer */
+.xs-user-block {
+  margin-top: auto;
+  padding: 10px 16px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-sidebar-fg-muted);
+  min-width: 0;
+}
+.xs-user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #2a3654;
+  color: #cdd6e4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.xs-user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-sidebar-fg);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+.xs-user-role {
+  font-size: 10.5px;
+  color: var(--color-sidebar-fg-muted);
+}
+.xs-sidebar-collapsed .xs-user-block { padding: 10px 0; justify-content: center; }
+.xs-sidebar-collapsed .xs-user-block .xs-user-name,
+.xs-sidebar-collapsed .xs-user-block .xs-user-role,
+.xs-sidebar-collapsed .xs-user-block .xs-user-actions { display: none; }
+
+/* Work session widget (placeholder for Phase 8 AI Chat) */
+.xs-work-widget {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 195, 137, 0.06);
+}
+.xs-work-widget-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.xs-work-widget-row + .xs-work-widget-row { margin-top: 4px; }
+.xs-work-widget-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-sidebar-accent);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 0 rgba(0, 195, 137, 0.6);
+  animation: xs-ws-pulse 1.8s infinite;
+}
+@keyframes xs-ws-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0, 195, 137, 0.55); }
+  70%  { box-shadow: 0 0 0 6px rgba(0, 195, 137, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 195, 137, 0); }
+}
+.xs-work-widget-label {
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.xs-work-widget-timer {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-sidebar-accent);
+  font-weight: 600;
+}
+.xs-sidebar-collapsed .xs-work-widget { display: none; }
+
+/* Resize handle */
+.xs-sidebar-resize {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width, 228px);
+  width: 8px;
+  height: 100vh;
+  margin-left: -4px;
+  cursor: ew-resize;
+  z-index: 1050;
+  background: transparent;
+  transition: background 140ms ease;
+}
+.xs-sidebar-resize::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+  background: transparent;
+  transition: background 140ms ease;
+}
+.xs-sidebar-resize:hover::after,
+.xs-sidebar-dragging .xs-sidebar-resize::after {
+  background: var(--color-sidebar-accent);
+}
+.xs-sidebar-collapsed .xs-sidebar-resize { display: none; }
+
+/* Collapse toggle (small circle on sidebar edge) */
+.xs-sidebar-toggle {
+  position: absolute;
+  top: 18px;
+  left: calc(var(--sidebar-width, 228px) - 11px);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-sidebar-bg-2);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-sidebar-fg-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1100;
+  transition: left 180ms ease, background 120ms, color 120ms, border-color 120ms;
+  padding: 0;
+}
+.xs-sidebar-toggle:hover {
+  color: var(--color-sidebar-accent);
+  border-color: var(--color-sidebar-accent);
+  background: var(--color-sidebar-bg-2);
+}
+.xs-sidebar-collapsed .xs-sidebar-toggle {
+  left: calc(var(--sidebar-width-collapsed, 64px) - 11px);
+}
+
+/* Main workspace */
+.xs-main {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.xs-workspace {
+  padding: 20px 24px 40px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Production-mode banner */
+.xs-prod-banner {
+  background: rgba(122, 130, 148, 0.1);
+  border-bottom: 1px solid rgba(122, 130, 148, 0.2);
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
