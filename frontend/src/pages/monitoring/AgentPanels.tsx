@@ -475,6 +475,8 @@ export function LookupPanel() {
                 </CardBody>
               </Card>
 
+              <LogsPanel agenttypeId={committed} />
+
               <Card>
                 <CardBody>
                   <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
@@ -542,5 +544,129 @@ function Badge({ label, count, dotClass }: { label: string; count: number; dotCl
       <span className="text-[var(--color-text-muted)]">{label}:</span>
       <span className="font-mono font-semibold">{count}</span>
     </span>
+  );
+}
+
+// ============================================================
+// Logs — viewer for one agent's recent logs
+// ============================================================
+
+interface LogRow {
+  id: string;
+  level: string;
+  message: string;
+  context: Record<string, unknown>;
+  version: string | null;
+  occurred_at: string | null;
+  created_at: string;
+}
+
+const LEVEL_COLOR: Record<string, string> = {
+  debug: "text-[var(--color-text-muted)]",
+  info: "text-[var(--color-text)]",
+  warn: "text-[var(--color-warning)]",
+  error: "text-[var(--color-danger)]",
+  fatal: "text-[var(--color-danger)]",
+};
+
+function LogsPanel({ agenttypeId }: { agenttypeId: string }) {
+  const [search, setSearch] = useState("");
+  const [level, setLevel] = useState<string>("");
+  const [limit, setLimit] = useState(200);
+
+  const { data: logs = [], isLoading, refetch } = useQuery({
+    queryKey: ["agent-logs", agenttypeId, level, search, limit],
+    queryFn: () => {
+      const params = new URLSearchParams({ limit: String(limit) });
+      if (level) params.set("level", level);
+      if (search.trim()) params.set("search", search.trim());
+      return api.get<LogRow[]>(`/agents/${agenttypeId}/logs?${params.toString()}`);
+    },
+    refetchInterval: 15000,
+  });
+
+  return (
+    <Card>
+      <CardBody>
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+            Logs ({logs.length}{logs.length === limit ? "+" : ""})
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={level}
+              onChange={(e) => setLevel(e.target.value)}
+              className="px-2 py-1 text-xs border border-[var(--color-border)] rounded bg-[var(--color-surface)]"
+            >
+              <option value="">All levels</option>
+              <option value="debug">debug</option>
+              <option value="info">info</option>
+              <option value="warn">warn</option>
+              <option value="error">error</option>
+              <option value="fatal">fatal</option>
+            </select>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && refetch()}
+              placeholder="Search messages…"
+              className="w-40 px-2 py-1 text-xs border border-[var(--color-border)] rounded bg-[var(--color-surface)] font-mono"
+            />
+            <select
+              value={limit}
+              onChange={(e) => setLimit(parseInt(e.target.value))}
+              className="px-2 py-1 text-xs border border-[var(--color-border)] rounded bg-[var(--color-surface)]"
+            >
+              <option value={50}>50</option>
+              <option value={200}>200</option>
+              <option value={500}>500</option>
+              <option value={2000}>2000</option>
+            </select>
+          </div>
+        </div>
+        {isLoading && <div className="text-xs text-[var(--color-text-muted)]">Loading…</div>}
+        {!isLoading && logs.length === 0 && (
+          <div className="text-xs text-[var(--color-text-muted)] py-6 text-center">
+            No logs for this agent yet. Agents post via POST /api/v1/agents/{"{id}"}/logs.
+          </div>
+        )}
+        {logs.length > 0 && (
+          <div className="max-h-96 overflow-auto font-mono text-[11.5px] border border-[var(--color-border)] rounded bg-[var(--color-surface-2)]">
+            {logs.map((r) => (
+              <div
+                key={r.id}
+                className="px-2 py-1 border-b border-[var(--color-border)] last:border-b-0"
+              >
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[var(--color-text-muted)] shrink-0">
+                    {new Date(r.created_at).toLocaleTimeString()}
+                  </span>
+                  <span
+                    className={`uppercase shrink-0 text-[10px] font-semibold tracking-wide ${
+                      LEVEL_COLOR[r.level] ?? "text-[var(--color-text)]"
+                    }`}
+                  >
+                    {r.level}
+                  </span>
+                  {r.version && (
+                    <span className="text-[10px] text-[var(--color-text-muted)] shrink-0">
+                      v{r.version}
+                    </span>
+                  )}
+                  <span className={`flex-1 whitespace-pre-wrap break-words ${LEVEL_COLOR[r.level] ?? ""}`}>
+                    {r.message}
+                  </span>
+                </div>
+                {Object.keys(r.context).length > 0 && (
+                  <pre className="text-[10px] text-[var(--color-text-muted)] pl-16 mt-0.5 whitespace-pre-wrap">
+                    {JSON.stringify(r.context)}
+                  </pre>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardBody>
+    </Card>
   );
 }

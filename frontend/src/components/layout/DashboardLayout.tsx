@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useTokenExpiration, type UrgencyLevel } from "@/hooks/useTokenExpiration";
 import { useDeploymentMode } from "@/hooks/useDeploymentMode";
 import { useTheme } from "@/hooks/useTheme";
+import { useAgentHeartbeat } from "@/hooks/useAgentHeartbeat";
 import { TeamSelector } from "@/components/ui/TeamSelector";
 import { cn } from "@/lib/utils";
 import {
@@ -116,6 +117,7 @@ export function DashboardLayout() {
   const { remainingText, urgency } = useTokenExpiration();
   const { isDevMode, isProduction, canToggle, toggleDevMode } = useDeploymentMode();
   const { theme, toggleTheme } = useTheme();
+  useAgentHeartbeat();
   const navigate = useNavigate();
 
   // Width state: read from localStorage once on mount.

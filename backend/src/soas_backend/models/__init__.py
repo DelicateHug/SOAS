@@ -54,6 +54,7 @@ from soas_backend.models.observability import (
     PageLoadSample,
 )
 from soas_backend.models.registered_agent import RegisteredAgent
+from soas_backend.models.agent_log import AgentLog
 from soas_backend.models.reporting import Report
 from soas_backend.models.wiki_link import WikiPageLink
 
@@ -142,4 +143,5 @@ __all__ = [
     "Report",
     "WikiPageLink",
     "RegisteredAgent",
+    "AgentLog",
 ]

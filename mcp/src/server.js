@@ -17,6 +17,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 
 import { SoasClient, makeTokenProvider } from "./soas-client.js";
 import { registerTools } from "./tools.js";
+import { startHeartbeat } from "./heartbeat.js";
 
 const PORT = parseInt(process.env.MCP_HTTP_PORT || "8765", 10);
 const SOAS_API_URL = process.env.SOAS_API_URL || "http://backend:8000/api/v1";
@@ -114,6 +115,10 @@ async function main() {
     const names = Object.keys(t).sort();
     res.json({ count: names.length, tools: names });
   });
+
+  // Phase 11.1: heartbeat into the SOAS agents registry so the MCP
+  // instance shows up in the Agents tab alongside the Python services.
+  startHeartbeat({ apiUrl: SOAS_API_URL });
 
   app.listen(PORT, () => {
     console.log(`[soas-mcp] streamable-http listening on :${PORT}`);

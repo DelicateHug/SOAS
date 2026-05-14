@@ -85,6 +85,21 @@ async def lifespan(app: FastAPI):
 
     log_cleanup_task = asyncio.create_task(_request_log_cleanup_loop())
 
+    # Phase 11.1: attach an AgentLogHandler so anything logged with
+    # level >= INFO is mirrored into agent_logs for the Lookup view.
+    from soas_backend.services.agent_log_handler import AgentLogHandler
+    from soas_backend.services.agent_registry_service import resolve_agenttype_id
+    import os as _os
+    _agent_role = _os.environ.get("SOAS_AGENT_ROLE", "backend")
+    _agent_id = resolve_agenttype_id(_agent_role)
+    _agent_version = _os.environ.get("SOAS_VERSION", "0.1.0")
+    agent_log_handler = AgentLogHandler(_agent_id, _agent_version)
+    agent_log_handler.setFormatter(
+        logging.Formatter("%(message)s")
+    )
+    logging.getLogger().addHandler(agent_log_handler)
+    await agent_log_handler.start()
+
     # Seed default data (idempotent, non-fatal)
     try:
         from soas_backend.seed import seed_defaults
@@ -102,6 +117,11 @@ async def lifespan(app: FastAPI):
             await t
         except asyncio.CancelledError:
             pass
+    try:
+        await agent_log_handler.stop()
+        logging.getLogger().removeHandler(agent_log_handler)
+    except Exception:
+        pass
     await quorum_svc.deregister_instance(INSTANCE_ID)
     await r.aclose()
 
