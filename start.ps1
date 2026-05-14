@@ -331,10 +331,24 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # OpenSSL (for JWT key generation)
-if (-not (Get-Command openssl -ErrorAction SilentlyContinue)) {
-    Write-Warn "OpenSSL not found. JWT keys must be generated manually if missing."
+$opensslCmd = $null
+if (Get-Command openssl -ErrorAction SilentlyContinue) {
+    $opensslCmd = "openssl"
 } else {
-    Write-Ok "OpenSSL available"
+    # Fallback: Git for Windows ships openssl under mingw64\bin but doesn't add it to PATH
+    $gitOpensslCandidates = @(
+        "$env:ProgramFiles\Git\mingw64\bin\openssl.exe",
+        "$env:ProgramFiles\Git\usr\bin\openssl.exe",
+        "${env:ProgramFiles(x86)}\Git\mingw64\bin\openssl.exe"
+    )
+    foreach ($cand in $gitOpensslCandidates) {
+        if ($cand -and (Test-Path $cand)) { $opensslCmd = $cand; break }
+    }
+}
+if ($opensslCmd) {
+    Write-Ok "OpenSSL available ($opensslCmd)"
+} else {
+    Write-Warn "OpenSSL not found. JWT keys must be generated manually if missing."
 }
 
 # Node.js (for frontend dev mode or initial npm install)
@@ -362,21 +376,21 @@ $publicKey   = Join-Path $secretsDir "jwt_public.pem"
 if ((Test-Path $privateKey) -and (Test-Path $publicKey)) {
     Write-Ok "JWT keys already exist."
 } else {
-    if (-not (Get-Command openssl -ErrorAction SilentlyContinue)) {
+    if (-not $opensslCmd) {
         Write-Fail "Cannot generate JWT keys - OpenSSL is not installed."
         Write-Host "   Install OpenSSL or run: bash scripts/generate-jwt-keys.sh" -ForegroundColor Gray
         exit 1
     }
 
-    Write-Host "   Generating RSA 2048-bit key pair..." -ForegroundColor Gray
+    Write-Host "   Generating RSA 2048-bit key pair (using $opensslCmd)..." -ForegroundColor Gray
     if (-not (Test-Path $secretsDir)) {
         New-Item -ItemType Directory -Path $secretsDir -Force | Out-Null
     }
 
     $savedPref = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    openssl genrsa -out $privateKey 2048 2>$null
-    openssl rsa -in $privateKey -pubout -out $publicKey 2>$null
+    & $opensslCmd genrsa -out $privateKey 2048 2>$null
+    & $opensslCmd rsa -in $privateKey -pubout -out $publicKey 2>$null
     $ErrorActionPreference = $savedPref
 
     if ((Test-Path $privateKey) -and (Test-Path $publicKey)) {
@@ -404,29 +418,73 @@ if (Test-Path $envFile) {
     Write-Warn "No .env or .env.example found. Docker Compose will use defaults."
 }
 
-# Auto-generate USER_SECRET_ENCRYPTION_KEY if it's still the placeholder
+# Auto-fill .env placeholders left by .env.example.
+# Runs whenever the .env still contains a placeholder, regardless of whether the file is fresh or
+# was edited by hand. Each key is fixed independently so partial edits aren't clobbered.
+function Resolve-PythonCommand {
+    if (Get-Command python -ErrorAction SilentlyContinue) { return "python" }
+    if (Get-Command python3 -ErrorAction SilentlyContinue) { return "python3" }
+    return $null
+}
+
+function Get-RandomToken([int]$Length) {
+    $bytes = New-Object byte[] $Length
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    # URL-safe base64, trimmed to requested length so .env values stay predictable
+    return ([Convert]::ToBase64String($bytes) -replace '\+','-' -replace '/','_' -replace '=','').Substring(0, $Length)
+}
+
 if (Test-Path $envFile) {
     $envContent = Get-Content $envFile -Raw
+    $envChanged = $false
+    $pythonCmd = Resolve-PythonCommand
+
+    # 1. POSTGRES_PASSWORD — also flows into DATABASE_URL, replace both occurrences.
+    if ($envContent -match "<your-secure-password-here>") {
+        $pgPass = Get-RandomToken 32
+        $envContent = $envContent -replace "<your-secure-password-here>", $pgPass
+        $envChanged = $true
+        Write-Ok "Generated POSTGRES_PASSWORD in .env (also wired into DATABASE_URL)"
+    }
+
+    # 2. SOAS_API_TOKEN — inter-service token.
+    if ($envContent -match "SOAS_API_TOKEN=<generate-a-secure-token>") {
+        $apiToken = Get-RandomToken 48
+        $envContent = $envContent -replace "SOAS_API_TOKEN=<generate-a-secure-token>", "SOAS_API_TOKEN=$apiToken"
+        $envChanged = $true
+        Write-Ok "Generated SOAS_API_TOKEN in .env"
+    }
+
+    # 3. USER_SECRET_ENCRYPTION_KEY — must be a real Fernet key (32-byte url-safe b64).
     if ($envContent -match "USER_SECRET_ENCRYPTION_KEY=<generate-a-fernet-key>") {
         $fernetKey = $null
-        $savedPref = $ErrorActionPreference
-        $ErrorActionPreference = "Continue"
-        if (Get-Command python -ErrorAction SilentlyContinue) {
-            $fernetKey = python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" 2>$null
-        } elseif (Get-Command python3 -ErrorAction SilentlyContinue) {
-            $fernetKey = python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" 2>$null
+        if ($pythonCmd) {
+            $savedPref = $ErrorActionPreference
+            $ErrorActionPreference = "Continue"
+            $fernetKey = & $pythonCmd -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" 2>$null
+            # If cryptography isn't installed, install it on the fly. Pip is bundled with Python on Windows.
+            if (-not $fernetKey) {
+                Write-Host "   cryptography module missing - running pip install cryptography..." -ForegroundColor Gray
+                & $pythonCmd -m pip install --quiet --disable-pip-version-check cryptography 2>&1 | Out-Null
+                $fernetKey = & $pythonCmd -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" 2>$null
+            }
+            $ErrorActionPreference = $savedPref
         }
-        $ErrorActionPreference = $savedPref
         if ($fernetKey) {
             $fernetKey = $fernetKey.Trim()
             $envContent = $envContent -replace "USER_SECRET_ENCRYPTION_KEY=<generate-a-fernet-key>", "USER_SECRET_ENCRYPTION_KEY=$fernetKey"
-            Set-Content $envFile $envContent -NoNewline
+            $envChanged = $true
             Write-Ok "Generated USER_SECRET_ENCRYPTION_KEY in .env"
         } else {
-            Write-Warn "Python not found - could not auto-generate Fernet key."
+            Write-Warn "Python or cryptography unavailable - could not auto-generate Fernet key."
             Write-Host "   Set USER_SECRET_ENCRYPTION_KEY in .env manually:" -ForegroundColor Gray
+            Write-Host "   python -m pip install cryptography" -ForegroundColor Gray
             Write-Host "   python -c `"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())`"" -ForegroundColor Gray
         }
+    }
+
+    if ($envChanged) {
+        Set-Content $envFile $envContent -NoNewline
     }
 }
 
@@ -588,9 +646,45 @@ Write-Host ""
 Write-Host "  Frontend:     http://localhost:$frontendPort" -ForegroundColor White
 Write-Host "  Backend API:  http://localhost:8000/api/docs" -ForegroundColor White
 Write-Host "  Health check: http://localhost:8000/api/health" -ForegroundColor White
+Write-Host "  MCP server:   http://localhost:8765/mcp" -ForegroundColor White
+Write-Host "  Embeddings:   internal only (http://embeddings:8200)" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  PostgreSQL:   localhost:5432  (soas/changeme)" -ForegroundColor Gray
 Write-Host "  Redis:        localhost:6379" -ForegroundColor Gray
+Write-Host ""
+
+# -------------------------------------------------------------------
+# 7c. Surface the MCP service token
+# -------------------------------------------------------------------
+# The backend seeded an `sst_…` token into the shared mcp_secrets volume on startup.
+# Copy a host-side mirror into secrets/mcp_token so editor configs that point at the
+# stdio variant (and any non-Docker tooling) can read it without docker exec.
+$mcpTokenLocal = Join-Path $ProjectRoot "secrets/mcp_token"
+$mcpTokenReady = $false
+$mcpToken = ""
+
+for ($i = 0; $i -lt 30; $i++) {
+    $tokenRaw = docker exec soas-backend cat /run/mcp/mcp_token 2>$null
+    if ($LASTEXITCODE -eq 0 -and $tokenRaw -and $tokenRaw.Trim()) {
+        $mcpToken = $tokenRaw.Trim()
+        $mcpTokenReady = $true
+        break
+    }
+    Start-Sleep -Seconds 1
+}
+
+if ($mcpTokenReady) {
+    if (-not (Test-Path (Split-Path $mcpTokenLocal -Parent))) {
+        New-Item -ItemType Directory -Path (Split-Path $mcpTokenLocal -Parent) -Force | Out-Null
+    }
+    Set-Content -Path $mcpTokenLocal -Value $mcpToken -NoNewline -Encoding ASCII
+    Write-Host "  MCP token:    $($mcpToken.Substring(0, [Math]::Min(12, $mcpToken.Length)))..." -ForegroundColor Yellow
+    Write-Host "                Full token saved to secrets/mcp_token (gitignored)" -ForegroundColor Gray
+    Write-Host "                Use this as a Bearer when calling http://localhost:8765/mcp" -ForegroundColor Gray
+} else {
+    Write-Warn "Could not read MCP token from backend. Try: docker exec soas-backend cat /run/mcp/mcp_token"
+}
+
 Write-Host ""
 if ($Dev) {
     Write-Host "  Dev mode: source changes hot-reload automatically." -ForegroundColor Yellow

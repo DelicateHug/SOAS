@@ -47,6 +47,8 @@ services:
       WEBAUTHN_ORIGIN: http://localhost:3000
       CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       USER_SECRET_ENCRYPTION_KEY: ${USER_SECRET_ENCRYPTION_KEY:-}
+      EMBEDDING_SERVICE_URL: http://embeddings:8200
+      MCP_TOKEN_FILE: /run/mcp/mcp_token
     ports:
       - "8000:8000"
     depends_on:
@@ -58,6 +60,10 @@ services:
       - automations:/app/automations
       - gitsync:/app/data/git-sync
       - ./wiki:/app/wiki:ro
+      # The backend writes the MCP token here; the MCP container mounts the same volume
+      # read-only and reads it at startup. Sharing a named volume is more portable than
+      # the docker-compose `secrets:` block, which only supports static files.
+      - mcp_secrets:/run/mcp
     secrets:
       - jwt_private_key
       - jwt_public_key
@@ -75,6 +81,7 @@ services:
       AUTOMATIONS_DIR: /app/automations
       SOAS_API_URL: http://backend:8000/api/v1
       USER_SECRET_ENCRYPTION_KEY: ${USER_SECRET_ENCRYPTION_KEY:-}
+      EMBEDDING_SERVICE_URL: http://embeddings:8200
     depends_on:
       postgres:
         condition: service_healthy
@@ -110,11 +117,63 @@ services:
     depends_on:
       - backend
 
+  # Local embedding service. CPU-only sentence-transformers model baked into the image.
+  # Bound only on the internal network — never published to the host. The backend and
+  # workers reach it via the docker DNS name `embeddings`.
+  embeddings:
+    build:
+      context: .
+      dockerfile: embeddings/Dockerfile
+    container_name: soas-embeddings
+    environment:
+      SENTENCE_MODEL: ${SENTENCE_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      EMBEDDING_MAX_BATCH: "128"
+    healthcheck:
+      # Python is guaranteed to be present (slim base); wget isn't.
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8200/health', timeout=3).status == 200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+
+  # MCP server — exposes SOAS as MCP tools to Claude Code / IDEs over streamable HTTP.
+  # Reads its bearer token from the shared volume the backend writes at startup.
+  mcp:
+    build:
+      context: .
+      dockerfile: mcp/Dockerfile
+    container_name: soas-mcp
+    environment:
+      SOAS_API_URL: http://backend:8000/api/v1
+      EMBEDDING_SERVICE_URL: http://embeddings:8200
+      SOAS_TOKEN_FILE: /run/secrets/mcp_token
+      MCP_HTTP_PORT: "8765"
+      # Optional: when set, MCP clients must present this bearer to call the MCP server
+      # itself. Leave unset for the default Docker-network-only deployment.
+      MCP_SERVER_TOKEN: ${MCP_SERVER_TOKEN:-}
+    ports:
+      - "8765:8765"
+    depends_on:
+      backend:
+        condition: service_started
+      embeddings:
+        condition: service_healthy
+    volumes:
+      # Read-only view of the same volume the backend wrote the token to.
+      - mcp_secrets:/run/secrets:ro
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:
   automations:
   gitsync:
+  mcp_secrets:
 
 secrets:
   jwt_private_key:

@@ -92,3 +92,10 @@ VisualPython/
 *.tmp
 *.temp
 wiki/dhug*
+
+# =========================
+# Investigation/scratch (not for commit)
+# =========================
+Investigation report/
+Investigation report.zip
+Investigation*report*.zip

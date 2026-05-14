@@ -1,11 +1,33 @@
 {
+  "$comment": "SOAS MCP server. Two server entries are provided so you can pick the transport that matches your editor. The HTTP server (`soas`) is brought up by start.ps1 as a Docker container and is the recommended default. The legacy stdio bridge (`soas-stdio-bridge`) is kept for the VS Code extension that talks to its own port 19542 host bridge.",
+
   "mcpServers": {
     "soas": {
+      "type": "http",
+      "url": "http://localhost:8765/mcp",
+      "$comment": "Streamable-HTTP transport. The MCP server reads its SOAS bearer from the shared mcp_secrets volume; clients of THIS endpoint do not need to send any auth unless MCP_SERVER_TOKEN is set in .env."
+    },
+
+    "soas-direct-stdio": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["mcp/src/server-stdio.js"],
+      "env": {
+        "SOAS_API_URL": "http://localhost:8000/api/v1",
+        "EMBEDDING_SERVICE_URL": "http://localhost:8200",
+        "SOAS_TOKEN_FILE": "secrets/mcp_token"
+      },
+      "$comment": "Direct stdio fallback. Talks straight to the SOAS backend at localhost:8000 using the auto-generated service token mirrored at secrets/mcp_token. Use when you don't want to run the MCP container."
+    },
+
+    "soas-stdio-bridge": {
+      "type": "stdio",
       "command": "node",
       "args": ["vscode-extension/mcp-server/index.mjs"],
       "env": {
         "SOAS_BRIDGE_URL": "http://127.0.0.1:19542"
-      }
+      },
+      "$comment": "Legacy stdio bridge that talks to the VS Code extension's local HTTP bridge. Only useful when the SOAS VS Code extension is running and you want webview integration (current-graph, current-wiki state)."
     }
   }
 }

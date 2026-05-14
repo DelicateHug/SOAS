@@ -65,6 +65,7 @@ type NavItem = { to: string; label: string; icon: typeof LayoutDashboard };
 
 const mainItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/dashboards", label: "Custom Dashboards", icon: LayoutDashboard },
   { to: "/incidents", label: "Incidents", icon: AlertTriangle },
   { to: "/cases", label: "Incident Groups", icon: Layers },
   { to: "/issues", label: "Issues", icon: CircleDot },

@@ -41,6 +41,7 @@ from soas_backend.models.service_token import ServiceToken
 from soas_backend.models.wiki_embedding import WikiEmbedding, WikiEmbeddingStatus
 from soas_backend.models.artifact_change import ArtifactChange
 from soas_backend.models.token_usage import TokenUsage
+from soas_backend.models.dashboard import Dashboard, DashboardWidget
 
 __all__ = [
     "AppSetting",
@@ -107,4 +108,6 @@ __all__ = [
     "WikiEmbeddingStatus",
     "ArtifactChange",
     "TokenUsage",
+    "Dashboard",
+    "DashboardWidget",
 ]

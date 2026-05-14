@@ -30,6 +30,9 @@ app.conf.update(
         "soas.cleanup_expired_files": {"queue": "celery"},
         "soas.git_sync": {"queue": "celery"},
         "soas.monitoring_cleanup_snapshots": {"queue": "celery"},
+        "soas.reindex_wiki_page": {"queue": "celery"},
+        "soas.reindex_wiki_all": {"queue": "celery"},
+        "soas.delete_wiki_embeddings": {"queue": "celery"},
     },
     beat_schedule={
         "worker-heartbeat": {
@@ -79,4 +82,5 @@ app.conf.include = [
     "soas_workers.tasks.cleanup_expired_files",
     "soas_workers.tasks.git_sync",
     "soas_workers.tasks.monitoring_cleanup",
+    "soas_workers.tasks.wiki_rag",
 ]

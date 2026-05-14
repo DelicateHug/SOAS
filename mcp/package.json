@@ -1,0 +1,19 @@
+{
+  "name": "soas-mcp-server",
+  "version": "1.0.0",
+  "description": "SOC on a Stick MCP server. Streamable HTTP + stdio transports, talks directly to the SOAS backend with a service token.",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "start:stdio": "node src/server-stdio.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "express": "^4.21.2",
+    "zod": "^3.23.8"
+  }
+}

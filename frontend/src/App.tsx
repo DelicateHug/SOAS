@@ -10,6 +10,9 @@ import { ChangePasswordPage } from "@/pages/auth/ChangePasswordPage";
 
 // Lazy-loaded pages — only fetched when the route is visited
 const DashboardPage = lazy(() => import("@/pages/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const DashboardListPage = lazy(() => import("@/pages/dashboards/DashboardListPage").then((m) => ({ default: m.DashboardListPage })));
+const DashboardDetailPage = lazy(() => import("@/pages/dashboards/DashboardDetailPage").then((m) => ({ default: m.DashboardDetailPage })));
+const DashboardEditPage = lazy(() => import("@/pages/dashboards/DashboardEditPage").then((m) => ({ default: m.DashboardEditPage })));
 const IncidentListPage = lazy(() => import("@/pages/incidents/IncidentListPage").then((m) => ({ default: m.IncidentListPage })));
 const IncidentDetailPage = lazy(() => import("@/pages/incidents/IncidentDetailPage").then((m) => ({ default: m.IncidentDetailPage })));
 const CreateIncidentPage = lazy(() => import("@/pages/incidents/CreateIncidentPage").then((m) => ({ default: m.CreateIncidentPage })));
@@ -91,6 +94,11 @@ export default function App() {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
+
+          {/* Custom dashboards (Phase 2) */}
+          <Route path="dashboards" element={<DashboardListPage />} />
+          <Route path="dashboards/:id" element={<DashboardDetailPage />} />
+          <Route path="dashboards/:id/edit" element={<DashboardEditPage />} />
 
           {/* Incidents */}
           <Route path="incidents" element={<IncidentListPage />} />
