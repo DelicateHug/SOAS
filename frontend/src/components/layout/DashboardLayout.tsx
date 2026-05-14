@@ -42,6 +42,7 @@ import {
   Activity,
   Server,
   AlertOctagon,
+  Network,
 } from "lucide-react";
 
 import "./sidebar.css";
@@ -78,6 +79,7 @@ const mainItems: NavItem[] = [
   { to: "/wiki", label: "Wiki", icon: BookOpen },
   { to: "/code-library", label: "Code Library", icon: Code },
   { to: "/saved-queries", label: "Saved Queries", icon: Search },
+  { to: "/reports", label: "Reports", icon: FileText },
   { to: "/executions", label: "Executions", icon: Terminal },
 ];
 
@@ -101,6 +103,7 @@ const adminItems: NavItem[] = [
   { to: "/admin/slas", label: "SLAs", icon: Activity },
   { to: "/admin/assets", label: "Assets", icon: Server },
   { to: "/admin/danger-zone", label: "Danger Zone", icon: AlertOctagon },
+  { to: "/admin/cluster", label: "Cluster", icon: Network },
   { to: "/admin/user-secrets", label: "User Secrets", icon: KeyRound },
   { to: "/admin/review-changes", label: "Review Changes", icon: GitPullRequest },
   { to: "/monitoring", label: "Monitoring", icon: Heart },

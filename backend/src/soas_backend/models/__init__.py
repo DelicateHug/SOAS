@@ -48,6 +48,13 @@ from soas_backend.models.sla import SLADefinition, SLASnapshot
 from soas_backend.models.asset import Asset, UserRunOptin
 from soas_backend.models.job_tick import JobTick
 from soas_backend.models.ai import AIAction, CaseAIChat
+from soas_backend.models.observability import (
+    InstanceMetricSample,
+    NetworkIOMinutely,
+    PageLoadSample,
+)
+from soas_backend.models.reporting import Report
+from soas_backend.models.wiki_link import WikiPageLink
 
 __all__ = [
     "AppSetting",
@@ -128,4 +135,9 @@ __all__ = [
     "JobTick",
     "AIAction",
     "CaseAIChat",
+    "InstanceMetricSample",
+    "NetworkIOMinutely",
+    "PageLoadSample",
+    "Report",
+    "WikiPageLink",
 ]

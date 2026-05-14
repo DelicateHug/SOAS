@@ -50,6 +50,8 @@ from soas_backend.api.v1.slas import router as slas_router
 from soas_backend.api.v1.assets import router as assets_router
 from soas_backend.api.v1.optins_and_danger_zone import router as danger_zone_router
 from soas_backend.api.v1.ai import router as ai_router
+from soas_backend.api.v1.observability import router as observability_router
+from soas_backend.api.v1.reports import router as reports_router
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth_router)
@@ -100,3 +102,5 @@ v1_router.include_router(slas_router)
 v1_router.include_router(assets_router)
 v1_router.include_router(danger_zone_router)
 v1_router.include_router(ai_router)
+v1_router.include_router(observability_router)
+v1_router.include_router(reports_router)

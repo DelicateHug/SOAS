@@ -18,6 +18,8 @@ const SavedQueriesPage = lazy(() => import("@/pages/saved-queries/SavedQueriesPa
 const AdminSLAPage = lazy(() => import("@/pages/admin/AdminSLAPage").then((m) => ({ default: m.AdminSLAPage })));
 const AdminAssetsPage = lazy(() => import("@/pages/admin/AdminAssetsPage").then((m) => ({ default: m.AdminAssetsPage })));
 const AdminDangerZonePage = lazy(() => import("@/pages/admin/AdminDangerZonePage").then((m) => ({ default: m.AdminDangerZonePage })));
+const AdminClusterPage = lazy(() => import("@/pages/admin/AdminClusterPage").then((m) => ({ default: m.AdminClusterPage })));
+const ReportsPage = lazy(() => import("@/pages/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const IncidentListPage = lazy(() => import("@/pages/incidents/IncidentListPage").then((m) => ({ default: m.IncidentListPage })));
 const IncidentDetailPage = lazy(() => import("@/pages/incidents/IncidentDetailPage").then((m) => ({ default: m.IncidentDetailPage })));
 const CreateIncidentPage = lazy(() => import("@/pages/incidents/CreateIncidentPage").then((m) => ({ default: m.CreateIncidentPage })));
@@ -166,6 +168,8 @@ export default function App() {
           <Route path="admin/slas" element={<AdminSLAPage />} />
           <Route path="admin/assets" element={<AdminAssetsPage />} />
           <Route path="admin/danger-zone" element={<AdminDangerZonePage />} />
+          <Route path="admin/cluster" element={<AdminClusterPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="admin/soas-variables" element={<SOASVariablesPage />} />
           <Route path="admin/incident-variables" element={<IncidentVariablesPage />} />
           <Route path="admin/form-definitions" element={<FormDefinitionsPage />} />

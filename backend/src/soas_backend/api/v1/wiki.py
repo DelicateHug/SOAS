@@ -473,3 +473,36 @@ async def set_wiki_permissions(
         granted_by=current_user.id,
     )
     return {"message": "Permissions updated"}
+
+
+# ------------------------------------------------------------------
+# Phase 10: backlinks
+# ------------------------------------------------------------------
+
+
+@router.get("/{page_id}/backlinks")
+async def page_backlinks(
+    page_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return pages that link to this one via [[slug]] syntax."""
+    from soas_backend.services.wiki_link_service import WikiLinkService
+    return await WikiLinkService(db).backlinks_for(page_id)
+
+
+@router.post("/{page_id}/refresh-links", status_code=204)
+async def refresh_page_links(
+    page_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Force-re-extract backlinks from the current page content.
+
+    Normally the wiki_service should call this on save; this endpoint
+    is provided for one-off rebuilds.
+    """
+    from soas_backend.services.wiki_link_service import WikiLinkService
+    svc = WikiService(db)
+    page = await svc.get(page_id)
+    if not page:
+        raise HTTPException(status_code=404, detail="Wiki page not found")
+    await WikiLinkService(db).refresh_for_page(page_id, page.content)
