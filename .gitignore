@@ -92,6 +92,7 @@ VisualPython/
 *.tmp
 *.temp
 wiki/dhug*
+.claude/scheduled_tasks.lock
 
 # =========================
 # Investigation/scratch (not for commit)
