@@ -12,7 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi.security import HTTPAuthorizationCredentials
 
-from soas_backend.api.deps import get_current_user, get_user_teams, require_permission, security
+from soas_backend.api.deps import (
+    _pick_default_team_id,
+    get_current_user,
+    get_user_teams,
+    require_permission,
+    security,
+)
 from soas_backend.database import get_db
 from soas_backend.models.user import User
 from soas_backend.models.automation import Automation
@@ -155,8 +161,8 @@ async def create_automation(
     db: AsyncSession = Depends(get_db),
 ):
     effective_team_id = body.team_id
-    if effective_team_id is None and user_teams:
-        effective_team_id = UUID(user_teams[0]["id"])
+    if effective_team_id is None:
+        effective_team_id = await _pick_default_team_id(db, current_user.id, user_teams)
 
     svc = AutomationService(db)
     automation = await svc.create(

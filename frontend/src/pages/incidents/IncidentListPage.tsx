@@ -41,7 +41,7 @@ export function IncidentListPage() {
       const params = new URLSearchParams();
       if (filters.severity) params.set("severity", filters.severity);
       if (filters.status) params.set("status", filters.status);
-      params.set("team_id", activeTeamId!);
+      if (activeTeamId) params.set("team_id", activeTeamId);
       params.set("page", String(filters.page));
       params.set("per_page", "25");
       return api.get<PaginatedResponse<IncidentListItem>>(`/incidents?${params}`);

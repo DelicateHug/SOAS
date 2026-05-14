@@ -7,7 +7,13 @@ import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from soas_backend.api.deps import get_current_user, get_redis, get_user_teams, require_permission
+from soas_backend.api.deps import (
+    _pick_default_team_id,
+    get_current_user,
+    get_redis,
+    get_user_teams,
+    require_permission,
+)
 from soas_backend.database import get_db
 from soas_backend.models.user import User
 from soas_backend.services.audit import audit
@@ -175,9 +181,11 @@ async def create_incident(
 
     # Auto-stamp team_id from the caller's primary team if they didn't pick one.
     # Without this, rows land with team_id=NULL and get hidden from the team-filtered list view.
+    # For admins (user_teams is None) we look up their memberships directly so admin-created
+    # rows are also assigned to a team instead of being orphaned.
     effective_team_id = body.team_id
-    if effective_team_id is None and user_teams:
-        effective_team_id = UUID(user_teams[0]["id"])
+    if effective_team_id is None:
+        effective_team_id = await _pick_default_team_id(db, current_user.id, user_teams)
 
     svc = IncidentService(db)
     incident = await svc.create(

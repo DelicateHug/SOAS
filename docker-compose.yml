@@ -52,6 +52,11 @@ services:
       SOAS_AGENT_ID: backend_001
       SOAS_AGENT_ROLE: backend
       SOAS_VERSION: "0.1.0"
+      # AI subprocess: shells out to the `claude` CLI (installed in the image).
+      # If ANTHROPIC_API_KEY is set, the CLI uses it directly. Otherwise the analyst
+      # must `docker compose exec backend claude` once to log in via OAuth — the
+      # session persists in the claude-config named volume.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "8000:8000"
     depends_on:
@@ -63,6 +68,7 @@ services:
       - automations:/app/automations
       - gitsync:/app/data/git-sync
       - ./wiki:/app/wiki:ro
+      - claude_config:/root/.claude
       # The backend writes the MCP token here; the MCP container mounts the same volume
       # read-only and reads it at startup. Sharing a named volume is more portable than
       # the docker-compose `secrets:` block, which only supports static files.
@@ -194,6 +200,7 @@ volumes:
   automations:
   gitsync:
   mcp_secrets:
+  claude_config:
 
 secrets:
   jwt_private_key:

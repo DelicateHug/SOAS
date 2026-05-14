@@ -89,7 +89,7 @@ export function WikiListPage() {
       if (statusFilter) params.set("status", statusFilter);
       if (tagFilter) params.set("tag", tagFilter);
       if (search) params.set("search", search);
-      params.set("team_id", activeTeamId!);
+      if (activeTeamId) params.set("team_id", activeTeamId);
       params.set("page", String(page));
       params.set("per_page", "25");
       return api.get<PaginatedResponse<WikiPageListItem>>(`/wiki?${params}`);

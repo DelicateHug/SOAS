@@ -64,7 +64,7 @@ export function AutomationListPage() {
     queryFn: () => {
       const params = new URLSearchParams();
       if (filters.status) params.set("status", filters.status);
-      params.set("team_id", activeTeamId!);
+      if (activeTeamId) params.set("team_id", activeTeamId);
       params.set("page", String(filters.page));
       params.set("per_page", "25");
       return api.get<PaginatedResponse<AutomationItem>>(`/automations?${params}`);

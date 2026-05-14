@@ -209,6 +209,40 @@ async def get_user_teams(
     return payload.get("teams", [])
 
 
+async def _pick_default_team_id(
+    db: AsyncSession,
+    user_id: UUID,
+    user_teams: list[dict[str, Any]] | None,
+) -> UUID | None:
+    """Pick the team to stamp on a newly-created entity when the request omits one.
+
+    Order of preference:
+      1. The user's first team membership (from JWT for non-admins).
+      2. For admins (whose JWT says ``teams=None``), look up actual memberships
+         in the DB so admin-created rows are also team-stamped.
+      3. The team named ``default`` (created by the bootstrap CLI / migration 042).
+    Returns ``None`` if no team exists at all — caller stores ``NULL``.
+    """
+    if user_teams:
+        return UUID(user_teams[0]["id"])
+
+    from soas_backend.models.team import Team, TeamMembership
+
+    # Admin path: read membership directly
+    rs = await db.execute(
+        select(TeamMembership.team_id)
+        .where(TeamMembership.user_id == user_id)
+        .limit(1)
+    )
+    tid = rs.scalar_one_or_none()
+    if tid is not None:
+        return tid
+
+    # Last resort: the named default team
+    rs = await db.execute(select(Team.id).where(Team.name == "default"))
+    return rs.scalar_one_or_none()
+
+
 def require_permission(resource: str, action: str):
     """FastAPI dependency that enforces RBAC on a route.
 
