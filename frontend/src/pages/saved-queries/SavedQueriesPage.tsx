@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Star, Trash2, Play, Globe, Lock, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
-import { AIQueryChat } from "@/components/ai/AIQueryChat";
+import { AIDraftChat } from "@/components/ai/AIDraftChat";
 
 interface SavedQuery {
   id: string;
@@ -250,7 +250,8 @@ function NewQueryForm({ onSubmit, onCancel }: { onSubmit: (b: Partial<SavedQuery
 
         {showAI && (
           <div className="mt-3">
-            <AIQueryChat
+            <AIDraftChat
+              kind="query"
               initialTarget={queryType}
               onApply={(q) => setQueryText(q)}
             />

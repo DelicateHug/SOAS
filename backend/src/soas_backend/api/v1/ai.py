@@ -331,93 +331,113 @@ class ChatTurn(BaseModel):
     content: str
 
 
-class QueryChatRequest(BaseModel):
-    target_type: str  # "incidents_sql", "leql", "kql", "splunk", "winevent", "sysmon"
+class DraftChatRequest(BaseModel):
+    target_type: str
     messages: list[ChatTurn] = Field(min_length=1, max_length=20)
     model: str | None = "sonnet"
 
 
-_QUERY_CHAT_DIALECT_HINTS: dict[str, str] = {
+# Each dialect supplies (fence_tag, system_dialect_prose). The orchestrator uses
+# fence_tag in the output contract; the UI extracts that exact tag.
+_DRAFT_DIALECTS: dict[str, tuple[str, str]] = {
     "incidents_sql": (
+        "query",
         "Dialect: Postgres SQL against SOAS schema. Tables: incidents(id, title, summary, "
         "severity, status, source, source_ref, tags text[], metadata jsonb, created_at, "
         "team_id), cases(id, title, status, priority, created_at), security_events("
         "event_type, severity, actor_id, target_kind, target_id, created_at, ip_address). "
-        "Read-only SELECTs only. Use ${var} for parameter placeholders."
+        "Read-only SELECTs only. Use ${var} for parameter placeholders.",
     ),
     "kql": (
+        "query",
         "Dialect: Microsoft Defender XDR / Sentinel KQL. Common tables: DeviceLogonEvents, "
         "DeviceProcessEvents, EmailEvents, SigninLogs, AuditLogs, IdentityLogonEvents. "
-        "Use 'project' to limit columns and 'where' before 'project' for performance."
+        "Use 'project' to limit columns and 'where' before 'project' for performance.",
     ),
     "leql": (
+        "query",
         "Dialect: Rapid7 InsightIDR LEQL. Pattern: where(field=\"value\") groupby(field) "
-        "calculate(count). Date filtering uses calendarDay/relativeRange."
+        "calculate(count). Date filtering uses calendarDay/relativeRange.",
     ),
     "splunk": (
+        "query",
         "Dialect: Splunk SPL. Start with index= / sourcetype= filters, pipe to stats/eval/where. "
-        "Use earliest=-24h@h syntax for time windows. Avoid wildcards in the first term."
+        "Use earliest=-24h@h syntax for time windows. Avoid wildcards in the first term.",
     ),
     "winevent": (
+        "query",
         "Dialect: Windows Event Log query (XPath for wevtutil, or KQL for SecurityEvent). "
         "Reference Event IDs (e.g. 4624 logon, 4625 failed logon, 4688 process create, "
-        "4672 special privileges, 4720 user created)."
+        "4672 special privileges, 4720 user created).",
     ),
     "sysmon": (
+        "query",
         "Dialect: Microsoft Sysinternals Sysmon Event IDs. Key events: 1 (process create), "
         "3 (network connect), 7 (image loaded), 10 (process access), 11 (file create), "
         "13 (registry value set), 22 (DNS query). Field reference: Image, CommandLine, "
-        "TargetFilename, DestinationIp, DestinationPort."
+        "TargetFilename, DestinationIp, DestinationPort.",
+    ),
+    "code_python": (
+        "code",
+        "Dialect: Python 3 code block for the SOAS Visual Python compiler. The code runs "
+        "inside a function with these in-scope helpers:\n"
+        "  inputs        - dict of values from connected input ports\n"
+        "  outputs       - dict; write to it to send values to output ports\n"
+        "  globals       - persistent k/v store across nodes in one execution\n"
+        "  get_incident_var(name, default=None) / set_incident_var(name, value)\n"
+        "  get_incident_data() -> dict of all incident metadata\n"
+        "  get_soas_var(name, default=None) / set_soas_var(name, value)\n"
+        "Write straight-line Python that reads `inputs.get(...)`, does its work, and "
+        "writes `outputs[\"name\"] = value`. Keep blocks small and single-purpose. Avoid "
+        "imports that aren't in the stdlib unless the user says they're available.",
     ),
 }
 
 
-@router.post("/query-chat")
-async def query_chat(
-    body: QueryChatRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Multi-turn query-building chat. Returns the assistant message plus the
-    extracted ```query``` block (if the model emitted one) so the UI can fill a
-    "Suggested query" field.
-
-    History is provided by the client (sessionStorage / in-memory). We don't
-    persist transcripts here — the saved-query create flow is the persistence
-    point.
-    """
-    if body.target_type not in _QUERY_CHAT_DIALECT_HINTS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"target_type must be one of {sorted(_QUERY_CHAT_DIALECT_HINTS)}",
-        )
-    dialect = _QUERY_CHAT_DIALECT_HINTS[body.target_type]
-
-    system = (
-        "You are a SIEM hunting expert helping an analyst draft a query. You will have a "
-        "multi-turn conversation: ask clarifying questions when the user's intent is "
-        "ambiguous, then refine the query as they provide more detail.\n\n"
-        f"{dialect}\n\n"
+def _output_contract(fence_tag: str) -> str:
+    """Mandatory output-contract preamble: prose followed by one ``` <tag> block."""
+    return (
         "OUTPUT CONTRACT — MANDATORY ON EVERY REPLY:\n"
         "1. First, write your prose response in plain markdown (use bold, lists, etc.).\n"
-        "2. Then, ALWAYS end with a fenced code block tagged `query` containing your "
-        "current best draft of the query. If you don't have enough detail for a real "
-        "query yet, emit a templated stub with `<PLACEHOLDER>` tokens so the analyst can "
-        "see the shape.\n"
-        "3. The fenced block looks EXACTLY like this (no language other than `query`):\n"
-        "```query\n"
-        "SELECT ... FROM incidents WHERE ...\n"
+        f"2. Then, ALWAYS end with a fenced code block tagged `{fence_tag}` containing "
+        "your current best draft. If you don't have enough detail for a real result yet, "
+        "emit a templated stub with `<PLACEHOLDER>` tokens so the analyst can see the shape.\n"
+        f"3. The fenced block looks EXACTLY like this (no language other than `{fence_tag}`):\n"
+        f"```{fence_tag}\n"
+        "... your draft here ...\n"
         "```\n"
-        "4. The UI parses this fenced block and populates a 'Suggested query' field with "
-        "a copy button, so it MUST appear at the end of every assistant turn — even when "
-        "you're asking a clarifying question."
+        f"4. The UI parses this fenced block and populates a 'Suggested {fence_tag}' field "
+        "with a copy button, so it MUST appear at the end of every assistant turn — even "
+        "when you're asking a clarifying question."
     )
 
-    # Pack the chat history into a single user message with role labels. The CLI's
-    # --print mode is one-shot so we replay the transcript each turn. Keeps the
-    # endpoint stateless on the server side; client owns the history.
+
+async def _run_draft_chat(
+    *,
+    db: AsyncSession,
+    user_id: UUID,
+    target_type: str,
+    messages: list[ChatTurn],
+    model: str | None,
+    caller: str,
+) -> dict[str, Any]:
+    if target_type not in _DRAFT_DIALECTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"target_type must be one of {sorted(_DRAFT_DIALECTS)}",
+        )
+    fence_tag, dialect = _DRAFT_DIALECTS[target_type]
+
+    system = (
+        f"You are an expert helping an analyst draft a {fence_tag}. You will have a "
+        "multi-turn conversation: ask clarifying questions when intent is ambiguous, "
+        "then refine the draft as the user provides more detail.\n\n"
+        f"{dialect}\n\n"
+        f"{_output_contract(fence_tag)}"
+    )
+
     transcript = "\n\n".join(
-        f"### {t.role.upper()}\n{t.content}" for t in body.messages
+        f"### {t.role.upper()}\n{t.content}" for t in messages
     )
     user_prompt = (
         "Continue this conversation. Respond as ASSISTANT and follow the output contract.\n\n"
@@ -429,24 +449,69 @@ async def query_chat(
         result = await runner.run(
             prompt=user_prompt,
             system=system,
-            model=body.model or "sonnet",
-            caller="query_chat",
-            user_id=current_user.id,
+            model=model or "sonnet",
+            caller=caller,
+            user_id=user_id,
         )
     except ClaudeCLIError as e:
         raise HTTPException(status_code=502, detail=str(e))
 
-    # Extract the ```query``` block (last one wins so older drafts get superseded).
     content = result["content"]
-    suggested_query: str | None = None
-    for m in re.finditer(r"```query\s*\n(.*?)```", content, re.DOTALL):
-        suggested_query = m.group(1).strip()
-    # Strip the fenced block from the prose so the UI doesn't double-render it.
-    prose = re.sub(r"```query\s*\n.*?```", "", content, flags=re.DOTALL).strip()
+    suggested: str | None = None
+    pattern = rf"```{re.escape(fence_tag)}\s*\n(.*?)```"
+    for m in re.finditer(pattern, content, re.DOTALL):
+        suggested = m.group(1).strip()
+    prose = re.sub(pattern, "", content, flags=re.DOTALL).strip()
 
     return {
         "content": prose,
-        "suggested_query": suggested_query,
+        "suggested": suggested,
+        "fence_tag": fence_tag,
+        "usage": result["usage"],
+        "model": result["model"],
+    }
+
+
+@router.post("/draft-chat")
+async def draft_chat(
+    body: DraftChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generic multi-turn drafting chat. Used by both the saved-query builder
+    (`incidents_sql`/`kql`/`leql`/`splunk`/`winevent`/`sysmon`) and the code-block
+    editor (`code_python`). Output contract forces a fenced block tagged with the
+    dialect's fence_tag so the UI can extract it into a 'Suggested …' field.
+    """
+    return await _run_draft_chat(
+        db=db,
+        user_id=current_user.id,
+        target_type=body.target_type,
+        messages=body.messages,
+        model=body.model,
+        caller="draft_chat",
+    )
+
+
+@router.post("/query-chat")
+async def query_chat(
+    body: DraftChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Backwards-compat alias for the saved-query builder (returns suggested_query
+    instead of the generic `suggested`)."""
+    result = await _run_draft_chat(
+        db=db,
+        user_id=current_user.id,
+        target_type=body.target_type,
+        messages=body.messages,
+        model=body.model,
+        caller="query_chat",
+    )
+    return {
+        "content": result["content"],
+        "suggested_query": result["suggested"],
         "usage": result["usage"],
         "model": result["model"],
     }

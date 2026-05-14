@@ -1,16 +1,23 @@
 /**
- * Multi-turn query-builder chat.
+ * Generic multi-turn drafting chat.
  *
- * Mounted inside the New Query modal. The analyst types in plain English,
- * the model asks clarifying questions and emits a `query` fenced block at
- * the end of every reply. We extract that block into a "Suggested query"
- * field with copy + "Use this query" buttons; clicking the latter calls
- * `onApply(query)` so the parent form's textarea is filled.
+ * Used by:
+ *   - Saved Queries → New Query modal (`kind="query"`)
+ *   - Code Library → New Code Block modal (`kind="code"`)
+ *
+ * The backend's `/ai/draft-chat` endpoint emits a fenced ```<tag>...``` block
+ * tagged with the dialect's natural language (`query` or `code`). We extract
+ * the latest one and surface it as the "Suggested …" field with Copy and a
+ * "Use this …" button that calls `onApply` so the parent form's textarea is
+ * filled.
  */
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { marked } from "marked";
-import { Send, Loader2, Sparkles, Copy, Check, ArrowDownToLine, AlertCircle, Trash2 } from "lucide-react";
+import {
+  Send, Loader2, Sparkles, Copy, Check, ArrowDownToLine,
+  AlertCircle, Trash2,
+} from "lucide-react";
 import { api } from "@/lib/api";
 
 interface AIStatus {
@@ -20,35 +27,63 @@ interface AIStatus {
 interface ChatTurn {
   role: "user" | "assistant";
   content: string;
-  suggested_query?: string | null;
+  suggested?: string | null;
   ts: number;
 }
 
 interface ChatResponse {
   content: string;
-  suggested_query: string | null;
+  suggested: string | null;
+  fence_tag: string;
   usage: { input_tokens: number; output_tokens: number };
   model: string;
 }
 
-const TARGET_OPTIONS = [
-  { value: "incidents_sql", label: "Postgres / SOAS schema" },
-  { value: "kql", label: "Microsoft Defender / Sentinel (KQL)" },
-  { value: "leql", label: "Rapid7 InsightIDR (LEQL)" },
-  { value: "splunk", label: "Splunk (SPL)" },
-  { value: "winevent", label: "Windows Event Logs" },
-  { value: "sysmon", label: "Sysmon" },
-] as const;
+export type DraftKind = "query" | "code";
 
-interface Props {
-  /** Pre-selected target type from the parent form. */
-  initialTarget?: string;
-  /** Called when the analyst clicks "Use this query". */
-  onApply: (query: string) => void;
+interface TargetOption {
+  value: string;
+  label: string;
 }
 
-export function AIQueryChat({ initialTarget = "incidents_sql", onApply }: Props) {
-  const [target, setTarget] = useState<string>(initialTarget);
+const TARGETS_BY_KIND: Record<DraftKind, TargetOption[]> = {
+  query: [
+    { value: "incidents_sql", label: "Postgres / SOAS schema" },
+    { value: "kql", label: "Microsoft Defender / Sentinel (KQL)" },
+    { value: "leql", label: "Rapid7 InsightIDR (LEQL)" },
+    { value: "splunk", label: "Splunk (SPL)" },
+    { value: "winevent", label: "Windows Event Logs" },
+    { value: "sysmon", label: "Sysmon" },
+  ],
+  code: [{ value: "code_python", label: "Python (Visual Python block)" }],
+};
+
+const SUGGESTED_LABEL: Record<DraftKind, string> = {
+  query: "Suggested query",
+  code: "Suggested code",
+};
+
+const USE_LABEL: Record<DraftKind, string> = {
+  query: "Use this query",
+  code: "Use this code",
+};
+
+const EMPTY_HINT: Record<DraftKind, string> = {
+  query: "Describe what you want to hunt for — e.g. \"failed sign-ins from new IPs in the last 24h\"",
+  code: "Describe what you want the code block to do — e.g. \"normalize an email header and split into domain/local parts\"",
+};
+
+interface Props {
+  kind: DraftKind;
+  /** Pre-selected target type. */
+  initialTarget?: string;
+  /** Called when the analyst clicks "Use this …". */
+  onApply: (text: string) => void;
+}
+
+export function AIDraftChat({ kind, initialTarget, onApply }: Props) {
+  const targets = TARGETS_BY_KIND[kind];
+  const [target, setTarget] = useState<string>(initialTarget ?? targets[0].value);
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
@@ -64,7 +99,7 @@ export function AIQueryChat({ initialTarget = "incidents_sql", onApply }: Props)
 
   const chat = useMutation({
     mutationFn: (history: ChatTurn[]) =>
-      api.post<ChatResponse>("/ai/query-chat", {
+      api.post<ChatResponse>("/ai/draft-chat", {
         target_type: target,
         messages: history.map((m) => ({ role: m.role, content: m.content })),
       }),
@@ -74,14 +109,13 @@ export function AIQueryChat({ initialTarget = "incidents_sql", onApply }: Props)
         {
           role: "assistant",
           content: r.content,
-          suggested_query: r.suggested_query,
+          suggested: r.suggested,
           ts: Date.now(),
         },
       ]);
     },
   });
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, chat.isPending]);
@@ -101,12 +135,13 @@ export function AIQueryChat({ initialTarget = "incidents_sql", onApply }: Props)
     setInput("");
   };
 
-  // Most-recent suggested query (any assistant turn, last one wins)
-  const latestQuery = [...messages].reverse().find((m) => m.role === "assistant" && m.suggested_query)?.suggested_query ?? null;
+  const latest = [...messages]
+    .reverse()
+    .find((m) => m.role === "assistant" && m.suggested)?.suggested ?? null;
 
-  const copyQuery = () => {
-    if (!latestQuery) return;
-    navigator.clipboard.writeText(latestQuery).then(() => {
+  const copyLatest = () => {
+    if (!latest) return;
+    navigator.clipboard.writeText(latest).then(() => {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1200);
     });
@@ -156,22 +191,25 @@ export function AIQueryChat({ initialTarget = "incidents_sql", onApply }: Props)
           margin: 0.4em 0;
         }
       `}</style>
+
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
         <div className="flex items-center gap-2 text-xs font-medium">
           <Sparkles size={14} className="text-[var(--color-primary)]" />
           Build with AI
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            className="px-2 py-1 text-xs border border-[var(--color-border)] rounded bg-[var(--color-surface)] text-[var(--color-text)]"
-            disabled={chat.isPending}
-          >
-            {TARGET_OPTIONS.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </select>
+          {targets.length > 1 && (
+            <select
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              className="px-2 py-1 text-xs border border-[var(--color-border)] rounded bg-[var(--color-surface)] text-[var(--color-text)]"
+              disabled={chat.isPending}
+            >
+              {targets.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          )}
           {messages.length > 0 && (
             <button
               onClick={reset}
@@ -192,16 +230,15 @@ export function AIQueryChat({ initialTarget = "incidents_sql", onApply }: Props)
         </div>
       )}
 
-      {/* Suggested query */}
-      {latestQuery && (
+      {latest && (
         <div className="border-b border-[var(--color-border)] px-3 py-2 bg-[var(--color-bg)]">
           <div className="flex items-center justify-between mb-1">
             <div className="text-[10px] uppercase tracking-wide text-[var(--color-text-muted)] font-semibold">
-              Suggested query
+              {SUGGESTED_LABEL[kind]}
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={copyQuery}
+                onClick={copyLatest}
                 className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
                 title="Copy to clipboard"
               >
@@ -209,32 +246,28 @@ export function AIQueryChat({ initialTarget = "incidents_sql", onApply }: Props)
                 {copied ? "Copied" : "Copy"}
               </button>
               <button
-                onClick={() => onApply(latestQuery)}
+                onClick={() => onApply(latest)}
                 className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded bg-[var(--color-primary)] text-white hover:opacity-90"
-                title="Fill the Query field below"
+                title={`Fill the ${kind} field`}
               >
                 <ArrowDownToLine size={11} />
-                Use this query
+                {USE_LABEL[kind]}
               </button>
             </div>
           </div>
           <pre className="font-mono text-[11px] whitespace-pre-wrap text-[var(--color-text)] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-2 py-1.5 max-h-40 overflow-auto">
-            {latestQuery}
+            {latest}
           </pre>
         </div>
       )}
 
-      {/* Transcript */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-3 py-2 space-y-3 min-h-[180px] max-h-[40vh]"
       >
         {messages.length === 0 && !chat.isPending && (
-          <div className="text-xs text-[var(--color-text-muted)] text-center py-6">
-            Describe what you want to hunt for — e.g.&nbsp;
-            <span className="italic">
-              "successful logins from new IPs in the last 24h"
-            </span>
+          <div className="text-xs text-[var(--color-text-muted)] text-center py-6 italic">
+            {EMPTY_HINT[kind]}
           </div>
         )}
         {messages.map((m, i) =>
@@ -273,7 +306,6 @@ export function AIQueryChat({ initialTarget = "incidents_sql", onApply }: Props)
         )}
       </div>
 
-      {/* Input */}
       <div className="border-t border-[var(--color-border)] p-2 flex gap-2 bg-[var(--color-bg)]">
         <textarea
           value={input}

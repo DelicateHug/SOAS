@@ -4,7 +4,7 @@
  */
 
 import { useState, useRef } from "react";
-import { X } from "lucide-react";
+import { X, Sparkles } from "lucide-react";
 import {
   useCreateBlock,
   useUpdateBlock,
@@ -15,7 +15,7 @@ import { SnippetToolbar } from "./components/SnippetToolbar";
 import { PortBuilder, type PortDefinition } from "./components/PortBuilder";
 import { NodePreview } from "./components/NodePreview";
 import { EXAMPLE_TEMPLATES } from "./components/ExampleCodeTemplates";
-import { AIActionsBar } from "@/components/ai/AIActionsBar";
+import { AIDraftChat } from "@/components/ai/AIDraftChat";
 
 interface CodeBlockEditorProps {
   block?: CodeLibraryBlock;
@@ -75,6 +75,8 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
   const lastTemplateRef = useRef<string>(isEditing ? "" : EXAMPLE_TEMPLATES[initialLang] || "");
 
   const editorRef = useRef<CodeEditorPaneHandle>(null);
+
+  const [showAI, setShowAI] = useState(false);
 
   const createBlock = useCreateBlock();
   const updateBlock = useUpdateBlock();
@@ -161,13 +163,30 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
           </div>
         </div>
 
-        {/* AI actions row (auto-hides if no actions registered) */}
-        <div className="px-4 py-2 border-b border-[var(--color-border)]">
-          <AIActionsBar
-            pageKey="code_block_editor"
-            context={{ name, language: "python", is_editing: isEditing }}
-          />
+        {/* AI toggle row */}
+        <div className="px-4 py-2 border-b border-[var(--color-border)] flex items-center justify-between">
+          <div className="text-xs text-[var(--color-text-muted)]">
+            {showAI ? "AI assistant open — describe what you want; click Use this code to insert it." : "Need help? Ask AI to draft or refine the code."}
+          </div>
+          <button
+            onClick={() => setShowAI((v) => !v)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] text-[var(--color-primary)]"
+            title="Toggle AI chat"
+          >
+            <Sparkles className="w-3 h-3" />
+            {showAI ? "Hide AI" : "Build with AI"}
+          </button>
         </div>
+
+        {showAI && (
+          <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/40">
+            <AIDraftChat
+              kind="code"
+              initialTarget="code_python"
+              onApply={(c) => setCode(c)}
+            />
+          </div>
+        )}
 
         {/* Body: two-column layout */}
         <div className="flex-1 flex min-h-0">
