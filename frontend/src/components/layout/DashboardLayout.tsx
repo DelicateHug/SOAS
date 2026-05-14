@@ -37,6 +37,7 @@ import {
   GitBranch,
   GitPullRequest,
   UsersRound,
+  Tag,
 } from "lucide-react";
 
 import "./sidebar.css";
@@ -91,6 +92,7 @@ const adminItems: NavItem[] = [
   { to: "/admin/webhooks", label: "Webhooks", icon: Radio },
   { to: "/admin/webhook-sources", label: "Webhook Sources", icon: Unplug },
   { to: "/admin/normalization", label: "Normalization", icon: SlidersHorizontal },
+  { to: "/admin/alert-categories", label: "Alert Categories", icon: Tag },
   { to: "/admin/user-secrets", label: "User Secrets", icon: KeyRound },
   { to: "/admin/review-changes", label: "Review Changes", icon: GitPullRequest },
   { to: "/monitoring", label: "Monitoring", icon: Heart },

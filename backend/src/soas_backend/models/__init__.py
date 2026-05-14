@@ -42,6 +42,7 @@ from soas_backend.models.wiki_embedding import WikiEmbedding, WikiEmbeddingStatu
 from soas_backend.models.artifact_change import ArtifactChange
 from soas_backend.models.token_usage import TokenUsage
 from soas_backend.models.dashboard import Dashboard, DashboardWidget
+from soas_backend.models.alert_category import AlertCategory, AlertCategoryRule, IncidentTemplate
 
 __all__ = [
     "AppSetting",
@@ -110,4 +111,7 @@ __all__ = [
     "TokenUsage",
     "Dashboard",
     "DashboardWidget",
+    "AlertCategory",
+    "AlertCategoryRule",
+    "IncidentTemplate",
 ]

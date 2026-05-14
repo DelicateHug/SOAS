@@ -44,6 +44,12 @@ class Incident(Base):
     team_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
     )
+    # Phase 3 — alert classifier output
+    category_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Phase 3 — entity-dedup parent link (12h cluster)
+    parent_incident_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("incidents.id", ondelete="SET NULL"), nullable=True
+    )
 
     lead = relationship("User", foreign_keys=[lead_id])
     team = relationship("Team", foreign_keys=[team_id])
@@ -72,6 +78,8 @@ class Incident(Base):
         Index("idx_incidents_status", "status"),
         Index("idx_incidents_created", created_at.desc()),
         Index("idx_incidents_team_id", "team_id"),
+        Index("idx_incidents_category", "category_key"),
+        Index("idx_incidents_parent", "parent_incident_id"),
     )
 
 

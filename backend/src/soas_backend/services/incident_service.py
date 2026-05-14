@@ -47,13 +47,25 @@ class IncidentService:
         self.db.add(incident)
         await self.db.flush()
 
+        # Phase 3 pre-processing pipeline: classify, dedup, template-merge.
+        # Best-effort — errors are logged inside the pipeline and never fail
+        # the create.
+        try:
+            from soas_backend.services.incident_preprocessor import IncidentPreprocessor
+
+            await IncidentPreprocessor(self.db).run(incident)
+            await self.db.flush()
+        except Exception:  # noqa: BLE001
+            # Pipeline already swallows + logs each step; this is belt-and-braces.
+            pass
+
         # Auto-create timeline entry
         self.db.add(
             TimelineEntry(
                 incident_id=incident.id,
                 entry_type="created",
                 content=f"Incident created: {title}",
-                details={"severity": severity},
+                details={"severity": severity, "category_key": incident.category_key},
                 created_by=created_by,
             )
         )
