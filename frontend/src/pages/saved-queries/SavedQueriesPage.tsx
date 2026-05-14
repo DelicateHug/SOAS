@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Star, Trash2, Play, Globe, Lock } from "lucide-react";
 import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
+import { AIActionsBar } from "@/components/ai/AIActionsBar";
 
 interface SavedQuery {
   id: string;
@@ -88,6 +89,8 @@ export function SavedQueriesPage() {
           New query
         </button>
       </div>
+
+      <AIActionsBar pageKey="saved_queries" context={{}} />
 
       {showNew && <NewQueryForm onSubmit={(b) => create.mutate(b)} onCancel={() => setShowNew(false)} />}
 

@@ -10,6 +10,7 @@ import {
 import { ArrowLeft, ChevronDown, X } from "lucide-react";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
+import { AIActionsBar } from "@/components/ai/AIActionsBar";
 import { StartWorkButton } from "@/components/work/StartWorkButton";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { TimelineTab } from "./tabs/TimelineTab";
@@ -195,6 +196,13 @@ export function CaseDetailPage() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mb-3">
+        <AIActionsBar
+          pageKey="case_detail"
+          context={{ case_id: caseData.id, title: caseData.title, status: caseData.status, priority: caseData.priority }}
+        />
       </div>
 
       {/* Title + badges */}

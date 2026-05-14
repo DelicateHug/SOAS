@@ -27,6 +27,7 @@ import { api } from "@/lib/api";
 import type { ChangeRequestDetail } from "@/types/api";
 import { CodeBlockEditor } from "./CodeBlockEditor";
 import { CodeBlockPermissionsDialog } from "./components/CodeBlockPermissionsDialog";
+import { AIActionsBar } from "@/components/ai/AIActionsBar";
 
 const languageColors: Record<string, string> = {
   python: "bg-blue-100 text-blue-800",
@@ -85,6 +86,10 @@ export function CodeLibraryPage() {
           <Plus className="w-4 h-4" />
           New Block
         </button>
+      </div>
+
+      <div className="mb-3">
+        <AIActionsBar pageKey="code_library" context={{ language }} />
       </div>
 
       {/* Filters */}

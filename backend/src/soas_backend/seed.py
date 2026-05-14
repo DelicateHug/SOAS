@@ -27,7 +27,7 @@ from soas_backend.services.wiki_service import WikiService
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SEED_VERSION = "4"
+CURRENT_SEED_VERSION = "5"
 
 
 # ---------------------------------------------------------------------------
@@ -86,6 +86,14 @@ async def seed_defaults() -> None:
                 await seed_default_dashboard(db)
             except Exception:
                 logger.exception("seed: default dashboard seed failed (non-fatal)")
+
+            # Phase 12 follow-up: default AI actions (one or two per page surface).
+            # The AIActionsBar auto-hides when nothing is registered, so seeding is safe.
+            try:
+                from soas_backend.seed_ai_actions import seed_ai_actions
+                await seed_ai_actions(db)
+            except Exception:
+                logger.exception("seed: AI actions seed failed (non-fatal)")
 
             # Mark seed version
             if setting:

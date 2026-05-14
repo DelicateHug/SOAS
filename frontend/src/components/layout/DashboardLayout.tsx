@@ -302,22 +302,22 @@ export function DashboardLayout() {
           )}
         </nav>
 
-        <div className="xs-user-block">
-          <div className="relative shrink-0">
-            <div className="xs-user-avatar">{userInitial}</div>
-            {collapsed && (
-              <span
-                className={cn(
-                  "absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2",
-                  urgencyDotColors[urgency],
-                )}
-                style={{ borderColor: "var(--color-sidebar-bg)" }}
-                title={`Session: ${remainingText}`}
-              />
-            )}
-          </div>
-          {!collapsed && (
-            <>
+        <div className={cn("xs-user-block", !collapsed && "flex-col items-stretch gap-2")}>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="relative shrink-0">
+              <div className="xs-user-avatar">{userInitial}</div>
+              {collapsed && (
+                <span
+                  className={cn(
+                    "absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2",
+                    urgencyDotColors[urgency],
+                  )}
+                  style={{ borderColor: "var(--color-sidebar-bg)" }}
+                  title={`Session: ${remainingText}`}
+                />
+              )}
+            </div>
+            {!collapsed && (
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="xs-user-name" title={user?.display_name ?? ""}>
                   {user?.display_name ?? "Unknown"}
@@ -327,32 +327,34 @@ export function DashboardLayout() {
                   <span>{userRole} · {remainingText}</span>
                 </div>
               </div>
-              <div className="xs-user-actions inline-flex items-center gap-1">
-                <button
-                  onClick={toggleTheme}
-                  className="p-1 text-[var(--color-sidebar-fg-muted)] hover:text-white"
-                  title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-                  aria-label="Toggle theme"
-                >
-                  {theme === "dark" ? <Sun size={12} /> : <Moon size={12} />}
-                </button>
-                <button
-                  onClick={refreshSession}
-                  disabled={isRefreshing}
-                  className="p-1 text-[var(--color-sidebar-fg-muted)] hover:text-white disabled:opacity-50"
-                  title="Refresh session"
-                >
-                  <RefreshCw size={12} className={isRefreshing ? "animate-spin" : ""} />
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="p-1 text-[var(--color-sidebar-fg-muted)] hover:text-white"
-                  title="Logout"
-                >
-                  <LogOut size={12} />
-                </button>
-              </div>
-            </>
+            )}
+          </div>
+          {!collapsed && (
+            <div className="xs-user-actions inline-flex items-center justify-end gap-2 pt-1 border-t border-[var(--color-sidebar-border)]">
+              <button
+                onClick={toggleTheme}
+                className="p-1.5 rounded text-[var(--color-sidebar-fg-muted)] hover:text-white hover:bg-white/5"
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                aria-label="Toggle theme"
+              >
+                {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+              </button>
+              <button
+                onClick={refreshSession}
+                disabled={isRefreshing}
+                className="p-1.5 rounded text-[var(--color-sidebar-fg-muted)] hover:text-white hover:bg-white/5 disabled:opacity-50"
+                title="Refresh session"
+              >
+                <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded text-[var(--color-sidebar-fg-muted)] hover:text-white hover:bg-white/5"
+                title="Logout"
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
           )}
         </div>
       </aside>

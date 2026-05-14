@@ -42,7 +42,8 @@ def monitoring_persist_snapshots():
                 sa.text(
                     "INSERT INTO health_metric_snapshots "
                     "(id, component_type, component_id, status, metrics, recorded_at) "
-                    "VALUES (:id, :component_type, :component_id, :status, :metrics::jsonb, :recorded_at::timestamptz)"
+                    "VALUES (CAST(:id AS uuid), :component_type, :component_id, :status, "
+                    "CAST(:metrics AS jsonb), CAST(:recorded_at AS timestamptz))"
                 ),
                 snapshots,
             )

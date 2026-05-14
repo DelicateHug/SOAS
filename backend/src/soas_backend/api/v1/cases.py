@@ -143,8 +143,13 @@ async def create_case(
     body: CaseCreate,
     current_user: User = Depends(get_current_user),
     _: dict = Depends(require_permission("case", "create")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
+    effective_team_id = body.team_id
+    if effective_team_id is None and user_teams:
+        effective_team_id = UUID(user_teams[0]["id"])
+
     svc = CaseService(db)
     case = await svc.create(
         title=body.title,
@@ -153,7 +158,7 @@ async def create_case(
         priority=body.priority,
         tags=body.tags,
         metadata=body.metadata,
-        team_id=body.team_id,
+        team_id=effective_team_id,
     )
     case = await svc.get(case.id)
     return CaseRead(

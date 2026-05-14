@@ -15,6 +15,7 @@ import { SnippetToolbar } from "./components/SnippetToolbar";
 import { PortBuilder, type PortDefinition } from "./components/PortBuilder";
 import { NodePreview } from "./components/NodePreview";
 import { EXAMPLE_TEMPLATES } from "./components/ExampleCodeTemplates";
+import { AIActionsBar } from "@/components/ai/AIActionsBar";
 
 interface CodeBlockEditorProps {
   block?: CodeLibraryBlock;
@@ -158,6 +159,14 @@ export function CodeBlockEditor({ block, onClose }: CodeBlockEditorProps) {
               <X className="w-4 h-4" />
             </button>
           </div>
+        </div>
+
+        {/* AI actions row (auto-hides if no actions registered) */}
+        <div className="px-4 py-2 border-b border-[var(--color-border)]">
+          <AIActionsBar
+            pageKey="code_block_editor"
+            context={{ name, language: "python", is_editing: isEditing }}
+          />
         </div>
 
         {/* Body: two-column layout */}

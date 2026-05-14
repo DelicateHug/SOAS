@@ -10,6 +10,7 @@ import { useTeamStore } from "@/stores/teamStore";
 import { useEntityDraft } from "@/hooks/useEntityDraft";
 import { useDraftSave } from "@/hooks/useDraftSave";
 import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
+import { AIActionsBar } from "@/components/ai/AIActionsBar";
 import { TagInput } from "@/components/ui/TagInput";
 import { TierSelector } from "@/components/ui/TierSelector";
 import { useEntityVersion } from "@/hooks/useEntityVersion";
@@ -307,6 +308,12 @@ export function WikiPageEditor() {
 
   return (
     <div>
+      <div className="mb-3">
+        <AIActionsBar
+          pageKey="wiki_page_editor"
+          context={{ slug, title, is_edit: isEdit }}
+        />
+      </div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">

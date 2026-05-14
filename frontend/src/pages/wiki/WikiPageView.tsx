@@ -9,6 +9,7 @@ import { Edit, Clock, Tag, ChevronRight, BookOpen, Trash2, Users } from "lucide-
 import { DynamicIcon } from "@/components/ui/DynamicIcon";
 import { NodePreview } from "@/components/wiki/NodePreview";
 import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
+import { AIActionsBar } from "@/components/ai/AIActionsBar";
 import type { WikiPage, WikiBreadcrumb, WikiPageListItem, PaginatedResponse } from "@/types/api";
 
 export function WikiPageView() {
@@ -89,6 +90,12 @@ export function WikiPageView() {
         </nav>
       )}
 
+      <div className="mb-3">
+        <AIActionsBar
+          pageKey="wiki_page_view"
+          context={{ slug: page.slug, title: page.title, tags: page.tags }}
+        />
+      </div>
       {/* Header */}
       <div className="flex items-start justify-between mb-0.5">
         <div>

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Plus, Download, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
+import { AIActionsBar } from "@/components/ai/AIActionsBar";
 
 interface Report {
   id: string;
@@ -61,6 +62,8 @@ export function ReportsPage() {
           </p>
         </div>
       </div>
+
+      <AIActionsBar pageKey="reports" context={{ active_report_id: active?.id ?? null }} />
 
       <Card>
         <CardBody>

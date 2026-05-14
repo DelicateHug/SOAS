@@ -66,8 +66,11 @@ async def _mint_bootstrap_cert(username: str) -> int:
 
 
 async def _create_admin(username: str, email: str, password: str) -> int:
+    from sqlalchemy import text, update
+
     from soas_backend.auth.password import hash_password
     from soas_backend.models.role import Role, UserRole
+    from soas_backend.models.team import Team, TeamMembership
     from soas_backend.models.user import User
 
     async with async_session() as db:
@@ -93,8 +96,50 @@ async def _create_admin(username: str, email: str, password: str) -> int:
             print("warning: 'admin' role not found; user created without role", file=sys.stderr)
         else:
             db.add(UserRole(user_id=user.id, role_id=admin_role.id))
+
+        # Ensure the default team exists. Migration 042 skips this step when
+        # the DB was empty at migration time (no admin to set as creator),
+        # so we create it lazily here on first admin bootstrap.
+        rs = await db.execute(select(Team).where(Team.name == "default"))
+        default_team = rs.scalar_one_or_none()
+        if default_team is None:
+            default_team = Team(
+                name="default",
+                display_name="Default Team",
+                description="Default team for all users",
+                is_default=True,
+                created_by=user.id,
+            )
+            db.add(default_team)
+            await db.flush()
+            print(f"Created default team {default_team.id}")
+
+        # Add admin to the default team as owner.
+        viewer_role_id = admin_role.id if admin_role else None
+        if viewer_role_id is None:
+            rs = await db.execute(select(Role).where(Role.name == "viewer"))
+            vr = rs.scalar_one_or_none()
+            viewer_role_id = vr.id if vr else None
+        if viewer_role_id is not None:
+            db.add(
+                TeamMembership(
+                    user_id=user.id,
+                    team_id=default_team.id,
+                    team_role="owner",
+                    added_by=user.id,
+                )
+            )
+
+        # Backfill team_id on any existing rows so they appear in the default-team view.
+        for table in ("incidents", "cases", "automations"):
+            await db.execute(
+                text(f"UPDATE {table} SET team_id = :tid WHERE team_id IS NULL"),
+                {"tid": default_team.id},
+            )
+
         await db.commit()
         print(f"Created user {user.username} ({user.id}) with admin role")
+        print(f"Added to default team {default_team.id} as owner")
         return 0
 
 

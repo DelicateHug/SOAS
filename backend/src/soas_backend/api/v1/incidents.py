@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from soas_backend.api.deps import get_current_user, get_redis, get_user_teams, require_permission
 from soas_backend.database import get_db
 from soas_backend.models.user import User
+from soas_backend.services.audit import audit
 from soas_backend.services.incident_cache import IncidentCacheService
 from soas_backend.services.incident_service import IncidentService
 from soas_backend.services.normalization_service import NormalizationService
@@ -148,6 +149,7 @@ async def create_incident(
     body: IncidentCreate,
     current_user: User = Depends(get_current_user),
     _: dict = Depends(require_permission("incident", "create")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
     redis: aioredis.Redis = Depends(get_redis),
 ):
@@ -171,6 +173,12 @@ async def create_incident(
 
     effective_tags = list(set(body.tags + norm_tags))
 
+    # Auto-stamp team_id from the caller's primary team if they didn't pick one.
+    # Without this, rows land with team_id=NULL and get hidden from the team-filtered list view.
+    effective_team_id = body.team_id
+    if effective_team_id is None and user_teams:
+        effective_team_id = UUID(user_teams[0]["id"])
+
     svc = IncidentService(db)
     incident = await svc.create(
         title=body.title,
@@ -182,7 +190,7 @@ async def create_incident(
         tags=effective_tags,
         metadata=body.metadata,
         raw_event=body.raw_event,
-        team_id=body.team_id,
+        team_id=effective_team_id,
     )
     # Re-fetch with relationships
     incident = await svc.get(incident.id)

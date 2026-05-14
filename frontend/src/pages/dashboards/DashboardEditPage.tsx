@@ -7,6 +7,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import type { Dashboard, DashboardWidgetData, WidgetCreate } from "./types";
 import { SOURCES, TIME_RANGES, WIDGET_TYPES } from "./types";
 import { WidgetRenderer } from "./WidgetRenderer";
+import { AIActionsBar } from "@/components/ai/AIActionsBar";
 
 export function DashboardEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -62,6 +63,11 @@ export function DashboardEditPage() {
           </div>
         </div>
       </div>
+
+      <AIActionsBar
+        pageKey="dashboard_edit"
+        context={{ dashboard_id: dash.id, name: dash.name, widget_count: dash.widgets.length }}
+      />
 
       {/* Dashboard meta */}
       <Card>

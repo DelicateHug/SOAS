@@ -27,6 +27,10 @@ interface StringSetting {
   multiline?: boolean;
 }
 
+// Kept intentionally minimal: tenant + client id + redirect + secret.
+// Group-mapping and CAE knobs live in app_settings with sane defaults
+// but aren't shown here — the goal is "authenticate the user, fetch email + photo",
+// not surface every advanced toggle.
 const STRING_KEYS: StringSetting[] = [
   {
     key: "auth_oidc_tenant",
@@ -39,18 +43,7 @@ const STRING_KEYS: StringSetting[] = [
     label: "Redirect URI registered with Entra",
     placeholder: "https://soas.example.com/api/v1/auth/oidc/callback",
   },
-  {
-    key: "auth_oidc_group_mappings",
-    label: "Entra group → SOAS role mappings (JSON)",
-    placeholder: '{"<entra_oid>": "soc_manager"}',
-    multiline: true,
-  },
 ];
-
-const CAE_KEYS = [
-  { key: "auth_cae_cache_seconds", label: "CAE cache TTL (seconds)", placeholder: "30" },
-  { key: "auth_cae_strict", label: "Fail closed if Entra CAE unreachable (true/false)", placeholder: "true", boolean: true },
-] as const;
 
 export function AdminAuthSettingsPanel() {
   const qc = useQueryClient();
@@ -193,29 +186,6 @@ export function AdminAuthSettingsPanel() {
             </div>
           </div>
 
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
-              Continuous Access Evaluation (CAE)
-            </div>
-            <div className="space-y-2">
-              {CAE_KEYS.map((c) => (
-                <div key={c.key}>
-                  <label className="block text-[11px] text-[var(--color-text-muted)] mb-1">
-                    {c.label}
-                  </label>
-                  <input
-                    defaultValue={settings[c.key] || ""}
-                    onBlur={(e) => {
-                      const v = e.target.value;
-                      if (v !== (settings[c.key] || "")) update.mutate({ key: c.key, value: v });
-                    }}
-                    placeholder={c.placeholder}
-                    className="w-full px-2 py-1.5 text-sm border border-[var(--color-border)] rounded bg-[var(--color-surface)] font-mono"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </CardBody>
     </Card>

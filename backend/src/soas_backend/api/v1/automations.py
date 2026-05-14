@@ -151,8 +151,13 @@ async def create_automation(
     body: AutomationCreate,
     current_user: User = Depends(get_current_user),
     _: dict = Depends(require_permission("automation", "create")),
+    user_teams: list | None = Depends(get_user_teams),
     db: AsyncSession = Depends(get_db),
 ):
+    effective_team_id = body.team_id
+    if effective_team_id is None and user_teams:
+        effective_team_id = UUID(user_teams[0]["id"])
+
     svc = AutomationService(db)
     automation = await svc.create(
         name=body.name,
@@ -162,7 +167,7 @@ async def create_automation(
         parameters=[p.model_dump() for p in body.parameters] if body.parameters else [],
         timeout_seconds=body.timeout_seconds,
         tags=body.tags,
-        team_id=body.team_id,
+        team_id=effective_team_id,
     )
     automation = await svc.get(automation.id)
     return AutomationRead(

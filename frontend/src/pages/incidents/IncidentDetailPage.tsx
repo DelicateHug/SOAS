@@ -15,6 +15,7 @@ import { ChatTab } from "./tabs/ChatTab";
 import { VariablesTab } from "./tabs/VariablesTab";
 import { FormsTab } from "./tabs/FormsTab";
 import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
+import { AIActionsBar } from "@/components/ai/AIActionsBar";
 
 const tabs = [
   { id: "overview", label: "Overview" },
@@ -131,6 +132,14 @@ export function IncidentDetailPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* AI actions row (auto-hides if no actions registered for this page key) */}
+        <div className="mb-3">
+          <AIActionsBar
+            pageKey="incident_detail"
+            context={{ incident_id: incident.id, title: incident.title, severity: incident.severity, status: incident.status, tags: incident.tags }}
+          />
         </div>
 
         {/* Title + badges */}

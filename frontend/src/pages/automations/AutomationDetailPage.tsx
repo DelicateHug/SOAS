@@ -13,6 +13,7 @@ import { VersionManager } from "@/components/VersionManager";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { DocumentationViewer } from "@/components/DocumentationViewer";
 import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
+import { AIActionsBar } from "@/components/ai/AIActionsBar";
 import "@/components/MarkdownEditor.css";
 
 // ---------------------------------------------------------------------------
@@ -178,6 +179,12 @@ export function AutomationDetailPage() {
               onVersionRestored={() => {
                 queryClient.invalidateQueries({ queryKey: ["automation", id] });
               }}
+            />
+          </div>
+          <div className="mb-3">
+            <AIActionsBar
+              pageKey="automation_detail"
+              context={{ automation_id: automation.id, name: automation.name, status: automation.status, tags: automation.tags }}
             />
           </div>
           <div className="flex items-center gap-2">
