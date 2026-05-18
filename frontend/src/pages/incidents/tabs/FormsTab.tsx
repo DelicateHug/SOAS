@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { WriteGuard } from "@/components/work/WriteGuard";
 import type {
   FormDefinition,
   FormField,
@@ -206,18 +207,21 @@ export function FormsTab({ incidentId }: Props) {
         title="Forms"
         action={
           !showSubmitForm ? (
-            <button
-              onClick={() => setShowSubmitForm(true)}
-              className="px-3 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-xs font-medium"
-            >
-              Submit Form
-            </button>
+            <WriteGuard blockedTitle="Start work on this incident to submit forms">
+              <button
+                onClick={() => setShowSubmitForm(true)}
+                className="px-3 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-xs font-medium"
+              >
+                Submit Form
+              </button>
+            </WriteGuard>
           ) : undefined
         }
       />
 
       {/* Submit Form Panel */}
       {showSubmitForm && (
+        <WriteGuard blockedTitle="Start work on this incident to submit forms">
         <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-4">
           {/* Form Definition Selector */}
           <div>
@@ -282,6 +286,7 @@ export function FormsTab({ incidentId }: Props) {
             </button>
           </div>
         </div>
+        </WriteGuard>
       )}
 
       {/* Submissions List */}

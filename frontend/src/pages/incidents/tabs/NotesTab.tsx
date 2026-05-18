@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { WriteGuard } from "@/components/work/WriteGuard";
 import type { IncidentNote } from "@/types/api";
 
 interface Props {
@@ -76,41 +77,45 @@ export function NotesTab({ incidentId }: Props) {
         title="Notes"
         action={
           !showForm ? (
-            <button
-              onClick={() => setShowForm(true)}
-              className="px-3 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-xs font-medium"
-            >
-              Add Note
-            </button>
+            <WriteGuard blockedTitle="Start work on this incident to add notes">
+              <button
+                onClick={() => setShowForm(true)}
+                className="px-3 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-xs font-medium"
+              >
+                Add Note
+              </button>
+            </WriteGuard>
           ) : undefined
         }
       />
 
       {/* New note form */}
       {showForm && (
-        <div className="rounded-lg border border-[var(--color-border)] p-4">
-          <textarea
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Write your note..."
-            className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm min-h-24 resize-y bg-transparent"
-          />
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={() => newNote.trim() && createNote.mutate(newNote.trim())}
-              disabled={!newNote.trim() || createNote.isPending}
-              className="px-4 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
-            >
-              Save
-            </button>
-            <button
-              onClick={() => { setShowForm(false); setNewNote(""); }}
-              className="px-4 py-1.5 border border-[var(--color-border)] rounded-md text-sm"
-            >
-              Cancel
-            </button>
+        <WriteGuard blockedTitle="Start work on this incident to add notes">
+          <div className="rounded-lg border border-[var(--color-border)] p-4">
+            <textarea
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="Write your note..."
+              className="w-full px-3 py-2 border border-[var(--color-border)] rounded-md text-sm min-h-24 resize-y bg-transparent"
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => newNote.trim() && createNote.mutate(newNote.trim())}
+                disabled={!newNote.trim() || createNote.isPending}
+                className="px-4 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => { setShowForm(false); setNewNote(""); }}
+                className="px-4 py-1.5 border border-[var(--color-border)] rounded-md text-sm"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </div>
+        </WriteGuard>
       )}
 
       {/* Notes list */}

@@ -7,11 +7,14 @@ import {
   formatDate,
   caseStatusColors,
 } from "@/lib/utils";
-import { ArrowLeft, ChevronDown, X } from "lucide-react";
+import { ChevronLeft, ChevronDown, X, Clock } from "lucide-react";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
 import { AIActionsBar } from "@/components/ai/AIActionsBar";
 import { StartWorkButton } from "@/components/work/StartWorkButton";
+import { WorkGateProvider, useWorkGate } from "@/components/work/WorkGateContext";
+import { WorkGateBanner } from "@/components/work/WorkGateBanner";
+import { WriteGuard } from "@/components/work/WriteGuard";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { TimelineTab } from "./tabs/TimelineTab";
 import { ChatTab } from "./tabs/ChatTab";
@@ -163,227 +166,345 @@ export function CaseDetailPage() {
   };
 
   return (
-    <div className="max-w-5xl">
-      {/* Breadcrumb + status transition */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+    <WorkGateProvider caseId={id!}>
+      <CaseLayout
+        id={id!}
+        caseData={caseData}
+        users={users?.data || []}
+        available={available}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        editingTitle={editingTitle}
+        setEditingTitle={setEditingTitle}
+        titleDraft={titleDraft}
+        setTitleDraft={setTitleDraft}
+        editingDesc={editingDesc}
+        setEditingDesc={setEditingDesc}
+        descDraft={descDraft}
+        setDescDraft={setDescDraft}
+        showPriorityDropdown={showPriorityDropdown}
+        setShowPriorityDropdown={setShowPriorityDropdown}
+        showLeadDropdown={showLeadDropdown}
+        setShowLeadDropdown={setShowLeadDropdown}
+        pendingStatus={pendingStatus}
+        setPendingStatus={setPendingStatus}
+        cascadeChecked={cascadeChecked}
+        setCascadeChecked={setCascadeChecked}
+        updateCase={updateCase}
+        navigate={navigate}
+        saveTitle={saveTitle}
+        saveDesc={saveDesc}
+        handleStatusTransition={handleStatusTransition}
+      />
+    </WorkGateProvider>
+  );
+}
+
+// Inner layout so it can call useWorkGate (must be inside WorkGateProvider).
+// Long arg list is the trade-off for not lifting all state up; the gating
+// pattern keeps everything else intentionally untouched.
+type CaseLayoutProps = {
+  id: string;
+  caseData: CaseItem;
+  users: UserRead[];
+  available: CaseStatus[];
+  activeTab: TabId;
+  setActiveTab: (t: TabId) => void;
+  editingTitle: boolean;
+  setEditingTitle: (v: boolean) => void;
+  titleDraft: string;
+  setTitleDraft: (v: string) => void;
+  editingDesc: boolean;
+  setEditingDesc: (v: boolean) => void;
+  descDraft: string;
+  setDescDraft: (v: string) => void;
+  showPriorityDropdown: boolean;
+  setShowPriorityDropdown: (v: boolean) => void;
+  showLeadDropdown: boolean;
+  setShowLeadDropdown: (v: boolean) => void;
+  pendingStatus: CaseStatus | null;
+  setPendingStatus: (v: CaseStatus | null) => void;
+  cascadeChecked: boolean;
+  setCascadeChecked: (v: boolean) => void;
+  updateCase: { mutate: (body: Record<string, unknown>, opts?: { onSuccess?: () => void }) => void; isPending: boolean };
+  navigate: ReturnType<typeof useNavigate>;
+  saveTitle: () => void;
+  saveDesc: () => void;
+  handleStatusTransition: () => void;
+};
+
+function CaseLayout(p: CaseLayoutProps) {
+  const { isWorking } = useWorkGate();
+  const { caseData, users, id, available } = p;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      {/* ============ Sidebar ============ */}
+      <aside className="space-y-4">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
           <button
-            onClick={() => navigate(-1)}
-            className="p-1 rounded hover:bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+            onClick={() => p.navigate(-1)}
+            className="p-1 -ml-1 rounded hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] transition-colors"
             aria-label="Go back"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ChevronLeft size={14} />
           </button>
-          <Link
-            to="/cases"
-            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-          >
-            Incident Groups /
+          <Link to="/cases" className="hover:text-[var(--color-text)] transition-colors">
+            Incident Groups
           </Link>
         </div>
 
-        {available.length > 0 && (
-          <div className="flex gap-2">
-            {available.map((status) => (
-              <button
-                key={status}
-                onClick={() => setPendingStatus(status)}
-                disabled={updateCase.isPending}
-                className="px-3 py-1.5 border border-[var(--color-border)] rounded-md text-xs font-medium hover:bg-[var(--color-surface-2)] transition-colors disabled:opacity-50"
-              >
-                Move to {status}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="mb-3">
-        <AIActionsBar
-          pageKey="case_detail"
-          context={{ case_id: caseData.id, title: caseData.title, status: caseData.status, priority: caseData.priority }}
-        />
-      </div>
-
-      {/* Title + badges */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 flex-wrap mb-2">
+        {/* Status */}
+        <div className="space-y-2">
+          <SidebarLabel>Status</SidebarLabel>
           <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${caseStatusColors[caseData.status] || "bg-gray-500/15 text-gray-400"}`}
+            className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium ${caseStatusColors[caseData.status] || "bg-gray-500/15 text-gray-400"}`}
           >
             {caseData.status}
           </span>
-          <PriorityDropdown
-            priority={caseData.priority}
-            open={showPriorityDropdown}
-            onToggle={() => setShowPriorityDropdown(!showPriorityDropdown)}
-            onSelect={(p) => {
-              updateCase.mutate({ priority: p });
-              setShowPriorityDropdown(false);
-            }}
-          />
-          <div className="ml-auto">
-            <StartWorkButton caseId={caseData.id} size="sm" />
-          </div>
         </div>
 
-        {/* Editable title */}
-        {editingTitle ? (
-          <input
-            autoFocus
-            value={titleDraft}
-            onChange={(e) => setTitleDraft(e.target.value)}
-            onBlur={saveTitle}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") saveTitle();
-              if (e.key === "Escape") setEditingTitle(false);
-            }}
-            className="text-xl font-semibold leading-tight mb-2 w-full bg-transparent border-b border-[var(--color-primary)] outline-none"
-          />
-        ) : (
-          <h1
-            className="text-xl font-semibold leading-tight mb-2 cursor-pointer hover:text-[var(--color-primary)] transition-colors"
-            onClick={() => {
-              setTitleDraft(caseData.title);
-              setEditingTitle(true);
-            }}
-            title="Click to edit"
-          >
-            {caseData.title}
-          </h1>
-        )}
-
-        {/* Editable description */}
-        {editingDesc ? (
-          <textarea
-            autoFocus
-            value={descDraft}
-            onChange={(e) => setDescDraft(e.target.value)}
-            onBlur={saveDesc}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") setEditingDesc(false);
-            }}
-            rows={3}
-            className="w-full text-sm text-[var(--color-text-muted)] bg-transparent border border-[var(--color-border)] rounded p-2 outline-none resize-none"
-          />
-        ) : (
-          <p
-            className="text-sm text-[var(--color-text-muted)] cursor-pointer hover:text-[var(--color-text)] transition-colors"
-            onClick={() => {
-              setDescDraft(caseData.description || "");
-              setEditingDesc(true);
-            }}
-            title="Click to edit"
-          >
-            {caseData.description || "Add a description..."}
-          </p>
-        )}
-
-        {/* Meta row */}
-        <div className="flex items-center gap-4 mt-3 text-xs text-[var(--color-text-muted)] flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <UserAvatar
-              displayName={caseData.created_by.display_name}
-              size="sm"
+        {/* Priority */}
+        <div className="space-y-2">
+          <SidebarLabel>Priority</SidebarLabel>
+          <WriteGuard blockedTitle="Start work to change priority">
+            <PriorityDropdown
+              priority={caseData.priority}
+              open={p.showPriorityDropdown}
+              onToggle={() => p.setShowPriorityDropdown(!p.showPriorityDropdown)}
+              onSelect={(pr) => {
+                p.updateCase.mutate({ priority: pr });
+                p.setShowPriorityDropdown(false);
+              }}
             />
-            <span>{caseData.created_by.display_name}</span>
-          </div>
-          <span>{formatDate(caseData.created_at)}</span>
-          <span>{caseData.incident_count} linked incidents</span>
+          </WriteGuard>
+        </div>
 
-          {/* Lead assignment */}
-          <div className="relative">
-            <button
-              onClick={() => setShowLeadDropdown(!showLeadDropdown)}
-              className="flex items-center gap-1.5 hover:text-[var(--color-text)] transition-colors"
-            >
-              <span>Lead:</span>
-              {caseData.lead ? (
-                <>
-                  <UserAvatar
-                    displayName={caseData.lead.display_name}
-                    size="sm"
-                  />
-                  <span>{caseData.lead.display_name}</span>
-                </>
-              ) : (
-                <span className="italic">Unassigned</span>
+        {/* Start work */}
+        <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-3 space-y-2">
+          <SidebarLabel>
+            <Clock size={11} className="inline mr-1 -mt-0.5" /> Work session
+          </SidebarLabel>
+          <StartWorkButton caseId={caseData.id} />
+          {!isWorking && (
+            <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
+              Editing is locked until you start a work session on this group.
+            </p>
+          )}
+        </div>
+
+        {/* Transitions */}
+        {available.length > 0 && (
+          <div className="space-y-2">
+            <SidebarLabel>Transition to</SidebarLabel>
+            <div className="flex flex-col gap-1.5">
+              {available.map((status) => (
+                <button
+                  key={status}
+                  onClick={() => p.setPendingStatus(status)}
+                  disabled={!isWorking || p.updateCase.isPending}
+                  className="px-2.5 py-1.5 border border-[var(--color-border)] rounded text-xs text-left hover:bg-[var(--color-surface-2)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title={!isWorking ? "Start work to transition" : `Move to ${status}`}
+                >
+                  Move to {status}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Lead */}
+        <div className="space-y-2">
+          <SidebarLabel>Lead</SidebarLabel>
+          <WriteGuard blockedTitle="Start work to change lead">
+            <div className="relative">
+              <button
+                onClick={() => p.setShowLeadDropdown(!p.showLeadDropdown)}
+                className="w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] text-xs"
+              >
+                {caseData.lead ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <UserAvatar displayName={caseData.lead.display_name} size="sm" />
+                    {caseData.lead.display_name}
+                  </span>
+                ) : (
+                  <span className="italic text-[var(--color-text-muted)]">Unassigned</span>
+                )}
+                <ChevronDown className="w-3 h-3 shrink-0" />
+              </button>
+              {p.showLeadDropdown && (
+                <LeadDropdown
+                  users={users}
+                  currentLeadId={caseData.lead?.id}
+                  onSelect={(userId) => {
+                    p.updateCase.mutate({ lead_id: userId });
+                    p.setShowLeadDropdown(false);
+                  }}
+                  onClear={() => {
+                    p.updateCase.mutate({ lead_id: null });
+                    p.setShowLeadDropdown(false);
+                  }}
+                  onClose={() => p.setShowLeadDropdown(false)}
+                />
               )}
-              <ChevronDown className="w-3 h-3" />
-            </button>
-            {showLeadDropdown && (
-              <LeadDropdown
-                users={users?.data || []}
-                currentLeadId={caseData.lead?.id}
-                onSelect={(userId) => {
-                  updateCase.mutate({ lead_id: userId });
-                  setShowLeadDropdown(false);
-                }}
-                onClear={() => {
-                  updateCase.mutate({ lead_id: null });
-                  setShowLeadDropdown(false);
-                }}
-                onClose={() => setShowLeadDropdown(false)}
-              />
-            )}
+            </div>
+          </WriteGuard>
+        </div>
+
+        {/* Created by */}
+        <div className="space-y-2">
+          <SidebarLabel>Created by</SidebarLabel>
+          <div className="flex items-center gap-1.5 text-xs text-[var(--color-text)]">
+            <UserAvatar displayName={caseData.created_by.display_name} size="sm" />
+            <div>
+              <div>{caseData.created_by.display_name}</div>
+              <div className="text-[10px] text-[var(--color-text-muted)]">{formatDate(caseData.created_at)}</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Tab bar */}
-      <div className="border-b border-[var(--color-border)] mb-6">
-        <div className="flex gap-0 -mb-px">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? "border-[var(--color-primary)] text-[var(--color-text)]"
-                  : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
-              }`}
+        {/* Linked incidents */}
+        <div className="space-y-2">
+          <SidebarLabel>Linked incidents</SidebarLabel>
+          <div className="text-xs text-[var(--color-text-muted)]">{caseData.incident_count}</div>
+        </div>
+
+        {/* AI actions */}
+        <div className="pt-2 border-t border-[var(--color-border)]">
+          <SidebarLabel>AI</SidebarLabel>
+          <div className="mt-2">
+            <AIActionsBar
+              pageKey="case_detail"
+              context={{
+                case_id: caseData.id,
+                title: caseData.title,
+                status: caseData.status,
+                priority: caseData.priority,
+              }}
+            />
+          </div>
+        </div>
+      </aside>
+
+      {/* ============ Main workspace ============ */}
+      <main className="min-w-0">
+        {/* Editable title */}
+        <div className="mb-4">
+          {p.editingTitle ? (
+            <input
+              autoFocus
+              value={p.titleDraft}
+              onChange={(e) => p.setTitleDraft(e.target.value)}
+              onBlur={p.saveTitle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") p.saveTitle();
+                if (e.key === "Escape") p.setEditingTitle(false);
+              }}
+              className="text-2xl font-semibold leading-tight w-full bg-transparent border-b border-[var(--color-primary)] outline-none text-[var(--color-text)]"
+            />
+          ) : (
+            <h1
+              className={`text-2xl font-semibold leading-tight text-[var(--color-text)] ${isWorking ? "cursor-pointer hover:text-[var(--color-primary)] transition-colors" : ""}`}
+              onClick={() => {
+                if (!isWorking) return;
+                p.setTitleDraft(caseData.title);
+                p.setEditingTitle(true);
+              }}
+              title={isWorking ? "Click to edit" : "Start work to edit"}
             >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
+              {caseData.title}
+            </h1>
+          )}
 
-      {/* Tab content */}
-      {activeTab === "overview" && (
-        <OverviewTab caseData={caseData} caseId={id!} />
-      )}
-      {activeTab === "timeline" && <TimelineTab caseId={id!} />}
-      {activeTab === "chat" && <ChatTab caseId={id!} />}
-      {activeTab === "notes" && <NotesTab caseId={id!} />}
-      {activeTab === "files" && <FilesTab caseId={id!} />}
-      {activeTab === "forms" && <FormsTab caseId={id!} />}
-      {activeTab === "automations" && <AutomationsTab caseId={id!} />}
-      {activeTab === "issues" && (
-        <div className="border border-[var(--color-border)] rounded-lg p-4">
-          <EntityIssuesPanel
-            targetType="case"
-            targetId={id!}
-            targetName={caseData.title}
+          {/* Editable description */}
+          {p.editingDesc ? (
+            <textarea
+              autoFocus
+              value={p.descDraft}
+              onChange={(e) => p.setDescDraft(e.target.value)}
+              onBlur={p.saveDesc}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") p.setEditingDesc(false);
+              }}
+              rows={3}
+              className="mt-2 w-full text-sm text-[var(--color-text-muted)] bg-transparent border border-[var(--color-border)] rounded p-2 outline-none resize-none"
+            />
+          ) : (
+            <p
+              className={`mt-1.5 text-sm text-[var(--color-text-muted)] ${isWorking ? "cursor-pointer hover:text-[var(--color-text)] transition-colors" : ""}`}
+              onClick={() => {
+                if (!isWorking) return;
+                p.setDescDraft(caseData.description || "");
+                p.setEditingDesc(true);
+              }}
+              title={isWorking ? "Click to edit" : "Start work to edit"}
+            >
+              {caseData.description || (isWorking ? "Add a description..." : "No description")}
+            </p>
+          )}
+        </div>
+
+        {/* Gate banner */}
+        <WorkGateBanner />
+
+        {/* Tab bar */}
+        <div className="border-b border-[var(--color-border)] mb-6">
+          <div className="flex gap-0 -mb-px overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => p.setActiveTab(tab.id)}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  p.activeTab === tab.id
+                    ? "border-[var(--color-primary)] text-[var(--color-text)]"
+                    : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab content */}
+        {p.activeTab === "overview" && <OverviewTab caseData={caseData} caseId={id} />}
+        {p.activeTab === "timeline" && <TimelineTab caseId={id} />}
+        {p.activeTab === "chat" && <ChatTab caseId={id} />}
+        {p.activeTab === "notes" && <NotesTab caseId={id} />}
+        {p.activeTab === "files" && <FilesTab caseId={id} />}
+        {p.activeTab === "forms" && <FormsTab caseId={id} />}
+        {p.activeTab === "automations" && <AutomationsTab caseId={id} />}
+        {p.activeTab === "issues" && (
+          <div className="border border-[var(--color-border)] rounded-lg p-4">
+            <EntityIssuesPanel targetType="case" targetId={id} targetName={caseData.title} />
+          </div>
+        )}
+
+        {/* Status transition dialog */}
+        {p.pendingStatus && (
+          <StatusTransitionDialog
+            targetStatus={p.pendingStatus}
+            hasIncidents={caseData.incidents.length > 0}
+            cascadeChecked={p.cascadeChecked}
+            onCascadeChange={p.setCascadeChecked}
+            onConfirm={p.handleStatusTransition}
+            onCancel={() => {
+              p.setPendingStatus(null);
+              p.setCascadeChecked(false);
+            }}
+            isPending={p.updateCase.isPending}
           />
-        </div>
-      )}
+        )}
+      </main>
+    </div>
+  );
+}
 
-      {/* Status transition confirmation dialog */}
-      {pendingStatus && (
-        <StatusTransitionDialog
-          targetStatus={pendingStatus}
-          hasIncidents={caseData.incidents.length > 0}
-          cascadeChecked={cascadeChecked}
-          onCascadeChange={setCascadeChecked}
-          onConfirm={handleStatusTransition}
-          onCancel={() => {
-            setPendingStatus(null);
-            setCascadeChecked(false);
-          }}
-          isPending={updateCase.isPending}
-        />
-      )}
+function SidebarLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+      {children}
     </div>
   );
 }

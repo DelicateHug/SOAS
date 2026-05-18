@@ -4,6 +4,7 @@ import { useToastMutation } from "@/hooks/useToastMutation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { WriteGuard } from "@/components/work/WriteGuard";
 import type { TimelineEntry } from "@/types/api";
 
 interface Props {
@@ -74,28 +75,30 @@ export function ChatTab({ caseId }: Props) {
       </div>
 
       {/* Input */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (message.trim()) sendMessage.mutate(message.trim());
-        }}
-        className="flex gap-2 pt-3 border-t border-[var(--color-border)]"
-      >
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
-        />
-        <button
-          type="submit"
-          disabled={!message.trim() || sendMessage.isPending}
-          className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
+      <WriteGuard blockedTitle="Start work on this group to send chat messages">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (message.trim()) sendMessage.mutate(message.trim());
+          }}
+          className="flex gap-2 pt-3 border-t border-[var(--color-border)]"
         >
-          Send
-        </button>
-      </form>
+          <input
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type a message..."
+            className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-transparent"
+          />
+          <button
+            type="submit"
+            disabled={!message.trim() || sendMessage.isPending}
+            className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
+          >
+            Send
+          </button>
+        </form>
+      </WriteGuard>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { useTeamStore } from "@/stores/teamStore";
 import { formatDate, formatDuration } from "@/lib/utils";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { WriteGuard } from "@/components/work/WriteGuard";
 import type {
   AutomationItem,
   IncidentAutomationExecution,
@@ -97,27 +98,29 @@ export function AutomationsTab({ incidentId }: Props) {
       {/* Manual run */}
       <div className="rounded-lg border border-[var(--color-border)] p-4">
         <SectionHeader title="Run Automation" />
-        <div className="flex gap-2">
-          <select
-            value={selectedAutomation}
-            onChange={(e) => setSelectedAutomation(e.target.value)}
-            className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-[var(--color-bg)] text-[var(--color-text)]"
-          >
-            <option value="">Select an automation...</option>
-            {activeAutomations.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => selectedAutomation && runAutomation.mutate(selectedAutomation)}
-            disabled={!selectedAutomation || runAutomation.isPending}
-            className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
-          >
-            {runAutomation.isPending ? "Running..." : "Run"}
-          </button>
-        </div>
+        <WriteGuard blockedTitle="Start work on this incident to run automations">
+          <div className="flex gap-2">
+            <select
+              value={selectedAutomation}
+              onChange={(e) => setSelectedAutomation(e.target.value)}
+              className="flex-1 px-3 py-2 border border-[var(--color-border)] rounded-md text-sm bg-[var(--color-bg)] text-[var(--color-text)]"
+            >
+              <option value="">Select an automation...</option>
+              {activeAutomations.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => selectedAutomation && runAutomation.mutate(selectedAutomation)}
+              disabled={!selectedAutomation || runAutomation.isPending}
+              className="px-4 py-2 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm disabled:opacity-50"
+            >
+              {runAutomation.isPending ? "Running..." : "Run"}
+            </button>
+          </div>
+        </WriteGuard>
       </div>
 
       {evidenceError && (

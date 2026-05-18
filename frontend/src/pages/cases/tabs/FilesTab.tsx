@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { WriteGuard } from "@/components/work/WriteGuard";
 import type { CaseFile } from "@/types/api";
 
 interface Props {
@@ -73,33 +74,35 @@ export function FilesTab({ caseId }: Props) {
       <SectionHeader title="Files" />
 
       {/* Upload zone */}
-      <div
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handleDrop}
-        className="border-2 border-dashed border-[var(--color-border)] rounded-lg p-8 text-center hover:border-[var(--color-primary)] transition-colors"
-      >
-        <p className="text-sm text-[var(--color-text-muted)] mb-2">
-          Drag & drop files here, or
-        </p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) uploadFile.mutate(file);
-          }}
-          className="hidden"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="px-4 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm"
+      <WriteGuard blockedTitle="Start work on this group to upload files">
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDrop}
+          className="border-2 border-dashed border-[var(--color-border)] rounded-lg p-8 text-center hover:border-[var(--color-primary)] transition-colors"
         >
-          Choose File
-        </button>
-        {uploadFile.isPending && (
-          <p className="text-xs text-[var(--color-text-muted)] mt-2">Uploading...</p>
-        )}
-      </div>
+          <p className="text-sm text-[var(--color-text-muted)] mb-2">
+            Drag & drop files here, or
+          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) uploadFile.mutate(file);
+            }}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="px-4 py-1.5 bg-[var(--color-primary)] text-[#ffffff] rounded-md text-sm"
+          >
+            Choose File
+          </button>
+          {uploadFile.isPending && (
+            <p className="text-xs text-[var(--color-text-muted)] mt-2">Uploading...</p>
+          )}
+        </div>
+      </WriteGuard>
 
       {/* File list */}
       <div className="space-y-2">
