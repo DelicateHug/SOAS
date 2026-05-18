@@ -27,8 +27,10 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from soas_backend.api.deps import get_redis
+from soas_backend.api.deps import SESSION_COOKIE_NAME, get_redis
 from soas_backend.auth.jwt import create_access_token
+from soas_backend.services.app_session_service import AppSessionService
+from soas_backend.services.app_token_service import AppTokenService, DEFAULT_TTL_HOURS
 from soas_backend.auth.oidc import (
     OIDCConfigError,
     OIDCDisabledError,
@@ -189,29 +191,54 @@ async def oidc_callback(
     # Apply group → role mappings if any are configured.
     await _apply_group_role_mappings(db, user, groups)
 
-    # Mint a SOAS-side JWT carrying the Entra oid so CAE can re-check.
-    role_names = await _user_role_names(db, user.id)
-    perms = await _user_permissions(db, user.id)
-    soas_token = create_access_token(
+    # Mint a 6h AppToken bound 1:1 to a new AppSession with the originating IP.
+    # The session key lives in the cookie (httpOnly+Secure+SameSite=Strict) and the client
+    # also gets a one-shot read of it from /auth/session/bootstrap to use for HMAC signing.
+    ip = request.client.host if request and request.client else "0.0.0.0"
+    ua = request.headers.get("user-agent", "") if request else ""
+
+    _raw_app_token, app_token = await AppTokenService(db).issue(
         user_id=user.id,
-        username=user.username,
-        roles=role_names,
-        permissions=perms,
-        teams=[],
+        ttl_hours=DEFAULT_TTL_HOURS,
+        issued_via="entra",
+        oidc_subject=oid,
+    )
+    b64_session_key, session = await AppSessionService(db).create(
+        app_token_id=app_token.id,
+        user_id=user.id,
+        ip=ip,
+        user_agent=ua,
     )
 
     await SecurityEventService(db).record(
         event_type="auth.oidc_login_success",
         actor_id=user.id,
         actor_label=user.username,
-        ip_address=request.client.host if request and request.client else None,
-        extra={"oidc_subject": oid, "groups": groups},
+        ip_address=ip,
+        extra={
+            "oidc_subject": oid,
+            "groups": groups,
+            "app_token_id": str(app_token.id),
+            "session_id": str(session.id),
+        },
     )
 
-    # Redirect to the SPA, parking the SOAS token in the fragment so the
-    # frontend's auth bootstrap picks it up and stashes it in localStorage.
-    redirect_url = f"{next_path}#access_token={soas_token}&oidc=1"
-    return RedirectResponse(redirect_url, status_code=status.HTTP_302_FOUND)
+    # The cookie carries `<session_id>.<b64_session_key>`. The server stores only the
+    # encrypted form of the key; the client briefly holds the plaintext so it can sign
+    # requests. We mark `oidc=1` in the URL fragment so the frontend knows to call
+    # /auth/session/bootstrap to retrieve the signing key.
+    cookie_value = f"{session.id}.{b64_session_key}"
+    response = RedirectResponse(f"{next_path}#oidc=1", status_code=status.HTTP_302_FOUND)
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=cookie_value,
+        max_age=DEFAULT_TTL_HOURS * 3600,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        path="/",
+    )
+    return response
 
 
 async def _apply_group_role_mappings(

@@ -38,6 +38,8 @@ from soas_backend.models.change_request import ChangeRequest
 from soas_backend.models.team import Team, TeamMembership, TeamMembershipRole
 from soas_backend.models.team_variable import TeamVariable, TeamVariablePermission
 from soas_backend.models.service_token import ServiceToken
+from soas_backend.models.app_token import AppToken
+from soas_backend.models.app_session import AppSession
 from soas_backend.models.wiki_embedding import WikiEmbedding, WikiEmbeddingStatus
 from soas_backend.models.artifact_change import ArtifactChange
 from soas_backend.models.token_usage import TokenUsage
@@ -124,6 +126,8 @@ __all__ = [
     "TeamVariable",
     "TeamVariablePermission",
     "ServiceToken",
+    "AppToken",
+    "AppSession",
     "WikiEmbedding",
     "WikiEmbeddingStatus",
     "ArtifactChange",

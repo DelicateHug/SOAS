@@ -1,6 +1,7 @@
 """FastAPI dependency injection - auth, RBAC, and shared resources."""
 
 from collections.abc import AsyncGenerator
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -12,12 +13,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from soas_backend.auth.jwt import decode_access_token
+from soas_backend.auth import request_signature as reqsig
 from soas_backend.config import settings
 from soas_backend.database import get_db
+from soas_backend.models.app_session import AppSession
+from soas_backend.models.app_token import AppToken
 from soas_backend.models.role import Permission, Role, RolePermission, UserRole
 from soas_backend.models.user import User
 
-security = HTTPBearer()
+# `auto_error=False` lets unauthenticated requests fall through to the cookie-based path
+# rather than 401-ing immediately on a missing Authorization header. Service tokens and
+# legacy JWT bearers still work when the header IS present.
+security = HTTPBearer(auto_error=False)
+
+SESSION_COOKIE_NAME = "soas_session"
 
 
 # ---------------------------------------------------------------------------
@@ -119,11 +128,235 @@ async def get_redis() -> AsyncGenerator[aioredis.Redis, None]:
     yield await get_redis_pool()
 
 
+# ---------------------------------------------------------------------------
+# Cookie + HMAC-signature auth path
+# ---------------------------------------------------------------------------
+#
+# Interactive users (browsers) authenticate via an httpOnly cookie that carries
+# `<session_id>.<b64_session_key>`. Every request also presents an HMAC of the canonical
+# request string in the `X-SOAS-Signature` header, signed with the session key. The server
+# loads the AppSession by id, checks IP binding + signature + timestamp + expiry, and only
+# then resolves the user.
+#
+# Service tokens (sst_ / sat_ raw bearer in the Authorization header) keep their existing
+# path so MCP/CI clients are unaffected.
+
+
+def _parse_session_cookie(cookie: str | None) -> tuple[UUID, str] | None:
+    if not cookie or "." not in cookie:
+        return None
+    sid_str, _, key_b64 = cookie.partition(".")
+    try:
+        return UUID(sid_str), key_b64
+    except (ValueError, AttributeError):
+        return None
+
+
+def _client_ip(request: Request) -> str | None:
+    """Pick the right client IP. Honour X-Forwarded-For only when the proxy is trusted."""
+    if (settings.__dict__.get("trust_xfcc") or
+            (getattr(settings, "soas_trust_xff", None) is True)):
+        xff = request.headers.get("x-forwarded-for")
+        if xff:
+            return xff.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return None
+
+
+async def _payload_from_app_session(
+    request: Request,
+    db: AsyncSession,
+) -> tuple[dict[str, Any], User] | None:
+    """Validate the session cookie + signature, returning a JWT-shaped payload + user.
+
+    Returns None when there is no cookie at all (caller should then try Bearer). Raises
+    HTTPException on a present-but-invalid session (so attackers don't fall through and
+    we can revoke immediately).
+    """
+    from soas_backend.services.app_session_service import AppSessionService
+    from soas_backend.services.security_event_service import SecurityEventService
+
+    cookie = request.cookies.get(SESSION_COOKIE_NAME)
+    parsed = _parse_session_cookie(cookie)
+    if parsed is None:
+        return None
+    session_id, presented_key_b64 = parsed
+
+    # Load session + paired app token
+    result = await db.execute(
+        select(AppSession)
+        .where(AppSession.id == session_id)
+        .options(selectinload(AppSession.user), selectinload(AppSession.app_token))
+    )
+    session = result.scalar_one_or_none()
+    if session is None or session.revoked_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session not found or revoked",
+        )
+
+    sess_svc = AppSessionService(db)
+    sec = SecurityEventService(db)
+
+    # The cookie value must match the wrapped key on file. This guards against an attacker
+    # who steals only the session_id half (since both halves are required to sign).
+    try:
+        stored_key_b64 = sess_svc.reveal_key(session)
+    except Exception:
+        await sess_svc.revoke(session.id, "key_unwrap_failed")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session key corrupted",
+        )
+    if not reqsig.verify(presented=presented_key_b64, expected=stored_key_b64):
+        await sess_svc.revoke(session.id, "key_mismatch")
+        await sec.record(
+            event_type="auth.session_key_mismatch",
+            severity="warn",
+            actor_id=session.user_id,
+            ip_address=_client_ip(request),
+            message="Cookie session key did not match stored key",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid session",
+        )
+
+    # IP binding — hard reject and revoke. The 1:1 session↔token mapping means losing this
+    # session also kills the underlying app token unless explicitly preserved.
+    ip = _client_ip(request)
+    if ip is None or str(session.ip_address) != ip:
+        await sess_svc.revoke(session.id, "ip_mismatch")
+        await sec.record(
+            event_type="auth.session_ip_mismatch",
+            severity="warn",
+            actor_id=session.user_id,
+            ip_address=ip,
+            message=f"Expected {session.ip_address}, got {ip}",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="IP mismatch — please re-authenticate",
+        )
+
+    # App token expiry / revocation
+    token: AppToken | None = session.app_token
+    if token is None:
+        await sess_svc.revoke(session.id, "token_missing")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session token missing",
+        )
+    now = datetime.now(timezone.utc)
+    if token.revoked_at is not None or token.expires_at <= now:
+        await sess_svc.revoke(session.id, "token_expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired — please re-authenticate",
+        )
+
+    # Per-request signature
+    ts = request.headers.get(reqsig.TIMESTAMP_HEADER)
+    sig = request.headers.get(reqsig.SIGNATURE_HEADER)
+    if not ts or not sig:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing request signature headers",
+        )
+    if not reqsig.timestamp_in_window(ts):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Stale request",
+        )
+    # Body has already been buffered by FastAPI for the route; pull from the raw scope.
+    body = await request.body()
+    canonical = reqsig.build_canonical_string(
+        method=request.method,
+        path=request.url.path,
+        query_string=request.url.query,
+        timestamp=ts,
+        body=body,
+    )
+    expected_sig = reqsig.sign(canonical, stored_key_b64.encode("utf-8"))
+    if not reqsig.verify(presented=sig, expected=expected_sig):
+        await sec.record(
+            event_type="auth.session_bad_signature",
+            severity="warn",
+            actor_id=session.user_id,
+            ip_address=ip,
+            message="HMAC signature did not match canonical request",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid request signature",
+        )
+
+    user = session.user
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive",
+        )
+
+    # Resolve roles + permissions live (so a revoked role tightens access instantly)
+    roles_q = await db.execute(
+        select(Role.name)
+        .join(UserRole, UserRole.role_id == Role.id)
+        .where(UserRole.user_id == user.id)
+    )
+    role_names = [r[0] for r in roles_q.all()]
+    perms_q = await db.execute(
+        select(Permission.resource, Permission.action)
+        .join(RolePermission, RolePermission.permission_id == Permission.id)
+        .join(UserRole, UserRole.role_id == RolePermission.role_id)
+        .where(UserRole.user_id == user.id)
+    )
+    permissions = sorted({f"{r}:{a}" for r, a in perms_q.all()})
+
+    payload = {
+        "sub": str(user.id),
+        "username": user.username,
+        "roles": role_names,
+        "permissions": permissions,
+        "teams": [],
+        "auth_type": "app_session",
+        "session_id": str(session.id),
+        "token_id": str(token.id),
+    }
+
+    # Best-effort touch of last_seen_at — never block the request on this.
+    try:
+        await sess_svc.touch(session.id)
+    except Exception:
+        pass
+
+    return payload, user
+
+
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """Extract and validate the current user from a JWT or service token."""
+    """Extract and validate the current user.
+
+    Tries (in order):
+      1. App-session cookie + HMAC signature  (browsers)
+      2. Service token / JWT in Authorization header (MCP, CI, legacy clients)
+    """
+    # Cookie path
+    sess_result = await _payload_from_app_session(request, db)
+    if sess_result is not None:
+        _payload, user = sess_result
+        return user
+
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
     raw = credentials.credentials
 
     if _is_service_token(raw):
@@ -167,10 +400,22 @@ async def get_current_user(
 
 
 async def _resolve_payload(
-    credentials: HTTPAuthorizationCredentials,
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None,
     db: AsyncSession,
 ) -> dict[str, Any]:
-    """Return a JWT-shaped payload for either a JWT or a service token, or raise 401."""
+    """Return a JWT-shaped payload from cookie session, service token, or JWT — or raise 401."""
+    sess_result = await _payload_from_app_session(request, db)
+    if sess_result is not None:
+        payload, _user = sess_result
+        return payload
+
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
     raw = credentials.credentials
 
     if _is_service_token(raw):
@@ -193,14 +438,15 @@ async def _resolve_payload(
 
 
 async def get_user_teams(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> list[dict[str, Any]] | None:
-    """Extract team memberships from JWT or service token.
+    """Extract team memberships from cookie session, JWT, or service token.
 
     Returns list of team dicts for normal users, or None for admins (meaning all teams).
     """
-    payload = await _resolve_payload(credentials, db)
+    payload = await _resolve_payload(request, credentials, db)
 
     roles: list[str] = payload.get("roles", [])
     if "admin" in roles:
@@ -246,15 +492,16 @@ async def _pick_default_team_id(
 def require_permission(resource: str, action: str):
     """FastAPI dependency that enforces RBAC on a route.
 
-    Accepts both JWT bearer tokens (interactive users) and service tokens (`sst_…`),
-    sharing the same permission model. Admin role bypasses all checks.
+    Accepts cookie-based app sessions (browsers), service tokens (`sst_…`, MCP/CI) and
+    legacy JWT bearers, all sharing the same permission model. Admin role bypasses checks.
     """
 
     async def _check(
-        credentials: HTTPAuthorizationCredentials = Depends(security),
+        request: Request,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
         db: AsyncSession = Depends(get_db),
     ) -> dict:
-        payload = await _resolve_payload(credentials, db)
+        payload = await _resolve_payload(request, credentials, db)
 
         roles: list[str] = payload.get("roles", [])
         if "admin" in roles:
@@ -277,14 +524,15 @@ def require_permission(resource: str, action: str):
 def require_role(*role_names: str):
     """FastAPI dependency that enforces role membership.
 
-    Accepts both JWT and service tokens.
+    Accepts cookie sessions, service tokens, and JWT bearers.
     """
 
     async def _check(
-        credentials: HTTPAuthorizationCredentials = Depends(security),
+        request: Request,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
         db: AsyncSession = Depends(get_db),
     ) -> dict:
-        payload = await _resolve_payload(credentials, db)
+        payload = await _resolve_payload(request, credentials, db)
 
         principal_roles: list[str] = payload.get("roles", [])
         if not set(principal_roles) & set(role_names):
@@ -310,24 +558,40 @@ def require_role(*role_names: str):
 
 async def get_authenticated_user(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """Resolve the calling user with three layers of evidence.
+    """Resolve the calling user with multiple layers of evidence.
 
-    1. JWT/service token (existing logic) — identifies the user.
-    2. Continuous Access Evaluation (CAE) — re-checks revocation on
-       every request. SOAS-issued JWTs hit a Redis revoked-jti set;
-       OIDC users get a short-cached call back to Entra.
-    3. Client cert via X-Forwarded-Client-Cert (when SOAS_TRUST_XFCC=1
-       and auth_cert_login_enabled=true) — must match the JWT's `sub`.
-
-    Routes that previously used `get_current_user` can switch to this
-    dep at their own pace. The old dep stays in place.
+    1. App-session cookie + HMAC signature (browsers) — IP-bound, 6h TTL via the
+       paired AppToken. If a cookie is present, this path is authoritative.
+    2. JWT / service token (`sst_…`) bearer (MCP, CI, legacy clients) when no cookie.
+    3. Continuous Access Evaluation (CAE) — re-checks revocation on every request for
+       JWT-authenticated users. Skipped for service tokens and app sessions (whose
+       revocation is already DB-checked on every request).
+    4. Client cert via X-Forwarded-Client-Cert (when SOAS_TRUST_XFCC=1 and
+       auth_cert_login_enabled=true) — must match the resolved user.
     """
     from soas_backend.auth.cert import parse_xfcc_header, trust_enabled
     from soas_backend.services.app_setting_service import AppSettingService
     from soas_backend.services.cae_service import CAEService
+
+    # Cookie path takes precedence — it already does its own IP + signature + expiry checks
+    sess_result = await _payload_from_app_session(request, db)
+    if sess_result is not None:
+        payload, user = sess_result
+        try:
+            request.state.user = user
+            request.state.jwt_payload = payload
+        except Exception:
+            pass
+        return user
+
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
 
     raw = credentials.credentials
 

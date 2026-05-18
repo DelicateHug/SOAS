@@ -3,13 +3,15 @@
 import asyncio
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soas_backend.auth.totp import generate_backup_codes, generate_totp_secret, get_totp_uri, verify_totp
 from soas_backend.database import get_db
-from soas_backend.api.deps import get_current_user, get_redis_pool
+from soas_backend.api.deps import SESSION_COOKIE_NAME, get_current_user, get_redis_pool
+from soas_backend.services.app_session_service import AppSessionService
+from soas_backend.services.app_token_service import AppTokenService, DEFAULT_TTL_HOURS
 from soas_backend.models.user import User
 from soas_backend.config import settings
 from soas_backend.crypto import (
@@ -45,6 +47,44 @@ from soas_shared.schemas.user import UserCreate, UserRead
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+async def _mint_app_session_cookie(
+    *,
+    user: User,
+    request: Request,
+    response: Response,
+    db: AsyncSession,
+    issued_via: str = "local",
+) -> None:
+    """Issue a 6h AppToken + 1:1 AppSession and attach the httpOnly cookie to `response`.
+
+    Called after every successful local-login step (password-only, MFA verify). The browser
+    keeps the cookie for transport and reads the session key once via
+    /auth/session/bootstrap to sign subsequent requests with HMAC.
+    """
+    ip = request.client.host if request.client else "0.0.0.0"
+    ua = request.headers.get("user-agent", "")
+    _raw, app_token = await AppTokenService(db).issue(
+        user_id=user.id,
+        ttl_hours=DEFAULT_TTL_HOURS,
+        issued_via=issued_via,
+    )
+    b64_key, session = await AppSessionService(db).create(
+        app_token_id=app_token.id,
+        user_id=user.id,
+        ip=ip,
+        user_agent=ua,
+    )
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=f"{session.id}.{b64_key}",
+        max_age=DEFAULT_TTL_HOURS * 3600,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        path="/",
+    )
 
 
 async def _run_deferred_seed() -> None:
@@ -108,6 +148,7 @@ async def register(body: UserCreate, db: AsyncSession = Depends(get_db)):
 async def login(
     body: LoginRequest,
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ):
     app_svc = AppSettingService(db)
@@ -195,6 +236,9 @@ async def login(
         return MFARequiredResponse(mfa_token=mfa_token)
 
     access_token, refresh_token = await auth_service.create_tokens(user)
+    await _mint_app_session_cookie(
+        user=user, request=request, response=response, db=db, issued_via="local"
+    )
     return LoginResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -203,7 +247,12 @@ async def login(
 
 
 @router.post("/mfa/verify", response_model=LoginResponse)
-async def mfa_verify(body: MFAVerifyRequest, db: AsyncSession = Depends(get_db)):
+async def mfa_verify(
+    body: MFAVerifyRequest,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
     from soas_backend.auth.jwt import decode_access_token
     from sqlalchemy import select
 
@@ -230,6 +279,9 @@ async def mfa_verify(body: MFAVerifyRequest, db: AsyncSession = Depends(get_db))
 
     auth_service = AuthService(db)
     access_token, refresh_token = await auth_service.create_tokens(user)
+    await _mint_app_session_cookie(
+        user=user, request=request, response=response, db=db, issued_via="local"
+    )
     return LoginResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -254,12 +306,33 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
-    body: RefreshRequest,
+    request: Request,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    body: RefreshRequest | None = None,
 ):
     auth_service = AuthService(db)
-    await auth_service.revoke_refresh_token(body.refresh_token)
+    if body and body.refresh_token:
+        await auth_service.revoke_refresh_token(body.refresh_token)
+
+    # Revoke the app session + token so re-using the cookie returns 401.
+    cookie = request.cookies.get(SESSION_COOKIE_NAME)
+    if cookie and "." in cookie:
+        from uuid import UUID as _UUID
+        sid_str, _, _ = cookie.partition(".")
+        try:
+            sid = _UUID(sid_str)
+        except ValueError:
+            sid = None
+        if sid is not None:
+            sess_svc = AppSessionService(db)
+            session = await sess_svc.get_by_id(sid)
+            if session is not None:
+                await sess_svc.revoke(sid, "logout")
+                await AppTokenService(db).revoke(session.app_token_id)
+    response.delete_cookie(SESSION_COOKIE_NAME, path="/")
+
     # Evict DEK cache on logout
     redis = await get_redis_pool()
     await DekCache(redis).delete(current_user.id)

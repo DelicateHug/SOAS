@@ -7,13 +7,13 @@ import {
   formatDate,
   caseStatusColors,
 } from "@/lib/utils";
-import { ChevronLeft, ChevronDown, X, Clock } from "lucide-react";
+import { ChevronLeft, ChevronDown, X } from "lucide-react";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { EntityIssuesPanel } from "@/components/issues/EntityIssuesPanel";
 import { AIActionsBar } from "@/components/ai/AIActionsBar";
 import { StartWorkButton } from "@/components/work/StartWorkButton";
 import { WorkGateProvider, useWorkGate } from "@/components/work/WorkGateContext";
-import { WorkGateBanner } from "@/components/work/WorkGateBanner";
+import { WorkGateContent } from "@/components/work/WorkGateContent";
 import { WriteGuard } from "@/components/work/WriteGuard";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { TimelineTab } from "./tabs/TimelineTab";
@@ -52,14 +52,14 @@ const nextStatuses: Record<string, CaseStatus[]> = {
 };
 
 const tabs = [
-  { id: "overview", label: "Overview" },
-  { id: "timeline", label: "Timeline" },
-  { id: "chat", label: "Chat" },
-  { id: "notes", label: "Notes" },
-  { id: "files", label: "Files" },
-  { id: "forms", label: "Forms" },
-  { id: "automations", label: "Automations" },
-  { id: "issues", label: "Issues" },
+  { id: "overview", label: "Overview", gated: true },
+  { id: "timeline", label: "Timeline", gated: false },
+  { id: "chat", label: "Chat", gated: false },
+  { id: "notes", label: "Notes", gated: true },
+  { id: "files", label: "Files", gated: true },
+  { id: "forms", label: "Forms", gated: true },
+  { id: "automations", label: "Automations", gated: true },
+  { id: "issues", label: "Issues", gated: false },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -236,92 +236,140 @@ type CaseLayoutProps = {
 function CaseLayout(p: CaseLayoutProps) {
   const { isWorking } = useWorkGate();
   const { caseData, users, id, available } = p;
+  const shortId = caseData.id.slice(0, 8);
+  const activeTabSpec = tabs.find((t) => t.id === p.activeTab);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-      {/* ============ Sidebar ============ */}
-      <aside className="space-y-4">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
-          <button
-            onClick={() => p.navigate(-1)}
-            className="p-1 -ml-1 rounded hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] transition-colors"
-            aria-label="Go back"
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <Link to="/cases" className="hover:text-[var(--color-text)] transition-colors">
-            Incident Groups
-          </Link>
-        </div>
+    <div className="max-w-7xl space-y-4">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
+        <button
+          onClick={() => p.navigate(-1)}
+          className="p-1 -ml-1 rounded hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+          aria-label="Go back"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <Link to="/cases" className="hover:text-[var(--color-text)]">
+          Incident Groups
+        </Link>
+      </div>
 
-        {/* Status */}
-        <div className="space-y-2">
-          <SidebarLabel>Status</SidebarLabel>
-          <span
-            className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium ${caseStatusColors[caseData.status] || "bg-gray-500/15 text-gray-400"}`}
-          >
-            {caseData.status}
-          </span>
-        </div>
-
-        {/* Priority */}
-        <div className="space-y-2">
-          <SidebarLabel>Priority</SidebarLabel>
-          <WriteGuard blockedTitle="Start work to change priority">
-            <PriorityDropdown
-              priority={caseData.priority}
-              open={p.showPriorityDropdown}
-              onToggle={() => p.setShowPriorityDropdown(!p.showPriorityDropdown)}
-              onSelect={(pr) => {
-                p.updateCase.mutate({ priority: pr });
-                p.setShowPriorityDropdown(false);
-              }}
-            />
-          </WriteGuard>
-        </div>
-
-        {/* Start work */}
-        <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-3 space-y-2">
-          <SidebarLabel>
-            <Clock size={11} className="inline mr-1 -mt-0.5" /> Work session
-          </SidebarLabel>
-          <StartWorkButton caseId={caseData.id} />
-          {!isWorking && (
-            <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
-              Editing is locked until you start a work session on this group.
-            </p>
-          )}
-        </div>
-
-        {/* Transitions */}
-        {available.length > 0 && (
-          <div className="space-y-2">
-            <SidebarLabel>Transition to</SidebarLabel>
-            <div className="flex flex-col gap-1.5">
-              {available.map((status) => (
-                <button
-                  key={status}
-                  onClick={() => p.setPendingStatus(status)}
-                  disabled={!isWorking || p.updateCase.isPending}
-                  className="px-2.5 py-1.5 border border-[var(--color-border)] rounded text-xs text-left hover:bg-[var(--color-surface-2)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  title={!isWorking ? "Start work to transition" : `Move to ${status}`}
-                >
-                  Move to {status}
-                </button>
-              ))}
+      {/* ============ Hero card ============ */}
+      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+        {/* Top: badges + title + metrics */}
+        <div className="px-5 py-4 flex items-start justify-between flex-wrap gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${caseStatusColors[caseData.status] || "bg-gray-500/15 text-gray-400"}`}
+              >
+                {caseData.status}
+              </span>
+              <WriteGuard blockedTitle="Start work to change priority">
+                <PriorityDropdown
+                  priority={caseData.priority}
+                  open={p.showPriorityDropdown}
+                  onToggle={() => p.setShowPriorityDropdown(!p.showPriorityDropdown)}
+                  onSelect={(pr) => {
+                    p.updateCase.mutate({ priority: pr });
+                    p.setShowPriorityDropdown(false);
+                  }}
+                />
+              </WriteGuard>
+              {available.length > 0 && isWorking && (
+                <div className="flex items-center gap-1 ml-1">
+                  {available.map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => p.setPendingStatus(status)}
+                      disabled={p.updateCase.isPending}
+                      className="px-2 py-0.5 border border-[var(--color-border)] rounded text-[11px] hover:bg-[var(--color-surface-2)] disabled:opacity-50"
+                    >
+                      → {status}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <span className="ml-auto font-mono text-[11px] text-[var(--color-text-muted)]">
+                {shortId}
+              </span>
             </div>
+            {/* Editable title */}
+            {p.editingTitle ? (
+              <input
+                autoFocus
+                value={p.titleDraft}
+                onChange={(e) => p.setTitleDraft(e.target.value)}
+                onBlur={p.saveTitle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") p.saveTitle();
+                  if (e.key === "Escape") p.setEditingTitle(false);
+                }}
+                className="text-lg font-semibold leading-tight w-full bg-transparent border-b border-[var(--color-primary)] outline-none text-[var(--color-text)]"
+              />
+            ) : (
+              <h1
+                className={`text-lg font-semibold leading-tight text-[var(--color-text)] truncate ${isWorking ? "cursor-pointer hover:text-[var(--color-primary)] transition-colors" : ""}`}
+                onClick={() => {
+                  if (!isWorking) return;
+                  p.setTitleDraft(caseData.title);
+                  p.setEditingTitle(true);
+                }}
+                title={isWorking ? "Click to edit" : "Start work to edit"}
+              >
+                {caseData.title}
+              </h1>
+            )}
+            {/* Editable description */}
+            {p.editingDesc ? (
+              <textarea
+                autoFocus
+                value={p.descDraft}
+                onChange={(e) => p.setDescDraft(e.target.value)}
+                onBlur={p.saveDesc}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") p.setEditingDesc(false);
+                }}
+                rows={2}
+                className="mt-1 w-full text-xs text-[var(--color-text-muted)] bg-transparent border border-[var(--color-border)] rounded p-1.5 outline-none resize-none"
+              />
+            ) : (
+              <p
+                className={`mt-1 text-xs text-[var(--color-text-muted)] line-clamp-2 ${isWorking ? "cursor-pointer hover:text-[var(--color-text)] transition-colors" : ""}`}
+                onClick={() => {
+                  if (!isWorking) return;
+                  p.setDescDraft(caseData.description || "");
+                  p.setEditingDesc(true);
+                }}
+                title={isWorking ? "Click to edit" : "Start work to edit"}
+              >
+                {caseData.description || (isWorking ? "Add a description..." : "No description")}
+              </p>
+            )}
           </div>
-        )}
 
-        {/* Lead */}
-        <div className="space-y-2">
-          <SidebarLabel>Lead</SidebarLabel>
+          {/* Metrics block */}
+          <div className="flex items-start gap-6 flex-wrap">
+            <Metric label="Created" value={formatDate(caseData.created_at)} />
+            <Metric label="Incidents" value={String(caseData.incident_count)} />
+          </div>
+        </div>
+
+        {/* Footer: created by + lead + work session pill */}
+        <div className="px-5 py-3 bg-[var(--color-surface-2)] border-t border-[var(--color-border)] flex items-center gap-3 flex-wrap">
+          <CaseLabel>Created by</CaseLabel>
+          <div className="flex items-center gap-1.5 text-xs text-[var(--color-text)]">
+            <UserAvatar displayName={caseData.created_by.display_name} size="sm" />
+            {caseData.created_by.display_name}
+          </div>
+          <span className="text-[var(--color-text-muted)] text-xs">·</span>
+          <CaseLabel>Lead</CaseLabel>
           <WriteGuard blockedTitle="Start work to change lead">
             <div className="relative">
               <button
                 onClick={() => p.setShowLeadDropdown(!p.showLeadDropdown)}
-                className="w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] text-xs"
+                className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--color-border)] hover:bg-[var(--color-surface)] text-xs"
               >
                 {caseData.lead ? (
                   <span className="inline-flex items-center gap-1.5">
@@ -350,164 +398,112 @@ function CaseLayout(p: CaseLayoutProps) {
               )}
             </div>
           </WriteGuard>
-        </div>
-
-        {/* Created by */}
-        <div className="space-y-2">
-          <SidebarLabel>Created by</SidebarLabel>
-          <div className="flex items-center gap-1.5 text-xs text-[var(--color-text)]">
-            <UserAvatar displayName={caseData.created_by.display_name} size="sm" />
-            <div>
-              <div>{caseData.created_by.display_name}</div>
-              <div className="text-[10px] text-[var(--color-text-muted)]">{formatDate(caseData.created_at)}</div>
-            </div>
+          <div className="ml-auto">
+            <StartWorkButton caseId={caseData.id} size="sm" />
           </div>
         </div>
+      </div>
 
-        {/* Linked incidents */}
-        <div className="space-y-2">
-          <SidebarLabel>Linked incidents</SidebarLabel>
-          <div className="text-xs text-[var(--color-text-muted)]">{caseData.incident_count}</div>
-        </div>
+      {/* AI actions row, just under the hero */}
+      <AIActionsBar
+        pageKey="case_detail"
+        context={{
+          case_id: caseData.id,
+          title: caseData.title,
+          status: caseData.status,
+          priority: caseData.priority,
+        }}
+      />
 
-        {/* AI actions */}
-        <div className="pt-2 border-t border-[var(--color-border)]">
-          <SidebarLabel>AI</SidebarLabel>
-          <div className="mt-2">
-            <AIActionsBar
-              pageKey="case_detail"
-              context={{
-                case_id: caseData.id,
-                title: caseData.title,
-                status: caseData.status,
-                priority: caseData.priority,
-              }}
-            />
-          </div>
-        </div>
-      </aside>
-
-      {/* ============ Main workspace ============ */}
-      <main className="min-w-0">
-        {/* Editable title */}
-        <div className="mb-4">
-          {p.editingTitle ? (
-            <input
-              autoFocus
-              value={p.titleDraft}
-              onChange={(e) => p.setTitleDraft(e.target.value)}
-              onBlur={p.saveTitle}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") p.saveTitle();
-                if (e.key === "Escape") p.setEditingTitle(false);
-              }}
-              className="text-2xl font-semibold leading-tight w-full bg-transparent border-b border-[var(--color-primary)] outline-none text-[var(--color-text)]"
-            />
-          ) : (
-            <h1
-              className={`text-2xl font-semibold leading-tight text-[var(--color-text)] ${isWorking ? "cursor-pointer hover:text-[var(--color-primary)] transition-colors" : ""}`}
-              onClick={() => {
-                if (!isWorking) return;
-                p.setTitleDraft(caseData.title);
-                p.setEditingTitle(true);
-              }}
-              title={isWorking ? "Click to edit" : "Start work to edit"}
+      {/* ============ Tabs ============ */}
+      <div className="border-b border-[var(--color-border)]">
+        <div className="flex gap-0 -mb-px overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => p.setActiveTab(tab.id)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                p.activeTab === tab.id
+                  ? "border-[var(--color-primary)] text-[var(--color-text)]"
+                  : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
+              }`}
             >
-              {caseData.title}
-            </h1>
-          )}
-
-          {/* Editable description */}
-          {p.editingDesc ? (
-            <textarea
-              autoFocus
-              value={p.descDraft}
-              onChange={(e) => p.setDescDraft(e.target.value)}
-              onBlur={p.saveDesc}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") p.setEditingDesc(false);
-              }}
-              rows={3}
-              className="mt-2 w-full text-sm text-[var(--color-text-muted)] bg-transparent border border-[var(--color-border)] rounded p-2 outline-none resize-none"
-            />
-          ) : (
-            <p
-              className={`mt-1.5 text-sm text-[var(--color-text-muted)] ${isWorking ? "cursor-pointer hover:text-[var(--color-text)] transition-colors" : ""}`}
-              onClick={() => {
-                if (!isWorking) return;
-                p.setDescDraft(caseData.description || "");
-                p.setEditingDesc(true);
-              }}
-              title={isWorking ? "Click to edit" : "Start work to edit"}
-            >
-              {caseData.description || (isWorking ? "Add a description..." : "No description")}
-            </p>
-          )}
+              {tab.label}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Gate banner */}
-        <WorkGateBanner />
-
-        {/* Tab bar */}
-        <div className="border-b border-[var(--color-border)] mb-6">
-          <div className="flex gap-0 -mb-px overflow-x-auto">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => p.setActiveTab(tab.id)}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  p.activeTab === tab.id
-                    ? "border-[var(--color-primary)] text-[var(--color-text)]"
-                    : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border)]"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tab content */}
-        {p.activeTab === "overview" && <OverviewTab caseData={caseData} caseId={id} />}
-        {p.activeTab === "timeline" && <TimelineTab caseId={id} />}
-        {p.activeTab === "chat" && <ChatTab caseId={id} />}
-        {p.activeTab === "notes" && <NotesTab caseId={id} />}
-        {p.activeTab === "files" && <FilesTab caseId={id} />}
-        {p.activeTab === "forms" && <FormsTab caseId={id} />}
-        {p.activeTab === "automations" && <AutomationsTab caseId={id} />}
-        {p.activeTab === "issues" && (
-          <div className="border border-[var(--color-border)] rounded-lg p-4">
-            <EntityIssuesPanel targetType="case" targetId={id} targetName={caseData.title} />
-          </div>
+      {/* ============ Tab content ============ */}
+      <div>
+        {activeTabSpec?.gated ? (
+          <WorkGateContent
+            title="Start work to view group data"
+            subtitle="Overview, notes, files, and automations are hidden until you claim this group. Timeline, chat, and issues remain available."
+          >
+            <CaseTabContent tab={p.activeTab} caseData={caseData} id={id} />
+          </WorkGateContent>
+        ) : (
+          <CaseTabContent tab={p.activeTab} caseData={caseData} id={id} />
         )}
+      </div>
 
-        {/* Status transition dialog */}
-        {p.pendingStatus && (
-          <StatusTransitionDialog
-            targetStatus={p.pendingStatus}
-            hasIncidents={caseData.incidents.length > 0}
-            cascadeChecked={p.cascadeChecked}
-            onCascadeChange={p.setCascadeChecked}
-            onConfirm={p.handleStatusTransition}
-            onCancel={() => {
-              p.setPendingStatus(null);
-              p.setCascadeChecked(false);
-            }}
-            isPending={p.updateCase.isPending}
-          />
-        )}
-      </main>
+      {/* Status transition dialog */}
+      {p.pendingStatus && (
+        <StatusTransitionDialog
+          targetStatus={p.pendingStatus}
+          hasIncidents={caseData.incidents.length > 0}
+          cascadeChecked={p.cascadeChecked}
+          onCascadeChange={p.setCascadeChecked}
+          onConfirm={p.handleStatusTransition}
+          onCancel={() => {
+            p.setPendingStatus(null);
+            p.setCascadeChecked(false);
+          }}
+          isPending={p.updateCase.isPending}
+        />
+      )}
     </div>
   );
 }
 
-function SidebarLabel({ children }: { children: React.ReactNode }) {
+function CaseTabContent({ tab, caseData, id }: { tab: TabId; caseData: CaseItem; id: string }) {
+  switch (tab) {
+    case "overview":    return <OverviewTab caseData={caseData} caseId={id} />;
+    case "timeline":    return <TimelineTab caseId={id} />;
+    case "chat":        return <ChatTab caseId={id} />;
+    case "notes":       return <NotesTab caseId={id} />;
+    case "files":       return <FilesTab caseId={id} />;
+    case "forms":       return <FormsTab caseId={id} />;
+    case "automations": return <AutomationsTab caseId={id} />;
+    case "issues":
+      return (
+        <div className="border border-[var(--color-border)] rounded-lg p-4">
+          <EntityIssuesPanel targetType="case" targetId={id} targetName={caseData.title} />
+        </div>
+      );
+  }
+}
+
+function CaseLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
       {children}
     </div>
   );
 }
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-[110px]">
+      <CaseLabel>{label}</CaseLabel>
+      <div className="text-xs text-[var(--color-text)] font-medium tabular-nums mt-0.5 truncate">
+        {value}
+      </div>
+    </div>
+  );
+}
+
 
 /* ---- Sub-components ---- */
 
