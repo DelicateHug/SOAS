@@ -26,6 +26,11 @@ interface User {
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  /** True until the initial /auth/session/bootstrap call settles. ProtectedRoute should
+   *  show a loading state instead of redirecting to /login while this is true — otherwise
+   *  every page refresh bounces the user back to the login page before the cookie-backed
+   *  session has a chance to re-hydrate. */
+  isBootstrapping: boolean;
   isLoading: boolean;
   mustResetPassword: boolean;
   tokenExpiresAt: number | null;
@@ -38,6 +43,12 @@ interface AuthState {
   logout: () => void;
   hasPermission: (permission: string) => boolean;
   refreshSession: () => Promise<void>;
+  /**
+   * Pull the HMAC session key from /auth/session/bootstrap. Called after login, after
+   * OIDC redirect, and on app mount when a cookie is present. Returns true if the session
+   * is alive, false otherwise (caller should redirect to /login).
+   */
+  bootstrapAppSession: () => Promise<boolean>;
 }
 
 function parseJwt(token: string): Record<string, unknown> {
@@ -56,42 +67,41 @@ function getTokenExpiration(token: string): number | null {
 }
 
 export const useAuthStore = create<AuthState>((set, get) => {
-  // Initialize from stored token
-  const storedToken = localStorage.getItem("access_token");
-  let initialUser: User | null = null;
-  let initialMustReset = false;
-  let initialTokenExpiresAt: number | null = null;
+  // Browser auth = httpOnly soas_session cookie + in-memory HMAC key.
+  // No localStorage credentials. The cookie is session-scope (browser-close kills it)
+  // and the server-side AppToken caps the absolute TTL at 6h. Page reload re-bootstraps
+  // identity from /auth/session/bootstrap (works as long as the cookie is still alive).
+  const initialUser: User | null = null;
+  const initialMustReset = localStorage.getItem("must_reset_password") === "true";
+  const initialTokenExpiresAt: number | null = null;
 
-  if (storedToken) {
-    try {
-      const payload = parseJwt(storedToken);
-      initialUser = {
-        id: payload.sub as string,
-        username: payload.username as string,
-        display_name: (payload.display_name as string) || (payload.username as string),
-        email: "",
-        roles: (payload.roles as string[]) || [],
-        permissions: (payload.permissions as string[]) || [],
-        teams: (payload.teams as TeamClaim[]) || [],
-      };
-      initialMustReset = localStorage.getItem("must_reset_password") === "true";
-      initialTokenExpiresAt = getTokenExpiration(storedToken);
-    } catch {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("must_reset_password");
-    }
-  }
-
-  // Sync tokenExpiresAt when api client refreshes tokens on 401
+  // Keep this hook around for backward compat with anything that still subscribes,
+  // but we never actually mint new access tokens client-side any more.
   api.setOnTokensChanged((accessToken) => {
     const exp = getTokenExpiration(accessToken);
     set({ tokenExpiresAt: exp });
   });
 
+  // On store creation (page load / new tab), if a soas_session cookie may still be alive
+  // server-side, fetch the HMAC session key into memory so subsequent requests can sign.
+  // The cookie itself is httpOnly so we can't read it from JS — we just try bootstrap and
+  // accept silent failure (the router will then redirect to /login).
+  // Defer with a microtask so the store factory has returned before we touch `get()`,
+  // and always clear `isBootstrapping` once we know one way or the other.
+  Promise.resolve().then(async () => {
+    try {
+      await get().bootstrapAppSession();
+    } catch {
+      // bootstrap swallows its own errors; this is just a safety net.
+    } finally {
+      set({ isBootstrapping: false });
+    }
+  });
+
   return {
     user: initialUser,
     isAuthenticated: initialUser !== null,
+    isBootstrapping: true,
     isLoading: false,
     mustResetPassword: initialMustReset,
     tokenExpiresAt: initialTokenExpiresAt,
@@ -111,35 +121,19 @@ export const useAuthStore = create<AuthState>((set, get) => {
           return { mfa_required: true, mfa_token: res.mfa_token as string };
         }
 
-        const { access_token, refresh_token, must_reset_password } = res as {
-          access_token: string;
-          refresh_token: string;
-          must_reset_password?: boolean;
-        };
-        api.setTokens(access_token, refresh_token);
+        const { must_reset_password } = res as { must_reset_password?: boolean };
+        // Login already set the soas_session cookie. Pull the HMAC key + user identity
+        // from /auth/session/bootstrap — this is the only post-login state we need.
+        await get().bootstrapAppSession();
 
         const mustReset = must_reset_password === true;
         if (mustReset) {
           localStorage.setItem("must_reset_password", "true");
+          set({ mustResetPassword: true });
         } else {
           localStorage.removeItem("must_reset_password");
+          set({ mustResetPassword: false });
         }
-
-        const payload = parseJwt(access_token);
-        set({
-          user: {
-            id: payload.sub as string,
-            username: payload.username as string,
-            display_name: (payload.display_name as string) || (payload.username as string),
-            email: "",
-            roles: (payload.roles as string[]) || [],
-            permissions: (payload.permissions as string[]) || [],
-            teams: (payload.teams as TeamClaim[]) || [],
-          },
-          isAuthenticated: true,
-          mustResetPassword: mustReset,
-          tokenExpiresAt: typeof payload.exp === "number" ? payload.exp : null,
-        });
 
         return { must_reset_password: mustReset };
       } finally {
@@ -150,34 +144,21 @@ export const useAuthStore = create<AuthState>((set, get) => {
     verifyMfa: async (mfaToken, totpCode) => {
       set({ isLoading: true });
       try {
-        const res = await api.post<{ access_token: string; refresh_token: string; must_reset_password?: boolean }>(
+        const res = await api.post<{ must_reset_password?: boolean }>(
           "/auth/mfa/verify",
           { mfa_token: mfaToken, totp_code: totpCode }
         );
-        api.setTokens(res.access_token, res.refresh_token);
+        // MFA endpoint also set the soas_session cookie. Bootstrap pulls the key + user.
+        await get().bootstrapAppSession();
 
         const mustReset = res.must_reset_password === true;
         if (mustReset) {
           localStorage.setItem("must_reset_password", "true");
+          set({ mustResetPassword: true });
         } else {
           localStorage.removeItem("must_reset_password");
+          set({ mustResetPassword: false });
         }
-
-        const payload = parseJwt(res.access_token);
-        set({
-          user: {
-            id: payload.sub as string,
-            username: payload.username as string,
-            display_name: (payload.display_name as string) || (payload.username as string),
-            email: "",
-            roles: (payload.roles as string[]) || [],
-            permissions: (payload.permissions as string[]) || [],
-            teams: (payload.teams as TeamClaim[]) || [],
-          },
-          isAuthenticated: true,
-          mustResetPassword: mustReset,
-          tokenExpiresAt: typeof payload.exp === "number" ? payload.exp : null,
-        });
 
         return { must_reset_password: mustReset };
       } finally {
@@ -223,45 +204,48 @@ export const useAuthStore = create<AuthState>((set, get) => {
       return user.permissions.includes(permission);
     },
 
-    refreshSession: async () => {
-      set({ isRefreshing: true });
+    bootstrapAppSession: async () => {
+      // Call /auth/session/bootstrap directly (not via the HMAC-signed api client) since
+      // we are precisely fetching the signing key. The endpoint also returns user
+      // identity so we don't need a second hop.
       try {
-        const refreshToken = localStorage.getItem("refresh_token");
-        if (!refreshToken) {
-          get().logout();
-          return;
-        }
-
-        const res = await fetch("/api/v1/auth/refresh", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh_token: refreshToken }),
+        const res = await fetch("/api/v1/auth/session/bootstrap", {
+          method: "GET",
+          credentials: "include",
         });
-
-        if (!res.ok) {
-          get().logout();
-          return;
-        }
-
+        if (!res.ok) return false;
         const data = await res.json();
-        api.setTokens(data.access_token, data.refresh_token);
-
-        // Re-parse user from the new JWT so teams/permissions stay fresh
-        const payload = parseJwt(data.access_token);
+        // Install the key inside the api client.
+        await api.bootstrapSession();
+        const me = data.user || {};
+        const expiresAt = data.expires_at ? Math.floor(new Date(data.expires_at).getTime() / 1000) : null;
         set({
           user: {
-            id: payload.sub as string,
-            username: payload.username as string,
-            display_name: (payload.display_name as string) || (payload.username as string),
-            email: "",
-            roles: (payload.roles as string[]) || [],
-            permissions: (payload.permissions as string[]) || [],
-            teams: (payload.teams as TeamClaim[]) || [],
+            id: me.id,
+            username: me.username,
+            display_name: me.display_name || me.username,
+            email: me.email || "",
+            roles: me.roles || [],
+            permissions: me.permissions || [],
+            teams: me.teams || [],
           },
-          tokenExpiresAt: typeof payload.exp === "number" ? payload.exp : null,
+          isAuthenticated: true,
+          tokenExpiresAt: expiresAt,
         });
+        return true;
       } catch {
-        get().logout();
+        return false;
+      }
+    },
+
+    refreshSession: async () => {
+      // No more refresh-token flow. To pick up role/permission changes, just re-fetch
+      // identity from /auth/session/bootstrap (the cookie is still valid). If the
+      // cookie has expired, bootstrap will 401 and we log out.
+      set({ isRefreshing: true });
+      try {
+        const ok = await get().bootstrapAppSession();
+        if (!ok) get().logout();
       } finally {
         set({ isRefreshing: false });
       }

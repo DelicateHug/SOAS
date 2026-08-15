@@ -5,7 +5,24 @@
 // Agents tab in the SOAS UI lists this MCP instance alongside the
 // Python services. Best-effort — errors are logged and swallowed.
 
+import { readFileSync } from "node:fs";
+import { Agent as UndiciAgent } from "undici";
+
 const HEARTBEAT_INTERVAL = 30_000; // 30s
+const MTLS_DIR = process.env.MTLS_DIR || "/run/mtls";
+
+let _dispatcher = null;
+function dispatcher() {
+  if (_dispatcher) return _dispatcher;
+  _dispatcher = new UndiciAgent({
+    connect: {
+      ca: readFileSync(`${MTLS_DIR}/ca/ca.crt`),
+      cert: readFileSync(`${MTLS_DIR}/mcp/client.crt`),
+      key: readFileSync(`${MTLS_DIR}/mcp/client.key`),
+    },
+  });
+  return _dispatcher;
+}
 
 function resolveAgentId(role) {
   const env = (process.env.SOAS_AGENT_ID || "").trim();
@@ -37,6 +54,7 @@ export function startHeartbeat({ apiUrl }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        dispatcher: dispatcher(),
       });
       if (!res.ok) {
         console.warn(`[heartbeat] backend returned ${res.status}`);

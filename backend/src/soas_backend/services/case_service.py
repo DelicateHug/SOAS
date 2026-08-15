@@ -308,3 +308,18 @@ class CaseService:
             await self.db.delete(link)
             return True
         return False
+
+    async def delete_case(self, case_id: UUID, actor_id: UUID) -> bool:
+        """Delete a case and all its dependent rows.
+
+        Tier-3 / danger-zone operation. CaseIncident, CaseNote, CaseFile, TimelineEntry
+        rows are all FK-cascaded via ON DELETE CASCADE at the schema level — we don't
+        need to walk them manually here.
+        """
+        result = await self.db.execute(select(Case).where(Case.id == case_id))
+        case = result.scalar_one_or_none()
+        if case is None:
+            return False
+        await self.db.delete(case)
+        await self.db.flush()
+        return True

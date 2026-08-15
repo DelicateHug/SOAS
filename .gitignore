@@ -100,3 +100,19 @@ wiki/dhug*
 Investigation report/
 Investigation report.zip
 Investigation*report*.zip
+# --- secrets & local state (hardened 2026-08-15) ---
+2048
+*.pem
+*.key
+*.ovpn
+.env
+!.env.example
+*.tfstate
+*.tfstate.*
+.terraform/
+id_rsa
+id_ed25519
+cred.key
+cred.txt
+*-Admin-PC.*
+_archived-uncommitted-from-D/

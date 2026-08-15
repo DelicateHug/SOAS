@@ -76,10 +76,12 @@ async def _mint_app_session_cookie(
         ip=ip,
         user_agent=ua,
     )
+    # No max_age / expires -> session cookie. The browser drops it on close. The
+    # server-side AppToken still enforces a 6h hard upper bound, so the cookie's
+    # effective TTL is min(browser_session, 6h). Refresh is not supported.
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=f"{session.id}.{b64_key}",
-        max_age=DEFAULT_TTL_HOURS * 3600,
         httponly=True,
         secure=True,
         samesite="strict",
@@ -291,6 +293,11 @@ async def mfa_verify(
 
 @router.post("/refresh", response_model=LoginResponse)
 async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
+    """Refresh a bearer-token pair. Used ONLY by legacy bearer clients (service tokens,
+    CI scripts that POST /auth/login and read the JWT). The browser SPA does not call
+    this endpoint — its session lives in an httpOnly cookie bound to a 6h server-side
+    AppToken with no refresh; users re-authenticate when the session expires.
+    """
     auth_service = AuthService(db)
     tokens = await auth_service.refresh_access_token(body.refresh_token)
 
@@ -409,6 +416,128 @@ async def change_password(
     await DekCache(redis).set(current_user.id, dek)
 
     return {"message": "Password changed successfully"}
+
+
+@router.get("/session/bootstrap")
+async def session_bootstrap(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the session HMAC key + metadata so the SPA can sign subsequent requests.
+
+    This endpoint is the only one that intentionally does NOT require a request signature
+    — the client is calling it specifically to obtain the key. It still enforces the cookie
+    session, IP binding, and token TTL.
+
+    The key is delivered exactly once over an HTTPS connection that just survived the
+    above three checks. The client keeps it in memory (no localStorage); a page refresh
+    requires calling bootstrap again.
+    """
+    from uuid import UUID as _UUID
+
+    cookie = request.cookies.get(SESSION_COOKIE_NAME)
+    if not cookie or "." not in cookie:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No active session",
+        )
+    sid_str, _, presented_key = cookie.partition(".")
+    try:
+        sid = _UUID(sid_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Malformed session cookie",
+        )
+
+    sess_svc = AppSessionService(db)
+    session = await sess_svc.get_by_id(sid)
+    if session is None or session.revoked_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session not found or revoked",
+        )
+
+    # Cookie must match the stored key
+    stored_key = sess_svc.reveal_key(session)
+    if presented_key != stored_key:
+        await sess_svc.revoke(sid, "key_mismatch")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid session",
+        )
+
+    # IP binding
+    ip = request.client.host if request.client else None
+    if ip is None or str(session.ip_address) != ip:
+        await sess_svc.revoke(sid, "ip_mismatch")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="IP mismatch — please re-authenticate",
+        )
+
+    # Token expiry
+    from datetime import datetime as _dt, timezone as _tz
+    token = await AppTokenService(db).get_by_id(session.app_token_id)
+    if token is None or token.revoked_at is not None or token.expires_at <= _dt.now(_tz.utc):
+        await sess_svc.revoke(sid, "token_expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired",
+        )
+
+    # Resolve user identity for the SPA so it doesn't need a second hop.
+    from soas_backend.models.role import Permission, Role, RolePermission, UserRole
+    user_q = await db.execute(select(User).where(User.id == session.user_id))
+    user = user_q.scalar_one_or_none()
+    if user is None or not user.is_active:
+        await sess_svc.revoke(sid, "user_inactive")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User inactive",
+        )
+    roles_q = await db.execute(
+        select(Role.name)
+        .join(UserRole, UserRole.role_id == Role.id)
+        .where(UserRole.user_id == user.id)
+    )
+    role_names = [r[0] for r in roles_q.all()]
+    perms_q = await db.execute(
+        select(Permission.resource, Permission.action)
+        .join(RolePermission, RolePermission.permission_id == Permission.id)
+        .join(UserRole, UserRole.role_id == RolePermission.role_id)
+        .where(UserRole.user_id == user.id)
+    )
+    permissions = sorted({f"{r}:{a}" for r, a in perms_q.all()})
+
+    return {
+        "session_key": stored_key,
+        "expires_at": token.expires_at.isoformat(),
+        "user": {
+            "id": str(user.id),
+            "username": user.username,
+            "display_name": user.display_name or user.username,
+            "email": user.email,
+            "roles": role_names,
+            "permissions": permissions,
+            "teams": [],
+        },
+    }
+
+
+@router.get("/session/heartbeat")
+async def session_heartbeat(
+    current_user: User = Depends(get_current_user),
+):
+    """Browser pings this every 5 minutes to mark the session as alive.
+
+    The session-auth dependency (`get_current_user` → `_payload_from_app_session`)
+    enforces signature, IP binding, the 6-hour AppToken TTL, AND a 30-minute idle
+    timeout. On success the auth path calls `AppSessionService.touch()` to update
+    `last_seen_at`. So this endpoint's job is purely to keep the dep chain firing
+    — there's nothing for the body to do.
+    """
+    return {"ok": True, "user_id": str(current_user.id)}
 
 
 async def _cache_user_dek(user: User, password: str, db: AsyncSession) -> None:

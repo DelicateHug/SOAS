@@ -163,6 +163,20 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Clear soas_session cookie on 401 responses. If the server has revoked the session
+    # (idle timeout, IP mismatch, token expiry, bad signature), the cookie the browser
+    # is holding is useless — telling the browser to drop it keeps the client state in
+    # sync with the server. Service-token callers (Bearer header, no cookie) are
+    # unaffected because Set-Cookie on a request without one is a no-op.
+    from soas_backend.api.deps import SESSION_COOKIE_NAME
+
+    @app.middleware("http")
+    async def clear_dead_session_cookie(request, call_next):
+        response = await call_next(request)
+        if response.status_code == 401 and request.cookies.get(SESSION_COOKIE_NAME):
+            response.delete_cookie(SESSION_COOKIE_NAME, path="/")
+        return response
+
     # Production mode guard (blocks writes on entity APIs in production mode)
     app.add_middleware(ProductionGuardMiddleware)
 

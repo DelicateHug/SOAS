@@ -15,17 +15,18 @@ RUN npm install --omit=dev --no-audit --no-fund
 
 COPY mcp/src ./src
 
-# Healthcheck endpoint backed by /healthz on the HTTP server. Node is guaranteed in this
-# image; wget isn't (alpine).
+# Healthcheck endpoint backed by /healthz on the HTTPS server. Uses the mTLS client
+# cert mounted at /run/mtls/mcp so the server-side `rejectUnauthorized` accepts it.
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=4 \
-  CMD node -e "fetch('http://localhost:8765/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+  CMD node -e "const fs=require('fs');const{Agent}=require('undici');const a=new Agent({connect:{ca:fs.readFileSync('/run/mtls/ca/ca.crt'),cert:fs.readFileSync('/run/mtls/mcp/client.crt'),key:fs.readFileSync('/run/mtls/mcp/client.key')}});fetch('https://localhost:8765/healthz',{dispatcher:a}).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 
 EXPOSE 8765
 
 ENV NODE_ENV=production \
-    SOAS_API_URL=http://backend:8000/api/v1 \
-    EMBEDDING_SERVICE_URL=http://embeddings:8200 \
+    SOAS_API_URL=https://backend:8000/api/v1 \
+    EMBEDDING_SERVICE_URL=https://embeddings:8200 \
     MCP_HTTP_PORT=8765 \
-    SOAS_TOKEN_FILE=/run/secrets/mcp_token
+    SOAS_TOKEN_FILE=/run/secrets/mcp_token \
+    MTLS_DIR=/run/mtls
 
 CMD ["node", "src/server.js"]

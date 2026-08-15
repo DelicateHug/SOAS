@@ -1,5 +1,29 @@
-# Development overrides - use with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Development overrides — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Re-publishes host ports for backend/frontend/postgres/redis so the dev workflow
+# (hitting backend:8000 directly, opening :5173 in a browser, psql-ing into the DB)
+# keeps working. In production we rely on the proxy and these ports stay private.
+#
+# CAVEATS WITH mTLS ON:
+#  - The cookie set by /auth/login uses Secure=true, which Chrome only allows over
+#    HTTPS. Use the proxy URL (https://localhost) for end-to-end manual testing.
+#  - The Vite dev server on :5173 proxies /api to backend:8000 but does NOT present
+#    a client cert, so backend will reject the dev proxy's calls. For full end-to-end
+#    flow always go through Caddy at https://localhost. The :5173 Vite proxy is only
+#    useful for asset hot-reload + paths that don't hit the backend.
+#  - You can curl backend directly with: curl --cert ./secrets/mtls/proxy/client.crt \
+#      --key ./secrets/mtls/proxy/client.key --cacert ./secrets/mtls/ca/ca.crt \
+#      https://localhost:8000/api/v1/auth/providers
 services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
   backend:
     volumes:
       - ./backend/src:/app/src
@@ -8,18 +32,20 @@ services:
       - ./VisualPython2/src:/opt/vp2
       - ./wiki:/app/wiki:ro
       - automations:/app/automations
-      # Dev convenience: bind the host's Claude Code OAuth session into the
-      # container so the backend's `claude` subprocess uses the analyst's
-      # subscription login. Override the prod claude_config named-volume
-      # with a bind mount. Read-only because the container has no reason to
-      # mutate host credentials; the CLI still resolves auth from the keys
-      # in this directory.
       - ${HOME:-${USERPROFILE}}/.claude:/root/.claude:ro
-    command: sh -c "alembic upgrade head && uvicorn soas_backend.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src --reload-dir /app/shared-src"
+    # Dev: keep mTLS on (workers/embeddings depend on it) but add --reload. Note that
+    # uvicorn's --reload doesn't play perfectly with --ssl-cert-reqs=2 client validation
+    # against the reload child; in practice the parent reloads and the new child re-
+    # binds. If you hit auth-handshake issues during a reload, restart the container.
+    command: sh -c "alembic upgrade head && uvicorn soas_backend.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src --reload-dir /app/shared-src --ssl-keyfile=/run/mtls/backend/server.key --ssl-certfile=/run/mtls/backend/server.crt --ssl-ca-certs=/run/mtls/ca/ca.crt --ssl-cert-reqs=2"
+    ports:
+      - "8000:8000"
     environment:
       DEBUG: "true"
       PYTHONPATH: "/app/shared-src:/app/src:/opt/vp2"
-      CORS_ORIGINS: '["http://localhost:3000","http://localhost:${FRONTEND_PORT:-5173}"]'
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_ORIGIN: http://localhost:${FRONTEND_PORT:-5173}
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:${FRONTEND_PORT:-5173}","https://localhost"]'
 
   worker:
     volumes:
@@ -41,8 +67,41 @@ services:
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     environment:
-      VITE_API_URL: "http://backend:8000"
+      VITE_API_URL: "https://backend:8000"
     command: npm run dev -- --host 0.0.0.0 --port 5173
+    # In dev, Vite's proxy needs DNS access to the backend service. Attach the dev
+    # frontend container to the backend network too. Prod keeps it on frontend_net only.
+    networks:
+      - frontend_net
+      - backend_net
+
+  # MCP gets a host port in dev so Claude Code / Cursor on the host machine can talk
+  # to it without going through the proxy. Production deployments must drop this.
+  mcp:
+    ports:
+      - "8765:8765"
+
+  # Dev proxy uses Caddyfile.dev which routes / to the Vite dev server (plain HTTP)
+  # instead of the production nginx static container. /api and /mcp still go over mTLS.
+  proxy:
+    volumes:
+      - ./deploy/Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./secrets/mtls/ca:/run/mtls/ca:ro
+      - ./secrets/mtls/proxy:/run/mtls/proxy:ro
 
 volumes:
   automations:
+
+# In dev we relax the network isolation so host port publishes actually take effect.
+# `internal: true` (the prod default) prevents Docker from exposing any service to the
+# host bridge, which silently strips published ports. The proxy-only ingress model is
+# kept by default — switch it back on (or use prod compose) before production.
+networks:
+  frontend_net:
+    driver: bridge
+    internal: false
+  backend_net:
+    driver: bridge
+    internal: false

@@ -34,5 +34,14 @@ RUN pip install --no-cache-dir .
 ENV PYTHONPATH="/app/src:/opt/vp2"
 EXPOSE 8000
 
-# Run migrations on startup, then start uvicorn
-CMD ["sh", "-c", "alembic upgrade head && uvicorn soas_backend.main:app --host 0.0.0.0 --port 8000"]
+# Run migrations on startup, then start uvicorn with mTLS:
+#  - server cert + key from /run/mtls/backend (mounted by compose)
+#  - require client certs signed by the SOAS internal CA
+#  - the X-Forwarded-Client-Cert header from the proxy still works for cert-login of
+#    end users; the mTLS layer here is independent and authenticates the peer service.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn soas_backend.main:app \
+  --host 0.0.0.0 --port 8000 \
+  --ssl-keyfile=/run/mtls/backend/server.key \
+  --ssl-certfile=/run/mtls/backend/server.crt \
+  --ssl-ca-certs=/run/mtls/ca/ca.crt \
+  --ssl-cert-reqs=2"]

@@ -1,5 +1,6 @@
 """FastAPI dependency injection - auth, RBAC, and shared resources."""
 
+import logging as _logging
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 from typing import Any
@@ -27,6 +28,11 @@ from soas_backend.models.user import User
 security = HTTPBearer(auto_error=False)
 
 SESSION_COOKIE_NAME = "soas_session"
+# Browser-session idle timeout. If the client hasn't pinged /auth/session/heartbeat (or
+# made any other authenticated call) in this many minutes, the server revokes the
+# session. Heartbeat interval is 5 minutes, so the client can miss 6 in a row before
+# the session dies — covers network blips and Sleep/Wake cycles up to that bound.
+IDLE_TIMEOUT_MINUTES = 30
 
 
 # ---------------------------------------------------------------------------
@@ -50,8 +56,17 @@ def _is_service_token(raw: str) -> bool:
 async def _payload_from_service_token(
     raw: str,
     db: AsyncSession,
+    *,
+    on_behalf_of: str | None = None,
 ) -> tuple[dict[str, Any], User] | None:
-    """Validate a service token and return a (jwt-shaped payload, user) tuple."""
+    """Validate a service token and return a (jwt-shaped payload, user) tuple.
+
+    When `on_behalf_of` (a user id string) is supplied, the resulting payload is scoped
+    to *that* user's roles and permissions rather than the service token's underlying
+    user. The service token must still be valid — this prevents anyone without the
+    bearer from impersonating a user, while letting trusted MCP gateways scope per-call
+    permissions to the actual analyst.
+    """
     # Local import keeps the deps module light and avoids a circular import at module load.
     from soas_backend.services.service_token_service import ServiceTokenService
 
@@ -59,13 +74,28 @@ async def _payload_from_service_token(
     result = await svc.validate(raw)
     if result is None:
         return None
-    token, user = result
+    token, token_user = result
 
-    # Resolve roles + permissions for the underlying user.
+    target_user: User = token_user
+    obo_marker: dict[str, str] = {}
+
+    if on_behalf_of:
+        try:
+            obo_uuid = UUID(on_behalf_of)
+        except (ValueError, TypeError):
+            return None
+        obo_q = await db.execute(select(User).where(User.id == obo_uuid))
+        obo = obo_q.scalar_one_or_none()
+        if obo is None or not obo.is_active:
+            return None
+        target_user = obo
+        obo_marker["on_behalf_of"] = str(obo.id)
+
+    # Resolve roles + permissions for the effective user (token holder, or OBO).
     roles_q = await db.execute(
         select(Role.name)
         .join(UserRole, UserRole.role_id == Role.id)
-        .where(UserRole.user_id == user.id)
+        .where(UserRole.user_id == target_user.id)
     )
     role_names = [r[0] for r in roles_q.all()]
 
@@ -73,7 +103,7 @@ async def _payload_from_service_token(
         select(Permission.resource, Permission.action)
         .join(RolePermission, RolePermission.permission_id == Permission.id)
         .join(UserRole, UserRole.role_id == RolePermission.role_id)
-        .where(UserRole.user_id == user.id)
+        .where(UserRole.user_id == target_user.id)
     )
     permissions: set[str] = set()
     for resource, action in perms_q.all():
@@ -85,8 +115,8 @@ async def _payload_from_service_token(
         permissions &= set(token.scopes)
 
     payload = {
-        "sub": str(user.id),
-        "username": user.username,
+        "sub": str(target_user.id),
+        "username": target_user.username,
         "roles": role_names,
         "permissions": sorted(permissions),
         "teams": [],
@@ -94,6 +124,7 @@ async def _payload_from_service_token(
         "auth_type": "service_token",
         "token_id": str(token.id),
         "token_name": token.name,
+        **obo_marker,
     }
 
     # Touch usage timestamp out-of-band; never block the request on this.
@@ -102,7 +133,7 @@ async def _payload_from_service_token(
     except Exception:
         pass
 
-    return payload, user
+    return payload, target_user
 
 # ---------------------------------------------------------------------------
 # Redis
@@ -256,15 +287,47 @@ async def _payload_from_app_session(
             detail="Session expired — please re-authenticate",
         )
 
+    # Idle-timeout: if we haven't heard from this client in IDLE_TIMEOUT_MINUTES, kill the
+    # session. The browser sends a heartbeat every 5 minutes; missing 6 in a row (30 min)
+    # means the tab is closed or the user walked away, and we shouldn't trust the cookie
+    # if it's later reused. last_seen_at is updated by `sess_svc.touch()` at the bottom of
+    # this function on every successful auth check, and explicitly by the heartbeat route.
+    last_seen = session.last_seen_at or session.created_at
+    if last_seen is not None:
+        if last_seen.tzinfo is None:
+            last_seen = last_seen.replace(tzinfo=timezone.utc)
+        if (now - last_seen).total_seconds() > IDLE_TIMEOUT_MINUTES * 60:
+            await sess_svc.revoke(session.id, "idle_timeout")
+            await sec.record(
+                event_type="auth.session_idle_timeout",
+                severity="info",
+                actor_id=session.user_id,
+                ip_address=ip,
+                message=f"Session idle for {(now - last_seen).total_seconds():.0f}s",
+            )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session idle-timed out — please re-authenticate",
+            )
+
     # Per-request signature
     ts = request.headers.get(reqsig.TIMESTAMP_HEADER)
     sig = request.headers.get(reqsig.SIGNATURE_HEADER)
+    _auth_log = _logging.getLogger("soas_backend.auth")
     if not ts or not sig:
+        _auth_log.info(
+            "session auth: missing signature headers path=%s method=%s have_ts=%s have_sig=%s ip=%s session=%s",
+            request.url.path, request.method, bool(ts), bool(sig), ip, str(session.id)[:8],
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing request signature headers",
         )
     if not reqsig.timestamp_in_window(ts):
+        _auth_log.info(
+            "session auth: stale request path=%s ts=%s session=%s",
+            request.url.path, ts, str(session.id)[:8],
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Stale request",
@@ -278,8 +341,18 @@ async def _payload_from_app_session(
         timestamp=ts,
         body=body,
     )
-    expected_sig = reqsig.sign(canonical, stored_key_b64.encode("utf-8"))
+    # The session key is base64url(32 random bytes); the client signs with the raw
+    # decoded bytes via SubtleCrypto importKey("raw", ...). Match that here.
+    from soas_backend.services.app_session_service import session_key_from_b64
+    raw_key = session_key_from_b64(stored_key_b64)
+    expected_sig = reqsig.sign(canonical, raw_key)
     if not reqsig.verify(presented=sig, expected=expected_sig):
+        # Encode canonical with explicit \n markers so the log line is readable.
+        _auth_log.warning(
+            "session auth: bad signature\n  path=%s method=%s qlen=%d blen=%d\n  canonical=%r\n  expected=%s presented=%s\n  session=%s key_prefix=%s",
+            request.url.path, request.method, len(request.url.query or ""), len(body or b""),
+            canonical, expected_sig, sig, str(session.id)[:8], stored_key_b64[:8],
+        )
         await sec.record(
             event_type="auth.session_bad_signature",
             severity="warn",
@@ -360,7 +433,8 @@ async def get_current_user(
     raw = credentials.credentials
 
     if _is_service_token(raw):
-        st_result = await _payload_from_service_token(raw, db)
+        obo = request.headers.get("x-soas-on-behalf-of") if request else None
+        st_result = await _payload_from_service_token(raw, db, on_behalf_of=obo)
         if st_result is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -419,7 +493,8 @@ async def _resolve_payload(
     raw = credentials.credentials
 
     if _is_service_token(raw):
-        st_result = await _payload_from_service_token(raw, db)
+        obo = request.headers.get("x-soas-on-behalf-of") if request else None
+        st_result = await _payload_from_service_token(raw, db, on_behalf_of=obo)
         if st_result is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -597,7 +672,8 @@ async def get_authenticated_user(
 
     # JWT or service token → payload + user
     if _is_service_token(raw):
-        st_result = await _payload_from_service_token(raw, db)
+        obo = request.headers.get("x-soas-on-behalf-of") if request else None
+        st_result = await _payload_from_service_token(raw, db, on_behalf_of=obo)
         if st_result is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

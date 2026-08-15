@@ -25,10 +25,11 @@ from psycopg.rows import dict_row
 
 from soas_workers.celery_app import app
 from soas_workers.config import config
+from soas_workers.http_clients import internal_sync_client
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_SERVICE_URL = os.environ.get("EMBEDDING_SERVICE_URL", "http://embeddings:8200")
+EMBEDDING_SERVICE_URL = os.environ.get("EMBEDDING_SERVICE_URL", "https://embeddings:8200")
 EMBEDDING_TIMEOUT_S = float(os.environ.get("EMBEDDING_TIMEOUT_S", "60"))
 EMBEDDING_BATCH_SIZE = int(os.environ.get("EMBEDDING_BATCH_SIZE", "32"))
 CHUNK_TARGET_CHARS = int(os.environ.get("WIKI_CHUNK_TARGET_CHARS", "900"))
@@ -95,7 +96,7 @@ def _chunk_text(text: str) -> list[str]:
 def _embed_batch(texts: list[str]) -> tuple[list[list[float]], str, int]:
     if not texts:
         return [], "", 0
-    with httpx.Client(timeout=EMBEDDING_TIMEOUT_S) as client:
+    with internal_sync_client(timeout=EMBEDDING_TIMEOUT_S) as client:
         resp = client.post(
             f"{EMBEDDING_SERVICE_URL.rstrip('/')}/embed",
             json={"texts": texts, "normalize": True},

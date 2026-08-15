@@ -334,3 +334,20 @@ async def unlink_incident(
     removed = await svc.unlink_incident(case_id, incident_id)
     if not removed:
         raise HTTPException(status_code=404, detail="Link not found")
+
+
+@router.delete("/{case_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_case(
+    case_id: UUID,
+    current_user: User = Depends(get_current_user),
+    _: dict = Depends(require_permission("case", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete a case. Tier-3 (danger zone) operation.
+
+    Cascades through CaseIncident, CaseNote, CaseFile, TimelineEntry. Audit-logged.
+    """
+    svc = CaseService(db)
+    removed = await svc.delete_case(case_id, current_user.id)
+    if not removed:
+        raise HTTPException(status_code=404, detail="Case not found")

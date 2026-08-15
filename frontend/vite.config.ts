@@ -35,9 +35,13 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: process.env.VITE_API_URL || "http://localhost:8000",
+        target: process.env.VITE_API_URL || "https://backend:8000",
         changeOrigin: true,
         ws: true,
+        // Backend now serves HTTPS with a self-signed (SOAS-CA-signed) cert. The Vite
+        // dev proxy doesn't validate it against the SOAS CA, so accept it as-is in dev.
+        // Production uses Caddy which DOES validate (see deploy/Caddyfile).
+        secure: false,
       },
     },
   },

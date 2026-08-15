@@ -27,7 +27,7 @@ from soas_backend.services.wiki_service import WikiService
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SEED_VERSION = "5"
+CURRENT_SEED_VERSION = "6"
 
 
 # ---------------------------------------------------------------------------
@@ -79,6 +79,7 @@ async def seed_defaults() -> None:
             await _seed_user_secrets(db, uid)
             await _seed_automations(db, uid)
             await _seed_login_security_settings(db)
+            await _seed_tier_permissions(db)
 
             # Phase 11.4: default Operations dashboard
             try:
@@ -147,6 +148,107 @@ async def _seed_login_security_settings(db: AsyncSession) -> None:
         )
         if existing.scalar_one_or_none() is None:
             db.add(AppSetting(key=key, value=value, description=description))
+    await db.flush()
+
+
+# ---------------------------------------------------------------------------
+# Three-tier case-management permission seeding
+# ---------------------------------------------------------------------------
+#
+# Migration 061 already lays down these grants, but we re-apply them on every seed bump
+# so a `start.ps1 -Reset` restores the canonical mapping. Admins who hand-edit role
+# permissions for the L1/L2/L3 system roles will have their changes snapped back; custom
+# (non-system) roles are never touched.
+
+_T1_PERMS: tuple[tuple[str, str], ...] = (
+    ("case", "read"),
+    ("case_note", "read"),
+    ("case_note", "create"),
+    ("case_file", "read"),
+    ("incident", "read"),
+    ("incident_note", "read"),
+    ("incident_note", "create"),
+    ("timeline", "read"),
+    ("wiki", "read"),
+    ("dashboard", "read"),
+    ("execution", "read"),
+    ("automation", "read"),
+)
+_T2_DELTA: tuple[tuple[str, str], ...] = (
+    ("case", "create"),
+    ("case", "update"),
+    ("case_note", "update"),
+    ("case_file", "upload"),
+    ("incident", "update"),
+    ("incident", "assign"),
+    ("automation", "execute"),
+    ("case_form_submission", "create"),
+    ("incident_form_submission", "create"),
+    ("timeline", "create"),
+)
+_T3_DELTA: tuple[tuple[str, str], ...] = (
+    ("case", "delete"),
+    ("case_note", "delete"),
+    ("case_file", "delete"),
+    ("automation", "create"),
+    ("automation", "update"),
+    ("automation", "delete"),
+    ("soas_variable", "read"),
+    ("soas_variable", "create"),
+    ("soas_variable", "update"),
+    ("soas_variable", "delete"),
+    ("webhook", "read"),
+    ("webhook", "create"),
+    ("webhook", "update"),
+    ("webhook", "delete"),
+    ("role", "read"),
+    ("team", "read"),
+    ("team", "create"),
+    ("user", "read"),
+    ("execution", "cancel"),
+)
+
+
+async def _seed_tier_permissions(db: AsyncSession) -> None:
+    from sqlalchemy import text
+
+    tiers = {
+        "soc_analyst_l1": _T1_PERMS,
+        "soc_analyst_l2": _T1_PERMS + _T2_DELTA,
+        "soc_analyst_l3": _T1_PERMS + _T2_DELTA + _T3_DELTA,
+    }
+
+    # Make sure every (resource, action) we plan to grant exists.
+    all_perms = {p for perms in tiers.values() for p in perms}
+    for resource, action in sorted(all_perms):
+        await db.execute(
+            text(
+                "INSERT INTO permissions (id, resource, action, description) "
+                "VALUES (gen_random_uuid(), :r, :a, 'tier seed') "
+                "ON CONFLICT (resource, action) DO NOTHING"
+            ),
+            {"r": resource, "a": action},
+        )
+
+    # Wipe and re-grant for each tier role.
+    for role_name, perms in tiers.items():
+        await db.execute(
+            text(
+                "DELETE FROM role_permissions WHERE role_id = "
+                "(SELECT id FROM roles WHERE name = :rn)"
+            ),
+            {"rn": role_name},
+        )
+        for resource, action in perms:
+            await db.execute(
+                text(
+                    "INSERT INTO role_permissions (role_id, permission_id) "
+                    "SELECT r.id, p.id FROM roles r, permissions p "
+                    "WHERE r.name = :rn AND p.resource = :res AND p.action = :act "
+                    "ON CONFLICT DO NOTHING"
+                ),
+                {"rn": role_name, "res": resource, "act": action},
+            )
     await db.flush()
 
 

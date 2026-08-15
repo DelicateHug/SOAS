@@ -9,6 +9,8 @@
 // when the underlying request closes.
 
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import https from "node:https";
 
 import express from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -20,9 +22,10 @@ import { registerTools } from "./tools.js";
 import { startHeartbeat } from "./heartbeat.js";
 
 const PORT = parseInt(process.env.MCP_HTTP_PORT || "8765", 10);
-const SOAS_API_URL = process.env.SOAS_API_URL || "http://backend:8000/api/v1";
-const EMBEDDINGS_URL = process.env.EMBEDDING_SERVICE_URL || "http://embeddings:8200";
+const SOAS_API_URL = process.env.SOAS_API_URL || "https://backend:8000/api/v1";
+const EMBEDDINGS_URL = process.env.EMBEDDING_SERVICE_URL || "https://embeddings:8200";
 const TOKEN_FILE = process.env.SOAS_TOKEN_FILE || "/run/secrets/mcp_token";
+const MTLS_DIR = process.env.MTLS_DIR || "/run/mtls";
 
 // Optional bearer that the MCP *client* must present to call the *MCP* server.
 // This is distinct from the SOAS service token (used to call SOAS itself). When unset,
@@ -67,6 +70,14 @@ async function main() {
   // route requests to the right transport based on Mcp-Session-Id.
   app.all("/mcp", async (req, res) => {
     if (!authzGuard(req, res)) return;
+
+    // On-behalf-of header: when present, every SOAS backend call made while handling this
+    // request will carry X-SOAS-On-Behalf-Of, so the backend can scope permissions to the
+    // calling analyst's tier rather than the shared MCP service-token's roles.
+    const obo = req.header("x-soas-on-behalf-of") || null;
+    client.setOnBehalfOf(obo);
+    res.on("finish", () => client.setOnBehalfOf(null));
+    res.on("close", () => client.setOnBehalfOf(null));
 
     const sessionId = req.header("mcp-session-id");
     let transport;
@@ -120,14 +131,22 @@ async function main() {
   // instance shows up in the Agents tab alongside the Python services.
   startHeartbeat({ apiUrl: SOAS_API_URL });
 
-  app.listen(PORT, () => {
-    console.log(`[soas-mcp] streamable-http listening on :${PORT}`);
+  // mTLS: serve HTTPS and require any peer (proxy, backend, worker) to present a
+  // client cert signed by the SOAS internal CA. The MCP_SERVER_TOKEN bearer is still
+  // enforced on top — defence in depth.
+  const tlsOpts = {
+    key: readFileSync(`${MTLS_DIR}/mcp/server.key`),
+    cert: readFileSync(`${MTLS_DIR}/mcp/server.crt`),
+    ca: readFileSync(`${MTLS_DIR}/ca/ca.crt`),
+    requestCert: true,
+    rejectUnauthorized: true,
+  };
+  https.createServer(tlsOpts, app).listen(PORT, () => {
+    console.log(`[soas-mcp] streamable-https (mTLS) listening on :${PORT}`);
     console.log(`[soas-mcp] backend: ${SOAS_API_URL}`);
     console.log(`[soas-mcp] embeddings: ${EMBEDDINGS_URL}`);
     if (MCP_SERVER_TOKEN) {
-      console.log("[soas-mcp] MCP_SERVER_TOKEN set — clients must authenticate.");
-    } else {
-      console.log("[soas-mcp] MCP_SERVER_TOKEN not set — open to anyone on this network.");
+      console.log("[soas-mcp] MCP_SERVER_TOKEN set — clients must also present a bearer.");
     }
   });
 }

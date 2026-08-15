@@ -6,6 +6,32 @@
 // diagnostics to the MCP client instead of opaque "fetch failed".
 
 import { readFile, watch } from "node:fs/promises";
+import { readFileSync } from "node:fs";
+import { Agent as UndiciAgent } from "undici";
+
+const MTLS_DIR = process.env.MTLS_DIR || "/run/mtls";
+
+// One undici dispatcher per process, pre-loaded with MCP's client cert + the SOAS CA so
+// every outbound HTTPS call validates the server and proves who we are. The cert is
+// the same one our HTTPS server presents — services on this network treat MCP as one
+// identity for both directions.
+let _mtlsDispatcher = null;
+function getMtlsDispatcher() {
+  if (_mtlsDispatcher) return _mtlsDispatcher;
+  try {
+    _mtlsDispatcher = new UndiciAgent({
+      connect: {
+        ca: readFileSync(`${MTLS_DIR}/ca/ca.crt`),
+        cert: readFileSync(`${MTLS_DIR}/mcp/client.crt`),
+        key: readFileSync(`${MTLS_DIR}/mcp/client.key`),
+      },
+    });
+  } catch (e) {
+    console.error("[soas-mcp] mTLS cert load failed:", e.message);
+    throw e;
+  }
+  return _mtlsDispatcher;
+}
 
 export class SoasApiError extends Error {
   constructor(status, message, body) {
@@ -21,16 +47,28 @@ export class SoasClient {
     this.baseUrl = baseUrl.replace(/\/$/, "");
     this.embeddingsBaseUrl = (embeddingsBaseUrl || "").replace(/\/$/, "");
     this._getToken = getToken;
+    // Per-request "on-behalf-of" user id. Set by the MCP HTTP layer before dispatching a
+    // tool call so the SOAS backend can scope permissions to the calling analyst's tier
+    // rather than the shared MCP service-token user. Cleared after each call.
+    this._obo = null;
+  }
+
+  setOnBehalfOf(userId) {
+    this._obo = userId || null;
   }
 
   async _headers(extra = {}) {
     const token = await this._getToken();
-    return {
+    const headers = {
       "Content-Type": "application/json",
       Accept: "application/json",
       Authorization: `Bearer ${token}`,
       ...extra,
     };
+    if (this._obo) {
+      headers["X-SOAS-On-Behalf-Of"] = this._obo;
+    }
+    return headers;
   }
 
   async _request(method, path, { query, body } = {}) {
@@ -46,7 +84,7 @@ export class SoasClient {
       if (qs) url += `?${qs}`;
     }
 
-    const init = { method, headers: await this._headers() };
+    const init = { method, headers: await this._headers(), dispatcher: getMtlsDispatcher() };
     if (body !== undefined) init.body = JSON.stringify(body);
 
     const res = await fetch(url, init);
@@ -91,6 +129,7 @@ export class SoasClient {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ texts, normalize }),
+      dispatcher: getMtlsDispatcher(),
     });
     if (!res.ok) {
       const body = await res.text();

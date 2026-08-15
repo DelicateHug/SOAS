@@ -62,7 +62,18 @@ const TeamVariablesPage = lazy(() => import("@/pages/teams/TeamVariablesPage").t
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
   const mustResetPassword = useAuthStore((s) => s.mustResetPassword);
+  // While the cookie-backed session is being re-hydrated from /auth/session/bootstrap,
+  // show a tiny spinner instead of bouncing to /login. Otherwise every page refresh
+  // would briefly redirect even when the user has a live session.
+  if (isBootstrapping) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (mustResetPassword) return <Navigate to="/change-password" replace />;
   return <>{children}</>;

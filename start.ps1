@@ -12,6 +12,20 @@
       5. Installs frontend npm dependencies if needed
       6. Builds and starts all Docker containers
 
+    NETWORK TOPOLOGY (post-security-rework):
+      The stack runs on three Docker networks:
+        - proxy:        host bridge + Caddy reverse proxy only
+        - frontend_net: SPA <-> proxy (internal, no host bridge)
+        - backend_net:  backend, worker(s), postgres, redis, embeddings, MCP
+
+      Only the proxy is published to the host (https://localhost:443).
+      The SPA, backend, and MCP have no host ports in production. The dev override
+      (docker-compose.dev.yml) re-publishes :8000, :5173, :8765, :5432, :6379 for
+      developer convenience.
+
+      MCP_SERVER_TOKEN is now MANDATORY because the proxy is the only ingress to
+      MCP; generate a random string and put it in .env.
+
 .PARAMETER Dev
     Start in development mode with hot-reload (volume mounts + vite dev server).
     Expects the 'dev' branch by default but allows any branch with local changes.
@@ -89,7 +103,12 @@ function Write-Fail($msg)    { Write-Host "   [X] $msg" -ForegroundColor Red }
 if ($Down) {
     Write-Step "Stopping all containers..."
     Push-Location $ProjectRoot
+    $env:MCP_SERVER_TOKEN = "down-placeholder-discarded"
+    $savedPref = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     docker compose down
+    $ErrorActionPreference = $savedPref
+    Remove-Item Env:MCP_SERVER_TOKEN -ErrorAction SilentlyContinue
     Pop-Location
     Write-Ok "All containers stopped."
     exit 0
@@ -101,7 +120,17 @@ if ($Down) {
 if ($Reset) {
     Write-Step "RESET: Destroying all containers and volumes..."
     Push-Location $ProjectRoot
+    # docker compose now requires MCP_SERVER_TOKEN for service config interpolation,
+    # even on `down`. Inject a throwaway one for this command so the teardown succeeds
+    # even when .env is fresh or missing the var. The real one is generated later.
+    $env:MCP_SERVER_TOKEN = "reset-placeholder-discarded"
+    # docker compose writes progress to stderr; under ErrorActionPreference=Stop the
+    # script would bail. Suspend it just around this call.
+    $savedPref = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     docker compose down -v
+    $ErrorActionPreference = $savedPref
+    Remove-Item Env:MCP_SERVER_TOKEN -ErrorAction SilentlyContinue
     Pop-Location
     Write-Ok "All containers and volumes removed."
     $Build = $true
@@ -114,7 +143,12 @@ if ($Reset) {
 if ($Rebuild -and -not $Reset) {
     Write-Step "Stopping all containers for rebuild..."
     Push-Location $ProjectRoot
+    $env:MCP_SERVER_TOKEN = "rebuild-placeholder-discarded"
+    $savedPref = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     docker compose down
+    $ErrorActionPreference = $savedPref
+    Remove-Item Env:MCP_SERVER_TOKEN -ErrorAction SilentlyContinue
     Pop-Location
     Write-Ok "Containers stopped. Will rebuild all images."
     $Build = $true
@@ -402,6 +436,24 @@ if ((Test-Path $privateKey) -and (Test-Path $publicKey)) {
 }
 
 # -------------------------------------------------------------------
+# 2b. Generate internal mTLS CA + service certs
+# -------------------------------------------------------------------
+Write-Step "Checking internal mTLS certificates..."
+
+$mtlsScript = Join-Path $ProjectRoot "deploy\mtls\generate-certs.ps1"
+$mtlsCA = Join-Path $ProjectRoot "secrets\mtls\ca\ca.crt"
+if (Test-Path $mtlsCA) {
+    Write-Ok "mTLS CA present (run deploy/mtls/generate-certs.ps1 -Force to rotate)."
+} else {
+    & $mtlsScript
+    if (-not (Test-Path $mtlsCA)) {
+        Write-Fail "Failed to generate mTLS certificates."
+        exit 1
+    }
+    Write-Ok "mTLS certs generated under secrets/mtls/"
+}
+
+# -------------------------------------------------------------------
 # 3. Create .env if missing
 # -------------------------------------------------------------------
 Write-Step "Checking environment file..."
@@ -453,6 +505,21 @@ if (Test-Path $envFile) {
         $envContent = $envContent -replace "SOAS_API_TOKEN=<generate-a-secure-token>", "SOAS_API_TOKEN=$apiToken"
         $envChanged = $true
         Write-Ok "Generated SOAS_API_TOKEN in .env"
+    }
+
+    # 2b. MCP_SERVER_TOKEN — required by the new docker-compose.yml. Compose refuses to
+    # start without a value, so we fill the placeholder or append the var if absent.
+    if ($envContent -match "MCP_SERVER_TOKEN=<generate-a-random-string>") {
+        $mcpToken = Get-RandomToken 48
+        $envContent = $envContent -replace "MCP_SERVER_TOKEN=<generate-a-random-string>", "MCP_SERVER_TOKEN=$mcpToken"
+        $envChanged = $true
+        Write-Ok "Generated MCP_SERVER_TOKEN in .env"
+    } elseif (-not ($envContent -match "(?m)^MCP_SERVER_TOKEN=")) {
+        # .env predates the MCP_SERVER_TOKEN requirement — append a fresh one.
+        $mcpToken = Get-RandomToken 48
+        $envContent = $envContent.TrimEnd() + "`n`n# MCP server bearer (required by docker-compose).`nMCP_SERVER_TOKEN=$mcpToken`n"
+        $envChanged = $true
+        Write-Ok "Appended MCP_SERVER_TOKEN to existing .env"
     }
 
     # 3. USER_SECRET_ENCRYPTION_KEY — must be a real Fernet key (32-byte url-safe b64).
@@ -553,9 +620,13 @@ if ($Build) {
 }
 
 Write-Host "   Running: docker $($composeArgs -join ' ')" -ForegroundColor Gray
+$savedPref = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 & docker @composeArgs
+$composeExit = $LASTEXITCODE
+$ErrorActionPreference = $savedPref
 
-if ($LASTEXITCODE -ne 0) {
+if ($composeExit -ne 0) {
     Pop-Location
     Write-Fail "Docker Compose failed. Check the output above."
     exit 1
@@ -601,32 +672,57 @@ Pop-Location
 if ($CreateAdmin) {
     Write-Step "Creating default admin user..."
 
-    # Wait for backend API to be fully ready (migrations + startup)
+    # Backend now serves HTTPS+mTLS and the /auth/register endpoint refuses requests once
+    # any user exists (the mcp-bot seed creates one almost immediately). Bypass the public
+    # API entirely and use the AuthService directly inside the backend container — that
+    # also lets us assign the admin role explicitly, since AuthService.register only
+    # auto-admins the very first user it sees.
     $backendReady = $false
     for ($i = 0; $i -lt 30; $i++) {
-        try {
-            $health = Invoke-RestMethod -Uri "http://localhost:8000/api/health" -Method Get -ErrorAction Stop
-            if ($health.status -eq "healthy") { $backendReady = $true; break }
-        } catch { }
+        docker exec soas-backend python -c "import urllib.request,ssl,sys;ctx=ssl.create_default_context(cafile='/run/mtls/ca/ca.crt');ctx.load_cert_chain('/run/mtls/backend/client.crt','/run/mtls/backend/client.key');sys.exit(0 if urllib.request.urlopen('https://backend:8000/api/health',context=ctx,timeout=3).status==200 else 1)" 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) { $backendReady = $true; break }
         Start-Sleep -Seconds 2
     }
 
     if ($backendReady) {
-        try {
-            $regBody = @{
-                username     = "admin"
-                email        = "admin@soas.app"
-                display_name = "Administrator"
-                password     = "adminadmin"
-            } | ConvertTo-Json
+        $pyScript = @'
+import asyncio
+from sqlalchemy import select
+from soas_backend.database import async_session
+from soas_backend.models.role import Role, UserRole
+from soas_backend.models.user import User
+from soas_backend.services.auth_service import AuthService
 
-            $null = Invoke-RestMethod -Uri "http://localhost:8000/api/v1/auth/register" `
-                -Method Post -Body $regBody -ContentType "application/json" -ErrorAction Stop
+async def main():
+    async with async_session() as db:
+        existing = (await db.execute(select(User).where(User.username == "admin"))).scalar_one_or_none()
+        if existing:
+            print("Admin already exists; skipping")
+            return
+        svc = AuthService(db)
+        user = await svc.register(
+            username="admin", email="admin@soas.app",
+            display_name="Administrator", password="adminadmin",
+        )
+        # Ensure the admin role is attached (auto-admin only fires for the literal first user)
+        role = (await db.execute(select(Role).where(Role.name == "admin"))).scalar_one_or_none()
+        if role is not None:
+            link = (await db.execute(
+                select(UserRole).where(UserRole.user_id == user.id, UserRole.role_id == role.id)
+            )).scalar_one_or_none()
+            if link is None:
+                db.add(UserRole(user_id=user.id, role_id=role.id))
+        await db.commit()
+        print("Created admin", user.id)
 
-            Write-Ok "Admin user created  (username: admin / password: adminadmin)"
+asyncio.run(main())
+'@
+        $result = docker exec -i soas-backend python -c $pyScript 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "Admin user ready  (username: admin / password: adminadmin)"
             Write-Warn "Change this password on first login!"
-        } catch {
-            Write-Warn "Could not create admin user: $($_.Exception.Message)"
+        } else {
+            Write-Warn "Could not create admin user: $result"
         }
     } else {
         Write-Warn "Backend not ready after 60s. Create admin user manually via the registration page."

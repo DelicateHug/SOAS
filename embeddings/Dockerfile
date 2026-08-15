@@ -34,4 +34,9 @@ EXPOSE 8200
 
 # Single uvicorn worker — sentence-transformers loads ~80MB into RAM and isn't worth
 # multiplying. Concurrency comes from FastAPI's async handling and short request times.
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8200", "--workers", "1"]
+# mTLS: serve TLS and require a client cert signed by the SOAS internal CA.
+CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port 8200 --workers 1 \
+  --ssl-keyfile=/run/mtls/embeddings/server.key \
+  --ssl-certfile=/run/mtls/embeddings/server.crt \
+  --ssl-ca-certs=/run/mtls/ca/ca.crt \
+  --ssl-cert-reqs=2"]

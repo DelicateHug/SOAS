@@ -23,12 +23,13 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from soas_backend.http_clients import internal_async_client
 from soas_backend.models.wiki import WikiPage
 from soas_backend.models.wiki_embedding import WikiEmbedding, WikiEmbeddingStatus
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_SERVICE_URL = os.environ.get("EMBEDDING_SERVICE_URL", "http://embeddings:8200")
+EMBEDDING_SERVICE_URL = os.environ.get("EMBEDDING_SERVICE_URL", "https://embeddings:8200")
 EMBEDDING_TIMEOUT_S = float(os.environ.get("EMBEDDING_TIMEOUT_S", "60"))
 EMBEDDING_BATCH_SIZE = int(os.environ.get("EMBEDDING_BATCH_SIZE", "32"))
 
@@ -130,13 +131,13 @@ class EmbeddingClient:
         self.timeout_s = timeout_s
 
     async def health(self) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=self.timeout_s) as client:
+        async with internal_async_client(timeout=self.timeout_s) as client:
             r = await client.get(f"{self.base_url}/health")
             r.raise_for_status()
             return r.json()
 
     async def info(self) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=self.timeout_s) as client:
+        async with internal_async_client(timeout=self.timeout_s) as client:
             r = await client.get(f"{self.base_url}/info")
             r.raise_for_status()
             return r.json()
@@ -145,7 +146,7 @@ class EmbeddingClient:
         """Embed a batch. Returns (embeddings, model_name, dim)."""
         if not texts:
             return [], "", 0
-        async with httpx.AsyncClient(timeout=self.timeout_s) as client:
+        async with internal_async_client(timeout=self.timeout_s) as client:
             r = await client.post(
                 f"{self.base_url}/embed",
                 json={"texts": texts, "normalize": True},

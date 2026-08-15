@@ -6,8 +6,6 @@ services:
       POSTGRES_DB: soas
       POSTGRES_USER: soas
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d
@@ -16,12 +14,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - backend_net
 
   redis:
     image: redis:7-alpine
     container_name: soas-redis
-    ports:
-      - "6379:6379"
     volumes:
       - redisdata:/data
     healthcheck:
@@ -29,6 +27,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - backend_net
 
   backend:
     build:
@@ -44,24 +44,21 @@ services:
       JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
       WEBAUTHN_RP_ID: localhost
       WEBAUTHN_RP_NAME: SOC on a Stick
-      WEBAUTHN_ORIGIN: http://localhost:3000
-      CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
+      WEBAUTHN_ORIGIN: https://localhost
+      CORS_ORIGINS: '["https://localhost"]'
       USER_SECRET_ENCRYPTION_KEY: ${USER_SECRET_ENCRYPTION_KEY:-}
-      EMBEDDING_SERVICE_URL: http://embeddings:8200
+      EMBEDDING_SERVICE_URL: https://embeddings:8200
       MCP_TOKEN_FILE: /run/mcp/mcp_token
+      MTLS_DIR: /run/mtls
+      MTLS_SERVICE_NAME: backend
       SOAS_AGENT_ID: backend_001
       SOAS_AGENT_ROLE: backend
       SOAS_VERSION: "0.1.0"
-      # AI subprocess: shells out to the `claude` CLI (installed in the image).
-      # If ANTHROPIC_API_KEY is set, the CLI uses it directly. Otherwise the analyst
-      # must `docker compose exec backend claude` once to log in via OAuth — the
-      # session persists in the claude-config named volume.
+      # The reverse proxy lives on the only network that touches the public bridge,
+      # so any X-Forwarded-For we see came from it. Trust the chain.
+      SOAS_TRUST_XFF: "1"
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      # The CLI refuses to run as root unless IS_SANDBOX=1 explicitly tells it the
-      # process is in a contained environment. The backend container is exactly that.
       IS_SANDBOX: "1"
-    ports:
-      - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,13 +69,15 @@ services:
       - gitsync:/app/data/git-sync
       - ./wiki:/app/wiki:ro
       - claude_config:/root/.claude
-      # The backend writes the MCP token here; the MCP container mounts the same volume
-      # read-only and reads it at startup. Sharing a named volume is more portable than
-      # the docker-compose `secrets:` block, which only supports static files.
       - mcp_secrets:/run/mcp
+      # mTLS: each container mounts the CA + its own server/client cert under /run/mtls.
+      - ./secrets/mtls/ca:/run/mtls/ca:ro
+      - ./secrets/mtls/backend:/run/mtls/backend:ro
     secrets:
       - jwt_private_key
       - jwt_public_key
+    networks:
+      - backend_net
 
   worker:
     build:
@@ -91,9 +90,11 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       AUTOMATIONS_DIR: /app/automations
-      SOAS_API_URL: http://backend:8000/api/v1
+      SOAS_API_URL: https://backend:8000/api/v1
       USER_SECRET_ENCRYPTION_KEY: ${USER_SECRET_ENCRYPTION_KEY:-}
-      EMBEDDING_SERVICE_URL: http://embeddings:8200
+      EMBEDDING_SERVICE_URL: https://embeddings:8200
+      MTLS_DIR: /run/mtls
+      MTLS_SERVICE_NAME: worker
       SOAS_AGENT_ID: worker_001
       SOAS_AGENT_ROLE: worker
       SOAS_VERSION: "0.1.0"
@@ -105,7 +106,11 @@ services:
     volumes:
       - automations:/app/automations
       - gitsync:/app/data/git-sync
+      - ./secrets/mtls/ca:/run/mtls/ca:ro
+      - ./secrets/mtls/worker:/run/mtls/worker:ro
     command: celery -A soas_workers.celery_app worker --loglevel=info --concurrency=4 -Q celery,compile,execute
+    networks:
+      - backend_net
 
   worker-beat:
     build:
@@ -116,13 +121,21 @@ services:
       DATABASE_URL: postgresql://soas:${POSTGRES_PASSWORD:-changeme}@postgres:5432/soas
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
+      MTLS_DIR: /run/mtls
+      MTLS_SERVICE_NAME: worker-beat
+      SOAS_API_URL: https://backend:8000/api/v1
       SOAS_AGENT_ID: beat_001
       SOAS_AGENT_ROLE: beat
       SOAS_VERSION: "0.1.0"
     depends_on:
       redis:
         condition: service_healthy
+    volumes:
+      - ./secrets/mtls/ca:/run/mtls/ca:ro
+      - ./secrets/mtls/worker-beat:/run/mtls/worker-beat:ro
     command: celery -A soas_workers.celery_app beat --loglevel=info --schedule=/tmp/celerybeat-schedule
+    networks:
+      - backend_net
 
   frontend:
     build:
@@ -130,18 +143,19 @@ services:
       dockerfile: Dockerfile
     container_name: soas-frontend
     environment:
-      VITE_API_URL: http://localhost:8000
+      # The browser hits /api on the proxy host — no direct backend URL needed.
+      VITE_API_URL: ""
       SOAS_AGENT_ID: frontend_001
       SOAS_AGENT_ROLE: frontend
       SOAS_VERSION: "0.1.0"
-    ports:
-      - "3000:3000"
     depends_on:
       - backend
+    volumes:
+      - ./secrets/mtls/ca:/run/mtls/ca:ro
+      - ./secrets/mtls/frontend:/run/mtls/frontend:ro
+    networks:
+      - frontend_net
 
-  # Local embedding service. CPU-only sentence-transformers model baked into the image.
-  # Bound only on the internal network — never published to the host. The backend and
-  # workers reach it via the docker DNS name `embeddings`.
   embeddings:
     build:
       context: .
@@ -150,52 +164,93 @@ services:
     environment:
       SENTENCE_MODEL: ${SENTENCE_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
       EMBEDDING_MAX_BATCH: "128"
-      SOAS_API_URL: http://backend:8000/api/v1
+      SOAS_API_URL: https://backend:8000/api/v1
+      MTLS_DIR: /run/mtls
+      MTLS_SERVICE_NAME: embeddings
       SOAS_AGENT_ID: embeddings_001
       SOAS_AGENT_ROLE: embeddings
       SOAS_VERSION: "0.1.0"
+    volumes:
+      - ./secrets/mtls/ca:/run/mtls/ca:ro
+      - ./secrets/mtls/embeddings:/run/mtls/embeddings:ro
     healthcheck:
-      # Python is guaranteed to be present (slim base); wget isn't.
+      # Healthcheck talks to the local mTLS port. Loads the SOAS CA + embeddings'
+      # own client cert as peer credentials.
       test:
         - "CMD"
         - "python"
         - "-c"
-        - "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8200/health', timeout=3).status == 200 else 1)"
+        - "import ssl, urllib.request, sys; ctx = ssl.create_default_context(cafile='/run/mtls/ca/ca.crt'); ctx.load_cert_chain('/run/mtls/embeddings/client.crt', '/run/mtls/embeddings/client.key'); ctx.check_hostname=False; sys.exit(0 if urllib.request.urlopen('https://localhost:8200/health', context=ctx, timeout=3).status==200 else 1)"
       interval: 15s
       timeout: 5s
       retries: 6
       start_period: 30s
     restart: unless-stopped
+    networks:
+      - backend_net
 
-  # MCP server — exposes SOAS as MCP tools to Claude Code / IDEs over streamable HTTP.
-  # Reads its bearer token from the shared volume the backend writes at startup.
+  # MCP server — backend-network-internal only. Not reachable from host. The reverse
+  # proxy fronts /mcp/* requests on the backend network on behalf of remote clients.
   mcp:
     build:
       context: .
       dockerfile: mcp/Dockerfile
     container_name: soas-mcp
     environment:
-      SOAS_API_URL: http://backend:8000/api/v1
-      EMBEDDING_SERVICE_URL: http://embeddings:8200
+      SOAS_API_URL: https://backend:8000/api/v1
+      EMBEDDING_SERVICE_URL: https://embeddings:8200
       SOAS_TOKEN_FILE: /run/secrets/mcp_token
       MCP_HTTP_PORT: "8765"
-      # Optional: when set, MCP clients must present this bearer to call the MCP server
-      # itself. Leave unset for the default Docker-network-only deployment.
-      MCP_SERVER_TOKEN: ${MCP_SERVER_TOKEN:-}
+      MTLS_DIR: /run/mtls
+      # MCP_SERVER_TOKEN is now mandatory in this topology — only the reverse proxy
+      # ever talks to MCP and it MUST present this token. Generate one and pass it
+      # through the .env file or compose secret of your choice.
+      MCP_SERVER_TOKEN: ${MCP_SERVER_TOKEN:?Set MCP_SERVER_TOKEN — backend-net only deployment requires it}
       SOAS_AGENT_ID: mcp_001
       SOAS_AGENT_ROLE: mcp
       SOAS_VERSION: "0.1.0"
-    ports:
-      - "8765:8765"
     depends_on:
       backend:
         condition: service_started
       embeddings:
         condition: service_healthy
     volumes:
-      # Read-only view of the same volume the backend wrote the token to.
       - mcp_secrets:/run/secrets:ro
+      - ./secrets/mtls/ca:/run/mtls/ca:ro
+      - ./secrets/mtls/mcp:/run/mtls/mcp:ro
     restart: unless-stopped
+    networks:
+      - backend_net
+
+  # Reverse proxy — the single host-published service. Terminates TLS, routes /api to
+  # backend, /mcp to mcp, everything else to the frontend SPA. Joins all three networks
+  # because it is the only ingress for the cluster.
+  proxy:
+    image: caddy:2-alpine
+    container_name: soas-proxy
+    ports:
+      - "${SOAS_HTTPS_PORT:-443}:443"
+      - "${SOAS_HTTP_PORT:-80}:80"
+    environment:
+      MCP_SERVER_TOKEN: ${MCP_SERVER_TOKEN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      # Proxy needs the CA + its own client cert so it can present credentials to the
+      # internal upstreams (backend, mcp, frontend). The proxy doesn't need a *server*
+      # cert for internal connections because it terminates TLS for the *public* side
+      # using Caddy's `tls internal` (or your real cert in production).
+      - ./secrets/mtls/ca:/run/mtls/ca:ro
+      - ./secrets/mtls/proxy:/run/mtls/proxy:ro
+    depends_on:
+      - backend
+      - frontend
+      - mcp
+    networks:
+      - proxy
+      - frontend_net
+      - backend_net
 
 volumes:
   pgdata:
@@ -204,9 +259,26 @@ volumes:
   gitsync:
   mcp_secrets:
   claude_config:
+  caddy_data:
+  caddy_config:
 
 secrets:
   jwt_private_key:
     file: ./secrets/jwt_private.pem
   jwt_public_key:
     file: ./secrets/jwt_public.pem
+
+networks:
+  # Public-facing — only the proxy joins this and the host bridge.
+  proxy:
+    driver: bridge
+  # Internal — frontend ↔ proxy. No external bridge so the SPA container is invisible
+  # to the host (it can only reach the proxy and vice-versa).
+  frontend_net:
+    driver: bridge
+    internal: true
+  # Internal — backend, workers, postgres, redis, embeddings, mcp. The proxy joins this
+  # too so it can route /api and /mcp without exposing those services to the host.
+  backend_net:
+    driver: bridge
+    internal: true

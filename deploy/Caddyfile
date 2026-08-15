@@ -1,0 +1,71 @@
+# Caddy reverse proxy in front of the SOAS stack.
+#
+# Network topology:
+#   - This container is the only ingress (joins proxy, frontend_net, backend_net).
+#   - Public side (browser → :443): server TLS only, no client cert (per requirement).
+#   - Internal side (proxy → backend/mcp/frontend): mTLS. Caddy presents the `proxy`
+#     client cert signed by the SOAS CA and verifies each upstream's server cert.
+#
+#   - /api/*  → backend:8000 (HTTPS+mTLS)
+#   - /mcp/*  → mcp:8765 (HTTPS+mTLS) — also requires MCP_SERVER_TOKEN bearer
+#   - /       → frontend:3000 (HTTPS+mTLS) static SPA
+#
+# The internal SOAS CA is also a trusted root inside this container so Caddy verifies
+# the upstream server certs.
+
+{
+	# Operator email isn't needed in dev. Set in production.
+	# email ops@example.com
+	#
+	# `auto_https disable_redirects` keeps the explicit :80 → :443 redirect block we
+	# define below as the authoritative redirect. Do NOT use `auto_https off` here —
+	# that also disables cert issuance under `tls internal`, leaving :443 with no leaf
+	# cert and ERR_SSL_PROTOCOL_ERROR for every connection.
+	auto_https disable_redirects
+}
+
+:80 {
+	redir https://{host}{uri} permanent
+}
+
+localhost:443, 127.0.0.1:443 {
+	tls internal
+
+	handle /api/* {
+		reverse_proxy https://backend:8000 {
+			transport http {
+				tls
+				tls_trusted_ca_certs /run/mtls/ca/ca.crt
+				tls_client_auth /run/mtls/proxy/client.crt /run/mtls/proxy/client.key
+				tls_server_name backend
+			}
+			header_up X-Forwarded-For {client_ip}
+			header_up X-Forwarded-Proto https
+			header_up X-Forwarded-Host {host}
+		}
+	}
+
+	handle /mcp/* {
+		@noauth not header Authorization "Bearer {$MCP_SERVER_TOKEN}"
+		respond @noauth "Unauthorized" 401
+		reverse_proxy https://mcp:8765 {
+			transport http {
+				tls
+				tls_trusted_ca_certs /run/mtls/ca/ca.crt
+				tls_client_auth /run/mtls/proxy/client.crt /run/mtls/proxy/client.key
+				tls_server_name mcp
+			}
+		}
+	}
+
+	handle {
+		reverse_proxy https://frontend:3000 {
+			transport http {
+				tls
+				tls_trusted_ca_certs /run/mtls/ca/ca.crt
+				tls_client_auth /run/mtls/proxy/client.crt /run/mtls/proxy/client.key
+				tls_server_name frontend
+			}
+		}
+	}
+}

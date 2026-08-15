@@ -28,7 +28,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soas_backend.api.deps import SESSION_COOKIE_NAME, get_redis
-from soas_backend.auth.jwt import create_access_token
 from soas_backend.services.app_session_service import AppSessionService
 from soas_backend.services.app_token_service import AppTokenService, DEFAULT_TTL_HOURS
 from soas_backend.auth.oidc import (
@@ -229,10 +228,10 @@ async def oidc_callback(
     # /auth/session/bootstrap to retrieve the signing key.
     cookie_value = f"{session.id}.{b64_session_key}"
     response = RedirectResponse(f"{next_path}#oidc=1", status_code=status.HTTP_302_FOUND)
+    # Session-scope cookie: browser drops it on close. AppToken TTL caps it at 6h.
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=cookie_value,
-        max_age=DEFAULT_TTL_HOURS * 3600,
         httponly=True,
         secure=True,
         samesite="strict",

@@ -1,0 +1,57 @@
+# Dev variant of the SOAS Caddyfile.
+#
+# Identical to deploy/Caddyfile except:
+#   - The frontend upstream is the Vite dev server on :5173 over plain HTTP, so HMR
+#     and websockets work without Vite needing its own client cert.
+#   - The /api and /mcp routes still go through mTLS exactly like in prod, so the
+#     security model is exercised end-to-end during dev.
+
+{
+	# `auto_https disable_redirects` is the only piece we want off — let Caddy still
+	# auto-issue the leaf cert via `tls internal`. Setting `auto_https off` outright
+	# also skips cert issuance, which leaves :443 unable to do a TLS handshake.
+	auto_https disable_redirects
+	debug
+}
+
+:80 {
+	redir https://{host}{uri} permanent
+}
+
+localhost:443, 127.0.0.1:443 {
+	tls internal
+
+	handle /api/* {
+		reverse_proxy https://backend:8000 {
+			transport http {
+				tls
+				tls_trusted_ca_certs /run/mtls/ca/ca.crt
+				tls_client_auth /run/mtls/proxy/client.crt /run/mtls/proxy/client.key
+				tls_server_name backend
+			}
+			header_up X-Forwarded-For {client_ip}
+			header_up X-Forwarded-Proto https
+			header_up X-Forwarded-Host {host}
+		}
+	}
+
+	handle /mcp/* {
+		@noauth not header Authorization "Bearer {$MCP_SERVER_TOKEN}"
+		respond @noauth "Unauthorized" 401
+		reverse_proxy https://mcp:8765 {
+			transport http {
+				tls
+				tls_trusted_ca_certs /run/mtls/ca/ca.crt
+				tls_client_auth /run/mtls/proxy/client.crt /run/mtls/proxy/client.key
+				tls_server_name mcp
+			}
+		}
+	}
+
+	# Dev only: Vite dev server speaks plain HTTP and provides hot module reload over
+	# the same port. Caddy upgrades the connection to HTTPS for the browser while the
+	# upstream stays HTTP.
+	handle {
+		reverse_proxy http://frontend:5173
+	}
+}

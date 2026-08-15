@@ -10,14 +10,19 @@ from typing import Any
 
 import httpx
 
+from soas_backend.http_clients import internal_async_client
+
 
 class SoasClient:
     def __init__(self, base_url: str, token: str, timeout: float = 30.0):
         self.base_url = base_url.rstrip("/")
-        self._client = httpx.AsyncClient(
+        # Internal mTLS-aware client: validates the backend server cert against the
+        # SOAS CA and presents our client cert. The bearer token is still sent for
+        # application-level RBAC.
+        self._client = internal_async_client(
+            timeout=timeout,
             base_url=self.base_url,
             headers={"Authorization": f"Bearer {token}"},
-            timeout=timeout,
         )
 
     async def aclose(self) -> None:
@@ -47,7 +52,7 @@ class SoasClient:
 
 
 def build_client_from_env() -> SoasClient:
-    base = os.environ.get("SOAS_API_URL", "http://backend:8000/api/v1")
+    base = os.environ.get("SOAS_API_URL", "https://backend:8000/api/v1")
     token_file = os.environ.get("SOAS_TOKEN_FILE", "/run/secrets/mcp_token")
     token = os.environ.get("SOAS_API_TOKEN", "")
     if not token and os.path.exists(token_file):

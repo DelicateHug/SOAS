@@ -103,7 +103,7 @@ def _start_beat_heartbeat():
     import threading
     import time
 
-    import requests
+    from soas_workers.http_clients import internal_sync_client
 
     role = os.environ.get("SOAS_AGENT_ROLE", "beat")
     candidate = os.environ.get("SOAS_AGENT_ID", "").strip()
@@ -116,7 +116,7 @@ def _start_beat_heartbeat():
         else:
             candidate = f"{role}_001"
 
-    api_url = os.environ.get("SOAS_API_URL", "http://backend:8000/api/v1")
+    api_url = os.environ.get("SOAS_API_URL", "https://backend:8000/api/v1")
     version = os.environ.get("SOAS_VERSION", "0.1.0")
     boot_ts = time.time()
 
@@ -139,7 +139,8 @@ def _start_beat_heartbeat():
                     body["mem_rss_bytes"] = int(proc.memory_info().rss)
                 except Exception:
                     pass
-                requests.post(f"{api_url}/agents/heartbeat", json=body, timeout=5)
+                with internal_sync_client(timeout=5) as c:
+                    c.post(f"{api_url}/agents/heartbeat", json=body)
             except Exception:
                 pass
             time.sleep(30)
